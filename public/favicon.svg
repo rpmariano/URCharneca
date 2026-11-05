@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <rect width="120" height="120" rx="28" fill="#0F172A"/>
+  <path d="M18 90L42 26H64L40 90H18Z" fill="#2563EB"/>
+  <path d="M50 90L74 26H96L72 90H50Z" fill="#38BDF8"/>
+  <circle cx="88" cy="30" r="10" fill="#F59E0B"/>
+  <text x="60" y="108" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="900" font-size="15" letter-spacing="2">UR CHARNECA</text>
+</svg>
