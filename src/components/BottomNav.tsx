@@ -154,12 +154,12 @@ export const BottomNav: React.FC = () => {
           className={({ isActive }) =>
             `relative flex flex-col items-center justify-center py-2 text-[11px] font-semibold transition active:scale-95 ${
               isActive
-                ? 'text-sky-400 font-bold'
+                ? 'text-[var(--run)] font-black'
                 : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
             }`
           }
         >
-          <Home className="w-5 h-5 mb-0.5 stroke-[2]" />
+          <Home className="w-5 h-5 mb-0.5 stroke-[2.2]" />
           <span>Início</span>
         </NavLink>
 
@@ -169,12 +169,12 @@ export const BottomNav: React.FC = () => {
           className={({ isActive }) =>
             `relative flex flex-col items-center justify-center py-2 text-[11px] font-semibold transition active:scale-95 ${
               isActive
-                ? 'text-sky-400 font-bold'
+                ? 'text-[var(--run)] font-black'
                 : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
             }`
           }
         >
-          <Trophy className="w-5 h-5 mb-0.5 stroke-[2]" />
+          <Trophy className="w-5 h-5 mb-0.5 stroke-[2.2]" />
           <span>Corridas</span>
         </NavLink>
 
@@ -187,12 +187,12 @@ export const BottomNav: React.FC = () => {
           className={({ isActive }) =>
             `relative flex flex-col items-center justify-center py-2 text-[11px] font-semibold transition active:scale-95 ${
               isActive
-                ? 'text-sky-400 font-bold'
+                ? 'text-[var(--run)] font-black'
                 : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
             }`
           }
         >
-          <CalendarDays className="w-5 h-5 mb-0.5 stroke-[2]" />
+          <CalendarDays className="w-5 h-5 mb-0.5 stroke-[2.2]" />
           <span>Treinos</span>
         </NavLink>
 
@@ -202,12 +202,12 @@ export const BottomNav: React.FC = () => {
           className={({ isActive }) =>
             `relative flex flex-col items-center justify-center py-2 text-[11px] font-semibold transition active:scale-95 ${
               isActive
-                ? 'text-sky-400 font-bold'
+                ? 'text-[var(--run)] font-black'
                 : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
             }`
           }
         >
-          <ShieldCheck className="w-5 h-5 mb-0.5 stroke-[2]" />
+          <ShieldCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
           <span>Admin</span>
         </NavLink>
 

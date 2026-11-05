@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Bus,
   MapPin,
-  Calendar,
   CheckCircle2,
   ChevronRight,
   Flame,
@@ -13,17 +11,20 @@ import {
   Clock,
   Check,
   HelpCircle,
+  Zap,
+  Activity,
+  ArrowRight,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { Race } from '../types'
 import { CATEGORIA_LABELS } from '../types'
-import { formatShortDate, formatDayMonth, computeVanAllocation } from '../utils/formatters'
+import { formatDayMonth, computeVanAllocation, getDaysFromReference } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { RaceDetailModal } from '../components/RaceDetailModal'
 
 /**
- * Página Inicial (/) — Painel da Armada Azul.
- * Resume o essencial: próxima prova, próximo treino, avisos e as minhas inscrições.
+ * Página Inicial (/) — Painel da Armada Azul (Estilo Runtastic / Adidas Running).
+ * Foco em telemetria rápida, contagem decrescente da prova, números legíveis e botões táteis.
  */
 export const HomePage: React.FC = () => {
   const {
@@ -97,16 +98,32 @@ export const HomePage: React.FC = () => {
     month: 'long',
   })
 
+  // Dias até à próxima prova
+  const daysUntilRace = nextRace ? getDaysFromReference(nextRace.date, today) : null
+
   return (
-    <div className="space-y-4 pb-8 pt-2">
-      {/* Saudação */}
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-3)] first-letter:uppercase">
-          {todayLabel}
-        </p>
-        <h1 className="font-display font-extrabold text-xl text-[var(--text-1)] tracking-tight">
-          Olá, {firstName} 👋
-        </h1>
+    <div className="space-y-5 pb-8 pt-2">
+      {/* Saudação Atlética Runtastic */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--run)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--run)] animate-pulse" />
+            <span>URC Armada Azul</span>
+          </div>
+          <h1 className="font-display font-black text-2xl text-[var(--text-1)] tracking-tight mt-0.5">
+            Olá, {firstName} 👋
+          </h1>
+          <p className="text-xs text-[var(--text-3)] capitalize mt-0.5">{todayLabel}</p>
+        </div>
+
+        {/* Badge de estatística rápida do utilizador */}
+        <div className="text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Inscrições</div>
+          <div className="font-display font-black text-xl text-[var(--text-1)] flex items-center justify-end gap-1">
+            <Activity className="w-4 h-4 text-[var(--run)]" />
+            {myUpcoming.length}
+          </div>
+        </div>
       </div>
 
       {/* Alerta de gestão (apenas Admin) */}
@@ -114,157 +131,238 @@ export const HomePage: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate('/equipa')}
-          className="w-full iron-card p-3.5 flex items-center justify-between gap-3 text-left border-rose-400/40 cursor-pointer"
+          className="w-full iron-card p-3.5 flex items-center justify-between gap-3 text-left border-rose-400/40 cursor-pointer active:scale-[0.99] transition"
         >
           <span className="flex items-center gap-2.5 text-xs text-[var(--text-2)]">
-            <span className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-400/30 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4 text-rose-400" />
+            <span className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-400/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-rose-400" />
             </span>
             <span>
-              <strong className="text-[var(--text-1)]">{adminPending} inscrições</strong> aguardam
-              confirmação nas próximas provas.
+              <strong className="text-[var(--text-1)] font-bold">{adminPending} inscrições</strong> aguardam
+              confirmação oficial nas próximas provas.
             </span>
           </span>
           <ChevronRight className="w-4 h-4 text-[var(--text-3)] shrink-0" />
         </button>
       )}
 
-      {/* Próxima Prova */}
+      {/* Hero da Próxima Prova — Telemetria HUD Runtastic */}
       <section className="space-y-2">
-        <SectionTitle title="Próxima prova" action="Ver todas" onAction={() => navigate('/corridas')} />
+        <SectionTitle
+          title="Próximo Objetivo"
+          action="Ver todas"
+          onAction={() => navigate('/corridas')}
+        />
         {nextRace ? (
-          <div
-            onClick={() => setSelectedRaceId(nextRace.id)}
-            className="iron-card relative overflow-hidden p-4 border border-amber-400/40 cursor-pointer space-y-3 group active:scale-[0.99]"
-          >
-            <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+          (() => {
+            const regs = registrations.filter(
+              (r) => r.race_id === nextRace.id && r.status !== 'cancelled'
+            )
+            const van = computeVanAllocation(nextRace, regs)
+            const myReg = regs.find((r) => r.athlete_id === currentUser.id && !r.is_dependent)
+            const primaryDistance = nextRace.distances[0] || '10 km'
 
-            <div className="flex items-center justify-between relative">
-              <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-400/30 flex items-center gap-1">
-                <Flame className="w-3 h-3" />
-                {CATEGORIA_LABELS[nextRace.category].label}
-              </span>
-              <span className="text-xs font-semibold text-[var(--text-2)] flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-sky-400" />
-                {formatShortDate(nextRace.date)} • {nextRace.start_time}
-              </span>
-            </div>
+            let countdownLabel = ''
+            if (daysUntilRace === 0) countdownLabel = 'É HOJE! 🔥'
+            else if (daysUntilRace === 1) countdownLabel = 'AMANHÃ! ⚡'
+            else if (daysUntilRace !== null && daysUntilRace > 0 && daysUntilRace <= 7)
+              countdownLabel = `FALTAM ${daysUntilRace} DIAS ⚡`
+            else if (daysUntilRace !== null && daysUntilRace > 7)
+              countdownLabel = `EM ${daysUntilRace} DIAS`
 
-            <div className="relative">
-              <h2 className="font-display font-extrabold text-base text-[var(--text-1)] leading-snug">
-                {nextRace.title}
-              </h2>
-              <p className="text-xs text-[var(--text-2)] flex items-center gap-1.5 mt-1">
-                <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                {nextRace.location}
-              </p>
-            </div>
+            return (
+              <div
+                onClick={() => setSelectedRaceId(nextRace.id)}
+                className="iron-card relative overflow-hidden p-5 border border-amber-400/50 cursor-pointer space-y-4 group active:scale-[0.99] transition"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(21, 31, 51, 0.95), rgba(15, 23, 38, 0.95))',
+                  boxShadow: 'var(--shadow-card)',
+                }}
+              >
+                {/* Glow de fundo atlético */}
+                <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-16 -left-16 w-44 h-44 rounded-full bg-[var(--run)]/10 blur-3xl pointer-events-none" />
 
-            {(() => {
-              const regs = registrations.filter(
-                (r) => r.race_id === nextRace.id && r.status !== 'cancelled'
-              )
-              const van = computeVanAllocation(nextRace, regs)
-              const myReg = regs.find((r) => r.athlete_id === currentUser.id && !r.is_dependent)
-              return (
-                <div className="pt-2.5 border-t border-[var(--border-card)] flex items-center justify-between text-xs relative">
-                  <div className="flex items-center gap-3 text-[var(--text-2)]">
-                    <span className="font-semibold flex items-center gap-1.5 text-[var(--text-1)]">
-                      <Users className="w-3.5 h-3.5 text-sky-400" />
-                      {regs.length} atletas
-                    </span>
-                    {nextRace.van_available && (
-                      <span className="flex items-center gap-1">
-                        <Bus className="w-3.5 h-3.5 text-amber-500" />
-                        {van.confirmedPassengers.length}/{van.capacity}
-                      </span>
-                    )}
-                  </div>
-                  {myReg ? (
-                    <span className="font-bold text-emerald-500 bg-emerald-500/15 border border-emerald-400/40 px-2.5 py-1 rounded-full text-[11px] flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Inscrito ({myReg.distance})
-                    </span>
-                  ) : (
-                    <span className="font-bold text-sky-400 flex items-center gap-1 text-xs">
-                      Inscrever <ChevronRight className="w-3.5 h-3.5" />
+                {/* Linha de topo: Contagem decrescente + Categoria */}
+                <div className="flex items-center justify-between relative gap-2 flex-wrap">
+                  {countdownLabel && (
+                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-display flex items-center gap-1.5 shadow-sm">
+                      <Zap className="w-3.5 h-3.5 stroke-[2.5]" />
+                      {countdownLabel}
                     </span>
                   )}
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[var(--text-2)] flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-amber-400" />
+                    {CATEGORIA_LABELS[nextRace.category].label}
+                  </span>
                 </div>
-              )
-            })()}
-          </div>
+
+                {/* Título & Local */}
+                <div className="relative">
+                  <h2 className="font-display font-black text-xl text-[var(--text-1)] leading-tight tracking-tight">
+                    {nextRace.title}
+                  </h2>
+                  <p className="text-xs text-[var(--text-2)] flex items-center gap-1.5 mt-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[var(--run)] shrink-0" />
+                    <span>{nextRace.location}</span>
+                  </p>
+                </div>
+
+                {/* Telemetria HUD (4 Métricas em Estilo Runtastic) */}
+                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                      Distância
+                    </div>
+                    <div className="font-display font-black text-base text-[var(--text-1)] mt-0.5 truncate">
+                      {primaryDistance.replace(/km/i, '').trim()}
+                      <span className="text-[10px] font-normal text-[var(--run)] ml-0.5">km</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                      Partida
+                    </div>
+                    <div className="font-display font-black text-base text-[var(--text-1)] mt-0.5">
+                      {nextRace.start_time}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                      Plantel
+                    </div>
+                    <div className="font-display font-black text-base text-amber-400 mt-0.5">
+                      {regs.length}
+                      <span className="text-[10px] font-normal text-[var(--text-3)] ml-0.5">atle</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                      Carrinha
+                    </div>
+                    <div className="font-display font-black text-base text-[var(--run)] mt-0.5">
+                      {van.confirmedPassengers.length}
+                      <span className="text-[10px] font-normal text-[var(--text-3)]">/{van.capacity}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botão de Ação Tátil Runtastic */}
+                <div className="pt-1">
+                  {myReg ? (
+                    <div className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-between bg-emerald-500/15 border border-emerald-400/40 text-emerald-400">
+                      <span className="flex items-center gap-2 font-display uppercase tracking-wider">
+                        <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                        Inscrito ({myReg.distance})
+                      </span>
+                      <span className="text-[11px] text-[var(--text-2)] flex items-center gap-1">
+                        Ver Carrinha & Detalhes <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 text-slate-950 font-display transition active:scale-[0.98]"
+                      style={{
+                        background: 'var(--grad-run)',
+                        boxShadow: 'var(--shadow-fab)',
+                      }}
+                    >
+                      <span>Participar na Prova</span>
+                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()
         ) : (
           <EmptyCard text="Não há provas futuras agendadas." />
         )}
       </section>
 
-      {/* Próximo Treino */}
+      {/* Próximo Treino — Card Estilo Workout Runtastic */}
       <section className="space-y-2">
-        <SectionTitle title="Próximo treino / evento" action="Ver treinos" onAction={() => navigate('/treinos')} />
+        <SectionTitle
+          title="Próximo Treino / Evento"
+          action="Agenda completa"
+          onAction={() => navigate('/treinos')}
+        />
         {nextEvent ? (
           (() => {
             const dm = formatDayMonth(nextEvent.date)
             const going = nextEvent.attendees.filter((a) => a.status === 'going').length
             const myRsvp = nextEvent.attendees.find((a) => a.athlete_id === currentUser.id)?.status
             return (
-              <div className="iron-card p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-sky-400 uppercase leading-none">{dm.month}</span>
-                    <span className="font-display font-black text-lg text-[var(--text-1)] leading-tight mt-0.5">
+              <div className="iron-card p-4 space-y-3.5 border-l-4 border-l-[var(--run)]">
+                <div className="flex items-start gap-3.5">
+                  {/* Badge de Data com Acabamento Atlético */}
+                  <div className="w-13 h-13 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-[var(--run)] uppercase tracking-wider leading-none">
+                      {dm.month}
+                    </span>
+                    <span className="font-display font-black text-xl text-[var(--text-1)] leading-tight mt-0.5">
                       {dm.day}
                     </span>
                   </div>
+
                   <div className="min-w-0 flex-1">
-                    <span
-                      className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${
-                        nextEvent.type === 'training'
-                          ? 'bg-sky-500/15 text-sky-400 border-sky-400/30'
-                          : 'bg-rose-500/15 text-rose-400 border-rose-400/30'
-                      }`}
-                    >
-                      {nextEvent.type === 'training' ? 'Treino' : 'Convívio'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                          nextEvent.type === 'training'
+                            ? 'bg-sky-500/15 text-[var(--run)] border border-sky-400/30'
+                            : 'bg-rose-500/15 text-rose-400 border border-rose-400/30'
+                        }`}
+                      >
+                        {nextEvent.type === 'training' ? '🏃 Treino URC' : '🍻 Convívio'}
+                      </span>
+                      <span className="text-[11px] font-bold text-[var(--text-3)] flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-[var(--run)]" />
+                        {nextEvent.time}
+                      </span>
+                    </div>
+
                     <h3 className="font-display font-bold text-sm text-[var(--text-1)] mt-1 truncate">
                       {nextEvent.title}
                     </h3>
-                    <div className="text-[11px] text-[var(--text-2)] flex flex-wrap items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-sky-400" />
-                        {nextEvent.time}
-                      </span>
-                      <span className="flex items-center gap-1 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                        {nextEvent.location}
-                      </span>
-                    </div>
+                    <p className="text-xs text-[var(--text-2)] flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-[var(--text-3)] shrink-0" />
+                      {nextEvent.location}
+                    </p>
                   </div>
                 </div>
+
+                {/* RSVP Tátil */}
                 <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[var(--border-card)]">
-                  <span className="text-[11px] text-[var(--text-3)]">{going} confirmados</span>
-                  <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-[var(--text-2)] flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-[var(--run)]" />
+                    <strong>{going}</strong> confirmados
+                  </span>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => rsvpEvent(nextEvent.id, 'going')}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1 cursor-pointer transition ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition active:scale-95 ${
                         myRsvp === 'going'
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)]'
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-xs'
+                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:border-emerald-400/50'
                       }`}
                     >
-                      <Check className="w-3 h-3" /> Vou
+                      <Check className="w-3.5 h-3.5" /> Vou
                     </button>
                     <button
                       type="button"
                       onClick={() => rsvpEvent(nextEvent.id, 'maybe')}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1 cursor-pointer transition ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition active:scale-95 ${
                         myRsvp === 'maybe'
-                          ? 'bg-amber-400 text-slate-950 border-amber-300'
-                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)]'
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow-xs'
+                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:border-amber-400/50'
                       }`}
                     >
-                      <HelpCircle className="w-3 h-3" /> Talvez
+                      <HelpCircle className="w-3.5 h-3.5" /> Talvez
                     </button>
                   </div>
                 </div>
@@ -279,7 +377,7 @@ export const HomePage: React.FC = () => {
       {/* Aviso em destaque */}
       <section className="space-y-2">
         <SectionTitle
-          title={unreadNotificationsCount > 0 ? `Avisos (${unreadNotificationsCount} por ler)` : 'Avisos'}
+          title={unreadNotificationsCount > 0 ? `Avisos (${unreadNotificationsCount} por ler)` : 'Avisos da Equipa'}
           action="Ver todos"
           onAction={() => navigate('/avisos')}
         />
@@ -290,15 +388,15 @@ export const HomePage: React.FC = () => {
               markNotificationRead(featuredNotice.id)
               navigate('/avisos')
             }}
-            className={`w-full text-left iron-card p-3.5 space-y-1 cursor-pointer ${
-              !featuredNotice.read_by.includes(currentUser.id) ? 'border-sky-400/50' : ''
+            className={`w-full text-left iron-card p-4 space-y-1.5 cursor-pointer active:scale-[0.99] transition ${
+              !featuredNotice.read_by.includes(currentUser.id) ? 'border-[var(--run)]/60' : ''
             }`}
           >
             <div className="flex items-center gap-2 text-[11px] text-[var(--text-3)]">
               <Megaphone className="w-3.5 h-3.5 text-rose-400" />
               <span className="font-semibold text-[var(--text-2)]">{featuredNotice.created_by_name}</span>
               {!featuredNotice.read_by.includes(currentUser.id) && (
-                <span className="ml-auto text-[11px] font-bold text-sky-400 bg-sky-500/15 px-2 py-0.5 rounded-full border border-sky-400/40">
+                <span className="ml-auto text-[10px] font-black uppercase tracking-wider text-[var(--run)] bg-[var(--run)]/15 px-2 py-0.5 rounded-full border border-[var(--run)]/40">
                   Novo
                 </span>
               )}
@@ -321,7 +419,7 @@ export const HomePage: React.FC = () => {
             onAction={() => navigate('/corridas')}
           />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {myUpcoming.slice(0, 4).map(({ race, regs }) => {
               const dm = formatDayMonth(race.date)
               return (
@@ -329,20 +427,27 @@ export const HomePage: React.FC = () => {
                   key={race.id}
                   type="button"
                   onClick={() => setSelectedRaceId(race.id)}
-                  className="w-full text-left iron-card iron-card-interactive p-3 flex items-center gap-3 cursor-pointer"
+                  className="w-full text-left iron-card iron-card-interactive p-3.5 flex items-center gap-3.5 cursor-pointer active:scale-[0.99] transition"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-sky-400 uppercase leading-none">{dm.month}</span>
-                    <span className="font-display font-black text-sm text-[var(--text-1)] leading-tight">{dm.day}</span>
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-[var(--run)] uppercase leading-none">{dm.month}</span>
+                    <span className="font-display font-black text-base text-[var(--text-1)] leading-tight mt-0.5">{dm.day}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-xs text-[var(--text-1)] truncate">{race.title}</div>
-                    <div className="text-[11px] text-[var(--text-3)] truncate">
-                      {regs.map((r) => r.athlete_name.split(' (')[0].split(' ')[0]).join(', ')} •{' '}
-                      {regs[0].distance}
+                    <div className="font-bold text-sm text-[var(--text-1)] truncate">{race.title}</div>
+                    <div className="text-xs text-[var(--text-3)] flex items-center gap-1.5 mt-0.5">
+                      <span className="font-bold text-[var(--run)] bg-[var(--run)]/10 px-1.5 py-0.5 rounded text-[10px]">
+                        {regs[0].distance}
+                      </span>
+                      <span>•</span>
+                      <span className="truncate">
+                        {regs.map((r) => r.athlete_name.split(' (')[0].split(' ')[0]).join(', ')}
+                      </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[var(--text-3)] shrink-0" />
+                  <div className="w-8 h-8 rounded-full bg-[var(--surface-raised)] border border-[var(--border-card)] flex items-center justify-center text-[var(--text-3)] shrink-0">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
                 </button>
               )
             })}
@@ -368,9 +473,9 @@ const SectionTitle: React.FC<{ title: string; action?: string; onAction?: () => 
       <button
         type="button"
         onClick={onAction}
-        className="text-[11px] font-bold text-sky-400 hover:underline cursor-pointer py-1.5 px-2 -mr-2 min-h-[38px] sm:min-h-[44px] inline-flex items-center gap-0.5"
+        className="text-xs font-bold text-[var(--run)] hover:underline cursor-pointer py-1 px-1 inline-flex items-center gap-0.5"
       >
-        {action} <ChevronRight className="w-3 h-3" />
+        {action} <ChevronRight className="w-3.5 h-3.5" />
       </button>
     )}
   </div>
@@ -381,15 +486,18 @@ const EmptyCard: React.FC<{ text: string; action?: string; onAction?: () => void
   action,
   onAction,
 }) => (
-  <div className="iron-card p-4 text-center text-xs text-[var(--text-3)] space-y-2">
+  <div className="iron-card p-5 text-center text-xs text-[var(--text-3)] space-y-2.5">
     <p>{text}</p>
     {action && onAction && (
       <button
         type="button"
         onClick={onAction}
-        className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] rounded-full bg-sky-500/15 text-sky-400 border border-sky-400/30 font-bold text-xs cursor-pointer active:scale-95 transition"
+        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full font-bold text-xs cursor-pointer active:scale-95 transition text-slate-950 font-display uppercase tracking-wider"
+        style={{
+          background: 'var(--grad-run)',
+        }}
       >
-        {action} <ChevronRight className="w-3 h-3" />
+        {action} <ArrowRight className="w-3.5 h-3.5" />
       </button>
     )}
   </div>

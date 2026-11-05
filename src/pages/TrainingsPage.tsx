@@ -222,7 +222,11 @@ export const TrainingsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-bold text-xs shadow-md transition active:scale-95 cursor-pointer text-slate-950 border border-sky-300 bg-gradient-to-r from-sky-400 to-blue-500 shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-bold text-xs shadow-md transition active:scale-95 cursor-pointer text-slate-950 border border-teal-300"
+          style={{
+            background: 'var(--grad-run)',
+            boxShadow: 'var(--shadow-fab)',
+          }}
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>Marcar Treino</span>
@@ -487,32 +491,32 @@ export const TrainingsPage: React.FC = () => {
             return (
               <div
                 key={item.key}
-                className="iron-card p-4 space-y-3"
+                className="iron-card p-4 space-y-3.5 rounded-2xl border-l-4 border-l-[var(--run)]"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-sky-400 leading-none uppercase">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-13 h-13 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-[var(--run)] leading-none uppercase tracking-wider">
                       {dm.month}
                     </span>
-                    <span className="font-display font-black text-lg text-[var(--text-1)] leading-tight mt-0.5">
+                    <span className="font-display font-black text-xl text-[var(--text-1)] leading-tight mt-0.5">
                       {dm.day}
                     </span>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span
-                        className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded ${
+                        className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
                           evt.type === 'training'
-                            ? 'bg-sky-500/15 text-sky-300 border border-sky-400/30'
+                            ? 'bg-sky-500/15 text-[var(--run)] border border-sky-400/30'
                             : 'bg-rose-500/15 text-rose-300 border border-rose-400/30'
                         }`}
                       >
-                        {evt.type === 'training' ? 'Treino' : 'Convívio'}
+                        {evt.type === 'training' ? '🏃 Treino URC' : '❤️ Convívio'}
                       </span>
                       {evt.requires_official_kit && (
-                        <span className="text-[11px] font-semibold text-amber-300 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded flex items-center gap-0.5">
-                          <Shirt className="w-2.5 h-2.5" /> Equipamento
+                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 rounded flex items-center gap-0.5">
+                          <Shirt className="w-2.5 h-2.5" /> Equipamento Obrigatório
                         </span>
                       )}
                     </div>
@@ -522,12 +526,12 @@ export const TrainingsPage: React.FC = () => {
                     </h3>
 
                     <div className="text-[11px] text-[var(--text-2)] flex flex-wrap items-center gap-3 mt-1.5">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-sky-400" />
+                      <span className="flex items-center gap-1 font-semibold">
+                        <Clock className="w-3.5 h-3.5 text-[var(--run)]" />
                         {evt.time}
                       </span>
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                        <MapPin className="w-3.5 h-3.5 text-[var(--text-3)]" />
                         {evt.location}
                       </span>
                     </div>
@@ -535,17 +539,17 @@ export const TrainingsPage: React.FC = () => {
                 </div>
 
                 {evt.workout_plan && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-[var(--text-2)]">
-                    <span className="font-bold text-sky-300">Plano:</span> {evt.workout_plan}
+                  <div className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-[var(--text-2)]">
+                    <span className="font-bold text-[var(--run)]">Plano Atlético:</span> {evt.workout_plan}
                   </div>
                 )}
 
                 {/* Botões de Presença e Participantes */}
                 <div className="pt-2.5 border-t border-white/10 space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-[var(--text-2)] font-medium text-[11px]">
-                      <Users className="w-3.5 h-3.5 text-sky-400" />
-                      {going.length} confirmados: {going.map((g) => g.athlete_name.split(' ')[0]).join(', ')}
+                    <span className="flex items-center gap-1.5 text-[var(--text-2)] font-semibold text-[11px]">
+                      <Users className="w-3.5 h-3.5 text-[var(--run)]" />
+                      <strong>{going.length}</strong> confirmados{going.length > 0 ? `: ${going.map((g) => g.athlete_name.split(' ')[0]).join(', ')}` : ''}
                     </span>
                   </div>
 
@@ -553,37 +557,37 @@ export const TrainingsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => rsvpEvent(evt.id, 'going')}
-                      className={`py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer border active:scale-95 ${
+                      className={`py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border active:scale-95 ${
                         myRsvp === 'going'
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-xs'
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-xs'
                           : 'bg-white/5 text-[var(--text-2)] border-white/10 hover:bg-white/10 hover:text-[var(--text-1)]'
                       }`}
                     >
-                      <Check className="w-3 h-3 stroke-[2.5]" />
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       Vou
                     </button>
                     <button
                       type="button"
                       onClick={() => rsvpEvent(evt.id, 'maybe')}
-                      className={`py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer border active:scale-95 ${
+                      className={`py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border active:scale-95 ${
                         myRsvp === 'maybe'
-                          ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                          ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow-xs'
                           : 'bg-white/5 text-[var(--text-2)] border-white/10 hover:bg-white/10 hover:text-[var(--text-1)]'
                       }`}
                     >
-                      <HelpCircle className="w-3 h-3 stroke-[2.5]" />
+                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" />
                       Talvez
                     </button>
                     <button
                       type="button"
                       onClick={() => rsvpEvent(evt.id, 'not_going')}
-                      className={`py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition cursor-pointer border active:scale-95 ${
+                      className={`py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border active:scale-95 ${
                         myRsvp === 'not_going'
-                          ? 'bg-slate-700 text-slate-200 border-slate-600'
+                          ? 'bg-slate-700 text-slate-200 border-slate-600 font-bold'
                           : 'bg-white/5 text-[var(--text-3)] border-white/10 hover:bg-white/10 hover:text-[var(--text-1)]'
                       }`}
                     >
-                      <X className="w-3 h-3 stroke-[2.5]" />
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
                       Não
                     </button>
                   </div>

@@ -73,14 +73,14 @@ export const RacesPage: React.FC = () => {
 
   const filterBtn = (active: boolean, tone: 'sky' | 'amber' | 'blue' | 'emerald') => {
     const activeTone = {
-      sky: 'bg-sky-500/20 text-sky-400 border-sky-400/50',
-      amber: 'bg-amber-500/20 text-amber-500 border-amber-400/50',
-      blue: 'bg-blue-500/20 text-blue-400 border-blue-400/50',
-      emerald: 'bg-emerald-500/20 text-emerald-500 border-emerald-400/50',
+      sky: 'bg-[var(--run)]/20 text-[var(--run)] border-[var(--run)]/60 shadow-xs',
+      amber: 'bg-amber-500/20 text-amber-400 border-amber-400/60 shadow-xs',
+      blue: 'bg-blue-500/20 text-blue-300 border-blue-400/60 shadow-xs',
+      emerald: 'bg-emerald-500/20 text-emerald-400 border-emerald-400/60 shadow-xs',
     }[tone]
-    return `px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 border flex items-center gap-1.5 ${
+    return `px-4 py-2 min-h-[40px] rounded-full text-xs font-bold whitespace-nowrap transition cursor-pointer active:scale-95 border flex items-center gap-1.5 ${
       active
-        ? `${activeTone} shadow-xs`
+        ? `${activeTone} font-extrabold`
         : 'bg-[var(--surface-raised)] text-[var(--text-3)] border-[var(--border-card)] hover:text-[var(--text-1)]'
     }`
   }
@@ -203,46 +203,54 @@ export const RacesPage: React.FC = () => {
             <div
               key={race.id}
               onClick={() => setSelectedRaceId(race.id)}
-              className={`iron-card iron-card-interactive p-3.5 cursor-pointer flex items-center justify-between gap-3 group ${
+              className={`iron-card iron-card-interactive p-4 cursor-pointer flex items-center justify-between gap-3.5 group rounded-2xl active:scale-[0.99] transition ${
                 race.category === 'trofeu_cascais' ? 'border-amber-400/40' : ''
               } ${isPast ? 'opacity-60' : ''}`}
             >
-              <div className="flex items-center gap-3.5 min-w-0">
-                {/* Bloco de Data */}
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                {/* Bloco de Data Atlético */}
                 <div
-                  className={`w-12 h-12 rounded-xl border flex flex-col items-center justify-center shrink-0 ${
+                  className={`w-13 h-13 rounded-2xl border flex flex-col items-center justify-center shrink-0 ${
                     race.category === 'trofeu_cascais'
-                      ? 'bg-amber-500/15 border-amber-400/40'
-                      : 'bg-[var(--surface-raised)] border-[var(--border-card)]'
+                      ? 'bg-amber-500/15 border-amber-400/40 text-amber-400'
+                      : 'bg-[var(--surface-raised)] border-[var(--border-card)] text-[var(--run)]'
                   }`}
                 >
-                  <span
-                    className={`text-[11px] font-bold uppercase leading-none ${
-                      race.category === 'trofeu_cascais' ? 'text-amber-500' : 'text-sky-400'
-                    }`}
-                  >
+                  <span className="text-[10px] font-black uppercase tracking-wider leading-none">
                     {dm.month}
                   </span>
-                  <span className="font-display font-black text-lg text-[var(--text-1)] leading-tight mt-0.5">
+                  <span className="font-display font-black text-xl text-[var(--text-1)] leading-tight mt-0.5">
                     {dm.day}
                   </span>
                 </div>
 
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
+                  {/* Badges de Categoria & Distâncias */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span
-                      className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
                         race.category === 'trofeu_cascais'
-                          ? 'bg-amber-500/15 text-amber-500 border-amber-400/30'
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-400/30'
                           : race.category === 'equipa'
-                          ? 'bg-blue-500/15 text-blue-400 border-blue-400/30'
-                          : 'bg-emerald-500/15 text-emerald-500 border-emerald-400/30'
+                          ? 'bg-blue-500/15 text-blue-300 border border-blue-400/30'
+                          : 'bg-emerald-500/15 text-emerald-400 border border-emerald-400/30'
                       }`}
                     >
                       {CATEGORIA_LABELS[race.category].label.replace('Troféu de ', '')}
                     </span>
+
+                    {/* Chips de Distância Runtastic */}
+                    {race.distances.slice(0, 2).map((d) => (
+                      <span
+                        key={d}
+                        className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[var(--text-2)]"
+                      >
+                        {d}
+                      </span>
+                    ))}
+
                     {isAdminView && pendingAdmin > 0 && (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-400/30">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-400/30">
                         {pendingAdmin} p/ inscrever
                       </span>
                     )}
@@ -252,33 +260,50 @@ export const RacesPage: React.FC = () => {
                     {race.title}
                   </h3>
 
-                  <div className="text-[11px] text-[var(--text-3)] flex items-center gap-2 mt-1 flex-wrap">
+                  <div className="text-[11px] text-[var(--text-3)] flex items-center gap-2 mt-0.5 flex-wrap">
                     <span>{race.start_time} • {race.location}</span>
                   </div>
-                  <div className="text-[11px] text-[var(--text-3)] flex items-center gap-2 mt-0.5">
-                    <span className="text-[var(--text-2)] font-medium">{raceRegs.length} atletas</span>
+
+                  {/* Telemetria do Plantel e Carrinha Runtastic */}
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <span className="text-[11px] text-[var(--text-2)] font-semibold flex items-center gap-1">
+                      <Users className="w-3 h-3 text-[var(--run)]" />
+                      {raceRegs.length} atletas
+                    </span>
+
                     {race.van_available && (
-                      <span className="flex items-center gap-1">
-                        • <Bus className="w-3 h-3 text-amber-500" /> {van.confirmedPassengers.length}/{van.capacity}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Bus className="w-3 h-3 text-amber-400 shrink-0" />
+                        <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden shrink-0">
+                          <div
+                            className="h-full bg-amber-400 rounded-full transition-all"
+                            style={{ width: `${Math.min(100, (van.confirmedPassengers.length / van.capacity) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold text-[var(--text-3)]">
+                          {van.confirmedPassengers.length}/{van.capacity}
+                        </span>
+                      </div>
                     )}
+
                     {race.registration_deadline && race.category !== 'individual' && !isPast && (
-                      <span className="text-amber-500 font-semibold">
-                        • Até {formatShortDate(race.registration_deadline)}
+                      <span className="text-amber-400 text-[10px] font-bold">
+                        Prazo: {formatShortDate(race.registration_deadline)}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
+              {/* Estado do Atleta / Seta */}
               <div className="shrink-0 flex items-center gap-1.5">
                 {myRegs.length > 0 ? (
-                  <span className="text-[11px] font-bold text-emerald-500 bg-emerald-500/15 border border-emerald-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="text-[11px] font-extrabold text-emerald-400 bg-emerald-500/15 border border-emerald-400/40 px-2.5 py-1 rounded-full flex items-center gap-1 font-display uppercase tracking-wider">
+                    <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />
                     Vou{myRegs.length > 1 ? ` (${myRegs.length})` : ''}
                   </span>
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-[var(--surface-raised)] border border-[var(--border-card)] flex items-center justify-center text-[var(--text-3)] group-hover:text-sky-400 transition">
+                  <div className="w-8 h-8 rounded-full bg-[var(--surface-raised)] border border-[var(--border-card)] flex items-center justify-center text-[var(--text-3)] group-hover:text-[var(--run)] group-hover:border-[var(--run)]/40 transition">
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 )}

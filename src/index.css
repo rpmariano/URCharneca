@@ -15,70 +15,72 @@
 }
 
 /* =========================================================================
-   1. DEFAULT: MEIO-TERMO (Balanced Slate Navy / Grafite Azulado)
-   O ponto de equilíbrio perfeito entre o preto carvão e o branco total.
+   1. DEFAULT: MEIO-TERMO (Runtastic Athletic Slate Navy)
+   Inspirado nos princípios da app Runtastic / Adidas Running:
+   Contraste atlético forte, ciano elétrico, âmbar solar e telemetria legível.
    ========================================================================= */
 :root, [data-theme="balanced"] {
   color-scheme: dark;
 
   /* Fundo e Estrutura */
-  --bg-app: #141c2b;
-  --bg-body-desktop: #0b111c;
-  --bg-header: rgba(20, 28, 43, 0.90);
-  --bg-nav: rgba(20, 28, 43, 0.92);
-  --bg-sheet: #1a2538;
-  --bg-scrim: rgba(10, 15, 26, 0.65);
+  --bg-app: #0f1726;
+  --bg-body-desktop: #080d17;
+  --bg-header: rgba(15, 23, 38, 0.92);
+  --bg-nav: rgba(15, 23, 38, 0.94);
+  --bg-sheet: #151f33;
+  --bg-scrim: rgba(8, 13, 23, 0.70);
 
   /* Superfícies dos Cartões */
-  --surface-card: rgba(26, 37, 56, 0.85);
-  --surface-card-hover: rgba(33, 47, 72, 0.95);
-  --surface-raised: rgba(255, 255, 255, 0.05);
-  --border-card: rgba(255, 255, 255, 0.12);
-  --border-card-strong: rgba(255, 255, 255, 0.18);
+  --surface-card: rgba(21, 31, 51, 0.90);
+  --surface-card-hover: rgba(28, 42, 69, 0.95);
+  --surface-raised: rgba(255, 255, 255, 0.06);
+  --border-card: rgba(255, 255, 255, 0.13);
+  --border-card-strong: rgba(255, 255, 255, 0.20);
 
   /* Tipografia */
-  --text-1: #f8fafc;
+  --text-1: #ffffff;
   --text-2: #cbd5e1;
   --text-3: #94a3b8;
   --text-muted: #64748b;
 
-  /* Cores Semânticas */
-  --race: #fbbf24;
+  /* Cores Semânticas Runtastic */
+  --race: #f59e0b;
   --race-deep: #d97706;
   --race-ink: #1a1206;
-  --run: #38bdf8;
-  --coach: #22d3ee;
+  --run: #00d2c4;
+  --coach: #0ea5e9;
   --gym: #9ec3d2;
-  --ok: #34d399;
-  --warn: #fb923c;
-  --danger: #f87171;
+  --ok: #10b981;
+  --warn: #f97316;
+  --danger: #ef4444;
 
-  /* Gradientes & Sombras */
+  /* Gradientes & Sombras Runtastic */
   --grad-race: linear-gradient(135deg, #fbbf24, #d97706);
-  --grad-nav-pill: linear-gradient(90deg, #38bdf8, #818cf8);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(251, 191, 36, 0.14) 0%, transparent 60%),
-                  radial-gradient(95% 45% at 95% 25%, rgba(56, 189, 248, 0.14) 0%, transparent 60%),
-                  radial-gradient(130% 60% at 50% 100%, rgba(99, 102, 241, 0.10) 0%, transparent 60%);
-  --grad-fade: linear-gradient(180deg, rgba(20, 28, 43, 0.70) 0%, rgba(20, 28, 43, 0) 18%, rgba(20, 28, 43, 0) 78%, rgba(20, 28, 43, 0.85) 100%);
-  --shadow-fab: 0 6px 22px rgba(251, 191, 36, 0.45);
-  --glow-pill: 0 0 10px rgba(56, 189, 248, 0.55);
-  --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+  --grad-run: linear-gradient(135deg, #00d2c4, #0284c7);
+  --grad-nav-pill: linear-gradient(90deg, #00d2c4, #38bdf8);
+  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(0, 210, 196, 0.15) 0%, transparent 60%),
+                  radial-gradient(95% 45% at 95% 25%, rgba(245, 158, 11, 0.14) 0%, transparent 60%),
+                  radial-gradient(130% 60% at 50% 100%, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+  --grad-fade: linear-gradient(180deg, rgba(15, 23, 38, 0.75) 0%, rgba(15, 23, 38, 0) 18%, rgba(15, 23, 38, 0) 78%, rgba(15, 23, 38, 0.90) 100%);
+  --shadow-fab: 0 8px 24px rgba(0, 210, 196, 0.45);
+  --glow-pill: 0 0 12px rgba(0, 210, 196, 0.65);
+  --shadow-card: 0 10px 28px -4px rgba(0, 0, 0, 0.40);
 
-  --contour-run: #38bdf8;
-  --contour-run-op: 0.11;
-  --contour-race: #fbbf24;
-  --contour-race-op: 0.09;
+  --contour-run: #00d2c4;
+  --contour-run-op: 0.12;
+  --contour-race: #f59e0b;
+  --contour-race-op: 0.10;
 
   /* Tints Semânticos Adaptáveis */
-  --tint-amber-bg: rgba(251, 191, 36, 0.12);
-  --tint-amber-bg-strong: rgba(251, 191, 36, 0.22);
-  --tint-amber-border: rgba(251, 191, 36, 0.35);
+  --tint-amber-bg: rgba(245, 158, 11, 0.12);
+  --tint-amber-bg-strong: rgba(245, 158, 11, 0.22);
+  --tint-amber-border: rgba(245, 158, 11, 0.35);
   --tint-amber-fg: #fde68a;
 
-  --tint-blue-bg: rgba(56, 189, 248, 0.12);
-  --tint-blue-bg-strong: rgba(56, 189, 248, 0.22);
-  --tint-blue-border: rgba(56, 189, 248, 0.35);
-  --tint-blue-fg: #7dd3fc;
+  --tint-blue-bg: rgba(0, 210, 196, 0.12);
+  --tint-blue-bg-strong: rgba(0, 210, 196, 0.22);
+  --tint-blue-border: rgba(0, 210, 196, 0.35);
+  --tint-blue-fg: #5eead4;
 
   --tint-emerald-bg: rgba(52, 211, 153, 0.12);
   --tint-emerald-bg-strong: rgba(52, 211, 153, 0.22);
