@@ -23,8 +23,8 @@ import { todayISO } from '../utils/dates'
 import { RaceDetailModal } from '../components/RaceDetailModal'
 
 /**
- * Página Inicial (/) — Painel da Armada Azul (Estilo Runtastic / Adidas Running).
- * Foco em telemetria rápida, contagem decrescente da prova, números legíveis e botões táteis.
+ * Página Inicial (/) — Painel da Armada Azul (Estilo Nike+ Run Club - NRC).
+ * Tipografia agressiva e atlética, preto profundo, Nike Volt (#d8ff00) e telemetria de corrida.
  */
 export const HomePage: React.FC = () => {
   const {
@@ -103,23 +103,23 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-5 pb-8 pt-2">
-      {/* Saudação Atlética Runtastic */}
+      {/* Saudação Atlética Nike+ Run Club */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--run)]">
-            <span className="w-2 h-2 rounded-full bg-[var(--run)] animate-pulse" />
-            <span>URC Armada Azul</span>
+          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--run)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--run)] shadow-[0_0_8px_#d8ff00]" />
+            <span>NRC CHARNECA • JUST DO IT</span>
           </div>
-          <h1 className="font-display font-black text-2xl text-[var(--text-1)] tracking-tight mt-0.5">
-            Olá, {firstName} 👋
+          <h1 className="font-display font-black text-3xl uppercase tracking-tighter text-[var(--text-1)] italic mt-0.5">
+            Olá, {firstName}
           </h1>
           <p className="text-xs text-[var(--text-3)] capitalize mt-0.5">{todayLabel}</p>
         </div>
 
         {/* Badge de estatística rápida do utilizador */}
         <div className="text-right">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Inscrições</div>
-          <div className="font-display font-black text-xl text-[var(--text-1)] flex items-center justify-end gap-1">
+          <div className="text-[9px] font-black uppercase tracking-widest text-[var(--text-3)]">Inscrições</div>
+          <div className="font-display font-black text-2xl italic text-[var(--run)] flex items-center justify-end gap-1">
             <Activity className="w-4 h-4 text-[var(--run)]" />
             {myUpcoming.length}
           </div>
@@ -146,12 +146,12 @@ export const HomePage: React.FC = () => {
         </button>
       )}
 
-      {/* Hero da Próxima Prova — Telemetria HUD Runtastic */}
+      {/* Hero da Próxima Prova — Telemetria HUD Nike+ Run Club */}
       <section className="space-y-2">
         <SectionTitle
-          title="Próximo Objetivo"
-          action="Ver todas"
-          onAction={() => navigate('/corridas')}
+          title="Próxima Corrida"
+          action="Agenda completa"
+          onAction={() => navigate('/atividades?tab=corridas')}
         />
         {nextRace ? (
           (() => {
@@ -173,25 +173,24 @@ export const HomePage: React.FC = () => {
             return (
               <div
                 onClick={() => setSelectedRaceId(nextRace.id)}
-                className="iron-card relative overflow-hidden p-5 border border-amber-400/50 cursor-pointer space-y-4 group active:scale-[0.99] transition"
+                className="iron-card relative overflow-hidden p-5 border border-white/15 cursor-pointer space-y-4 group active:scale-[0.99] transition rounded-2xl"
                 style={{
-                  background: 'linear-gradient(145deg, rgba(21, 31, 51, 0.95), rgba(15, 23, 38, 0.95))',
+                  background: 'linear-gradient(160deg, #16161a 0%, #0c0c0e 100%)',
                   boxShadow: 'var(--shadow-card)',
                 }}
               >
-                {/* Glow de fundo atlético */}
-                <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-16 -left-16 w-44 h-44 rounded-full bg-[var(--run)]/10 blur-3xl pointer-events-none" />
+                {/* Glow de fundo Nike Volt */}
+                <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-[var(--run)]/15 blur-3xl pointer-events-none" />
 
                 {/* Linha de topo: Contagem decrescente + Categoria */}
                 <div className="flex items-center justify-between relative gap-2 flex-wrap">
                   {countdownLabel && (
-                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-display flex items-center gap-1.5 shadow-sm">
-                      <Zap className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[var(--run)] text-black font-display italic flex items-center gap-1.5 shadow-[0_0_12px_rgba(216,255,0,0.4)]">
+                      <Zap className="w-3.5 h-3.5 stroke-[3]" />
                       {countdownLabel}
                     </span>
                   )}
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[var(--text-2)] flex items-center gap-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/10 text-white flex items-center gap-1">
                     <Flame className="w-3 h-3 text-amber-400" />
                     {CATEGORIA_LABELS[nextRace.category].label}
                   </span>
@@ -199,7 +198,7 @@ export const HomePage: React.FC = () => {
 
                 {/* Título & Local */}
                 <div className="relative">
-                  <h2 className="font-display font-black text-xl text-[var(--text-1)] leading-tight tracking-tight">
+                  <h2 className="font-display font-black text-2xl uppercase italic text-[var(--text-1)] leading-tight tracking-tight">
                     {nextRace.title}
                   </h2>
                   <p className="text-xs text-[var(--text-2)] flex items-center gap-1.5 mt-1.5">
@@ -208,70 +207,69 @@ export const HomePage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Telemetria HUD (4 Métricas em Estilo Runtastic) */}
+                {/* Telemetria HUD (4 Métricas NRC em Volt) */}
                 <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
                   <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--text-3)]">
                       Distância
                     </div>
-                    <div className="font-display font-black text-base text-[var(--text-1)] mt-0.5 truncate">
+                    <div className="font-display font-black italic text-lg text-white mt-0.5 truncate">
                       {primaryDistance.replace(/km/i, '').trim()}
-                      <span className="text-[10px] font-normal text-[var(--run)] ml-0.5">km</span>
+                      <span className="text-[10px] font-bold text-[var(--run)] ml-0.5">km</span>
                     </div>
                   </div>
 
                   <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--text-3)]">
                       Partida
                     </div>
-                    <div className="font-display font-black text-base text-[var(--text-1)] mt-0.5">
+                    <div className="font-display font-black italic text-lg text-white mt-0.5">
                       {nextRace.start_time}
                     </div>
                   </div>
 
                   <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--text-3)]">
                       Plantel
                     </div>
-                    <div className="font-display font-black text-base text-amber-400 mt-0.5">
+                    <div className="font-display font-black italic text-lg text-[var(--run)] mt-0.5">
                       {regs.length}
-                      <span className="text-[10px] font-normal text-[var(--text-3)] ml-0.5">atle</span>
+                      <span className="text-[9px] font-normal text-[var(--text-3)] ml-0.5">atle</span>
                     </div>
                   </div>
 
                   <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-3)]">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-[var(--text-3)]">
                       Carrinha
                     </div>
-                    <div className="font-display font-black text-base text-[var(--run)] mt-0.5">
+                    <div className="font-display font-black italic text-lg text-amber-400 mt-0.5">
                       {van.confirmedPassengers.length}
-                      <span className="text-[10px] font-normal text-[var(--text-3)]">/{van.capacity}</span>
+                      <span className="text-[9px] font-normal text-[var(--text-3)]">/{van.capacity}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Botão de Ação Tátil Runtastic */}
+                {/* Botão de Ação Tátil Nike+ Run Club */}
                 <div className="pt-1">
                   {myReg ? (
                     <div className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-between bg-emerald-500/15 border border-emerald-400/40 text-emerald-400">
-                      <span className="flex items-center gap-2 font-display uppercase tracking-wider">
+                      <span className="flex items-center gap-2 font-display uppercase tracking-wider font-black italic">
                         <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                         Inscrito ({myReg.distance})
                       </span>
-                      <span className="text-[11px] text-[var(--text-2)] flex items-center gap-1">
+                      <span className="text-[11px] text-[var(--text-2)] flex items-center gap-1 font-semibold">
                         Ver Carrinha & Detalhes <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   ) : (
                     <div
-                      className="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 text-slate-950 font-display transition active:scale-[0.98]"
+                      className="w-full py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 text-black font-display italic transition active:scale-[0.98] shadow-[0_0_20px_rgba(216,255,0,0.35)]"
                       style={{
                         background: 'var(--grad-run)',
-                        boxShadow: 'var(--shadow-fab)',
                       }}
                     >
                       <span>Participar na Prova</span>
-                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                      <ArrowRight className="w-4 h-4 stroke-[3]" />
                     </div>
                   )}
                 </div>
@@ -283,12 +281,12 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* Próximo Treino — Card Estilo Workout Runtastic */}
+      {/* Próximo Treino — Card Estilo Workout NRC */}
       <section className="space-y-2">
         <SectionTitle
-          title="Próximo Treino / Evento"
+          title="Próximo Treino"
           action="Agenda completa"
-          onAction={() => navigate('/treinos')}
+          onAction={() => navigate('/atividades?tab=treinos')}
         />
         {nextEvent ? (
           (() => {
@@ -296,9 +294,8 @@ export const HomePage: React.FC = () => {
             const going = nextEvent.attendees.filter((a) => a.status === 'going').length
             const myRsvp = nextEvent.attendees.find((a) => a.athlete_id === currentUser.id)?.status
             return (
-              <div className="iron-card p-4 space-y-3.5 border-l-4 border-l-[var(--run)]">
+              <div className="iron-card p-4 space-y-3.5 rounded-2xl border-l-4 border-l-[var(--run)]">
                 <div className="flex items-start gap-3.5">
-                  {/* Badge de Data com Acabamento Atlético */}
                   <div className="w-13 h-13 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
                     <span className="text-[10px] font-black text-[var(--run)] uppercase tracking-wider leading-none">
                       {dm.month}
@@ -311,10 +308,10 @@ export const HomePage: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span
-                        className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                        className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded font-display italic ${
                           nextEvent.type === 'training'
-                            ? 'bg-sky-500/15 text-[var(--run)] border border-sky-400/30'
-                            : 'bg-rose-500/15 text-rose-400 border border-rose-400/30'
+                            ? 'bg-[var(--run)] text-black'
+                            : 'bg-rose-500 text-white'
                         }`}
                       >
                         {nextEvent.type === 'training' ? '🏃 Treino URC' : '🍻 Convívio'}
@@ -325,7 +322,7 @@ export const HomePage: React.FC = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-display font-bold text-sm text-[var(--text-1)] mt-1 truncate">
+                    <h3 className="font-display font-black text-base uppercase italic tracking-tight text-[var(--text-1)] mt-1 truncate">
                       {nextEvent.title}
                     </h3>
                     <p className="text-xs text-[var(--text-2)] flex items-center gap-1 mt-0.5 truncate">
@@ -345,24 +342,24 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => rsvpEvent(nextEvent.id, 'going')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition active:scale-95 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-black border flex items-center gap-1.5 cursor-pointer transition active:scale-95 uppercase tracking-wider ${
                         myRsvp === 'going'
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-xs'
-                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:border-emerald-400/50'
+                          ? 'bg-[var(--run)] text-black border-lime-300 font-extrabold shadow-sm'
+                          : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:border-lime-300/50'
                       }`}
                     >
-                      <Check className="w-3.5 h-3.5" /> Vou
+                      <Check className="w-3.5 h-3.5 stroke-[3]" /> Vou
                     </button>
                     <button
                       type="button"
                       onClick={() => rsvpEvent(nextEvent.id, 'maybe')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition active:scale-95 ${
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-black border flex items-center gap-1.5 cursor-pointer transition active:scale-95 uppercase tracking-wider ${
                         myRsvp === 'maybe'
                           ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow-xs'
                           : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:border-amber-400/50'
                       }`}
                     >
-                      <HelpCircle className="w-3.5 h-3.5" /> Talvez
+                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" /> Talvez
                     </button>
                   </div>
                 </div>
@@ -388,20 +385,20 @@ export const HomePage: React.FC = () => {
               markNotificationRead(featuredNotice.id)
               navigate('/avisos')
             }}
-            className={`w-full text-left iron-card p-4 space-y-1.5 cursor-pointer active:scale-[0.99] transition ${
+            className={`w-full text-left iron-card p-4 space-y-1.5 cursor-pointer active:scale-[0.99] transition rounded-2xl ${
               !featuredNotice.read_by.includes(currentUser.id) ? 'border-[var(--run)]/60' : ''
             }`}
           >
             <div className="flex items-center gap-2 text-[11px] text-[var(--text-3)]">
-              <Megaphone className="w-3.5 h-3.5 text-rose-400" />
+              <Megaphone className="w-3.5 h-3.5 text-[var(--run)]" />
               <span className="font-semibold text-[var(--text-2)]">{featuredNotice.created_by_name}</span>
               {!featuredNotice.read_by.includes(currentUser.id) && (
-                <span className="ml-auto text-[10px] font-black uppercase tracking-wider text-[var(--run)] bg-[var(--run)]/15 px-2 py-0.5 rounded-full border border-[var(--run)]/40">
+                <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-black bg-[var(--run)] px-2 py-0.5 rounded-full font-display italic">
                   Novo
                 </span>
               )}
             </div>
-            <div className="font-display font-bold text-sm text-[var(--text-1)]">{featuredNotice.title}</div>
+            <div className="font-display font-black text-sm uppercase italic tracking-tight text-[var(--text-1)]">{featuredNotice.title}</div>
             <p className="text-xs text-[var(--text-2)] line-clamp-2">{featuredNotice.message}</p>
           </button>
         ) : (
@@ -415,8 +412,8 @@ export const HomePage: React.FC = () => {
         {myUpcoming.length === 0 ? (
           <EmptyCard
             text="Ainda não estás inscrito em nenhuma prova futura."
-            action="Explorar corridas"
-            onAction={() => navigate('/corridas')}
+            action="Explorar Atividades"
+            onAction={() => navigate('/atividades')}
           />
         ) : (
           <div className="space-y-2.5">
@@ -427,7 +424,7 @@ export const HomePage: React.FC = () => {
                   key={race.id}
                   type="button"
                   onClick={() => setSelectedRaceId(race.id)}
-                  className="w-full text-left iron-card iron-card-interactive p-3.5 flex items-center gap-3.5 cursor-pointer active:scale-[0.99] transition"
+                  className="w-full text-left iron-card iron-card-interactive p-3.5 flex items-center gap-3.5 cursor-pointer active:scale-[0.99] transition rounded-2xl"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border-card)] flex flex-col items-center justify-center shrink-0">
                     <span className="text-[10px] font-black text-[var(--run)] uppercase leading-none">{dm.month}</span>
@@ -436,7 +433,7 @@ export const HomePage: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm text-[var(--text-1)] truncate">{race.title}</div>
                     <div className="text-xs text-[var(--text-3)] flex items-center gap-1.5 mt-0.5">
-                      <span className="font-bold text-[var(--run)] bg-[var(--run)]/10 px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="font-black text-black bg-[var(--run)] px-1.5 py-0.5 rounded text-[9px] uppercase italic">
                         {regs[0].distance}
                       </span>
                       <span>•</span>

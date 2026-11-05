@@ -80,14 +80,14 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="min-w-0">
-              <div className="font-display font-black text-sm tracking-tight text-[var(--text-1)] leading-none flex items-center gap-1.5">
+              <div className="font-display font-black text-sm tracking-tighter uppercase italic text-[var(--text-1)] leading-none flex items-center gap-1.5">
                 <span>UR</span>
-                <span className="text-sky-400">CHARNECA</span>
+                <span className="text-[var(--run)]">CHARNECA</span>
               </div>
-              <div className="text-[11px] text-sky-400 font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                <span>Armada Azul</span>
+              <div className="text-[10px] text-[var(--run)] font-black uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                <span>NRC</span>
                 <span className="opacity-40">•</span>
-                <span className="text-amber-400 font-extrabold">Atletismo</span>
+                <span className="text-white font-bold">Armada Azul</span>
               </div>
             </div>
           </button>

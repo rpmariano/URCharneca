@@ -8,11 +8,8 @@ import { HomePage } from './pages/HomePage'
 import { OPEN_CREATE_RACE_EVENT } from './utils/appEvents'
 
 // Divisão de código por rotas com React.lazy para carregamento inicial ultra-rápido
-const RacesPage = lazy(() =>
-  import('./pages/RacesPage').then((m) => ({ default: m.RacesPage }))
-)
-const TrainingsPage = lazy(() =>
-  import('./pages/TrainingsPage').then((m) => ({ default: m.TrainingsPage }))
+const ActivitiesPage = lazy(() =>
+  import('./pages/ActivitiesPage').then((m) => ({ default: m.ActivitiesPage }))
 )
 const NotificationsPage = lazy(() =>
   import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage }))
@@ -59,8 +56,9 @@ const AppShell: React.FC = () => {
         <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/corridas" element={<RacesPage />} />
-            <Route path="/treinos" element={<TrainingsPage />} />
+            <Route path="/atividades" element={<ActivitiesPage />} />
+            <Route path="/corridas" element={<Navigate to="/atividades?tab=corridas" replace />} />
+            <Route path="/treinos" element={<Navigate to="/atividades?tab=treinos" replace />} />
             <Route path="/avisos" element={<NotificationsPage />} />
             <Route path="/perfil" element={<TeamProfilePage />} />
             <Route path="/equipa" element={<TeamProfilePage />} />
