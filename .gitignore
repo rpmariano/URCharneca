@@ -5,3 +5,11 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# design-sync (Claude Design)
+.ds-sync/
+ds-bundle/
+design-system/dist/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
