@@ -273,9 +273,8 @@ body {
 }
 
 /* Adaptador para temas escuro e meio-termo (harmonia de cores sem !important) */
-:root:not([data-theme="light"]),
-[data-theme="dark"],
-[data-theme="balanced"] {
+/* Só o tema escuro remapeia utilitários claros do Tailwind (o tema padrão é claro). */
+[data-theme="dark"] {
   & .bg-white {
     background-color: var(--surface-card);
   }
