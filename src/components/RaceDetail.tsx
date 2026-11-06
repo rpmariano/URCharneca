@@ -650,7 +650,17 @@ const RegistrationRow: React.FC<{
               Alterar
             </Button>
             {onCancel && (
-              <Button size="sm" variant="danger" onClick={onCancel}>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => {
+                  const sure =
+                    existing.status === 'enrolled_by_admin'
+                      ? `O clube já confirmou a inscrição de ${name}. Cancelar mesmo? O clube é avisado.`
+                      : `Cancelar a inscrição de ${name}?`
+                  if (window.confirm(sure)) onCancel()
+                }}
+              >
                 Cancelar inscrição
               </Button>
             )}
@@ -750,7 +760,12 @@ const RosterRow: React.FC<{
             </>
           )}
           {canRemove && (
-            <Button size="sm" variant="danger" block onClick={onRemove}>
+            <Button
+              size="sm"
+              variant="danger"
+              block
+              onClick={() => window.confirm(`Remover a inscrição de ${reg.athlete_name}?`) && onRemove()}
+            >
               Remover inscrição
             </Button>
           )}

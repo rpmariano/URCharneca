@@ -80,7 +80,7 @@ export function computeVanAllocation(
   const activeRegs = raceRegistrations.filter((r) => r.status !== 'cancelled')
   const vanRequesters = activeRegs
     .filter((r) => TRANSPORT_LABELS[r.transport_mode]?.usesVanSeat)
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .sort((a, b) => (a.van_requested_at || a.created_at).localeCompare(b.van_requested_at || b.created_at))
 
   const capacity = race.van_available ? race.van_capacity || 9 : 0
   const confirmedPassengers = vanRequesters.slice(0, capacity)

@@ -71,6 +71,7 @@ create table if not exists public.race_registrations (
   bib_number text,
   bib_status text not null default 'pending' check (bib_status in ('pending', 'at_club', 'delivered')),
   bib_pickup_by text,
+  van_requested_at timestamptz,
   bib_transfer_available boolean default false,
   bib_transferred_from text,
   result_time text,

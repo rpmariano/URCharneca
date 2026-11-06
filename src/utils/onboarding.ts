@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 
+/** Termos da equipa explicados em linguagem simples (Perfil → Glossário). */
+export const GLOSSARY: Array<{ term: string; text: string }> = [
+  { term: 'Escalão', text: 'O grupo de idade em que corres (por exemplo, Veteranos M40 ou Benjamins B). Calcula-se pela data de nascimento.' },
+  { term: 'Troféu de Cascais', text: 'Conjunto de provas oficiais do concelho. O clube trata da inscrição e leva-nos na carrinha.' },
+  { term: 'Prova do clube', text: 'Prova promovida pelo clube: tu pedes a inscrição e o clube confirma.' },
+  { term: 'Prova sugerida', text: 'Prova que um atleta propõe. Cada um se inscreve por si e marca presença para irmos juntos.' },
+  { term: 'Aguarda o clube', text: 'Pediste a inscrição e o clube ainda não a confirmou. Fica "Inscrito" quando o clube a tratar.' },
+  { term: 'Dorsal', text: 'O número que se prende à camisola. O clube levanta os dorsais na organização ("no clube") e entrega-os a cada atleta ("entregue").' },
+  { term: 'Carrinha e lista de espera', text: 'A carrinha do clube tem lugares limitados, dados por ordem de pedido. Quem fica de fora entra em lista de espera e sobe se alguém cancelar.' },
+  { term: 'Ponto de encontro', text: 'Local e hora onde a equipa se junta antes da prova, quando cada um vai por si.' },
+  { term: 'Prazo de inscrição', text: 'Último dia para pedires ou cancelares a inscrição. Depois disso, só o clube mexe.' },
+]
+
 /** Guias e dicas de primeira utilização: o que o utilizador já dispensou fica guardado neste dispositivo. */
 const KEY = 'urc_onboarding_v1'
 const EVENT = 'urc-onboarding-changed'

@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react'
-import { Baby, Check, CircleHelp, IdCard, Link2, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, UsersRound } from 'lucide-react'
+import { Baby, BookOpen, Check, CircleHelp, IdCard, Link2, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, UsersRound } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { calculateAge } from '../utils/formatters'
 import { AthleteForm, ChildForm, emptyChild } from '../components/PeopleForms'
 import { Sheet } from '../components/Sheet'
-import { resetOnboarding } from '../utils/onboarding'
+import { GLOSSARY, resetOnboarding } from '../utils/onboarding'
 import {
   Avatar,
   Button,
@@ -40,7 +40,7 @@ export const ProfilePage: React.FC = () => {
     associateChildToAdult,
     disassociateChildFromAdult,
   } = useApp()
-  const [sheet, setSheet] = useState<'none' | 'data' | 'users' | 'child-new' | 'child-link'>('none')
+  const [sheet, setSheet] = useState<'none' | 'data' | 'users' | 'child-new' | 'child-link' | 'glossary'>('none')
   const [editingChild, setEditingChild] = useState<string | null>(null)
   const [linkId, setLinkId] = useState('')
 
@@ -122,6 +122,7 @@ export const ProfilePage: React.FC = () => {
         <SectionTitle title="Conta" />
         <div className="divide-soft">
           <ListRow icon={IdCard} title="Dados pessoais" description="Contactos, escalão, emergência e t-shirt" onClick={() => setSheet('data')} />
+          <ListRow icon={BookOpen} title="Glossário" description="Escalão, dorsal, carrinha, prazo e outros termos" onClick={() => setSheet('glossary')} />
           <ListRow
             icon={CircleHelp}
             title="Ver o guia outra vez"
@@ -203,6 +204,20 @@ export const ProfilePage: React.FC = () => {
               }}
             />
           </div>
+        </Sheet>
+      )}
+
+      {sheet === 'glossary' && (
+        <Sheet onClose={close} ariaLabel="Glossário">
+          <SheetHeader title="Glossário" subtitle="Os termos da equipa, em poucas palavras." onClose={close} />
+          <dl className="flex-1 overflow-y-auto px-5 py-2 divide-soft">
+            {GLOSSARY.map((g) => (
+              <div key={g.term} className="py-4">
+                <dt className="t-body t-strong text-[var(--text-1)]">{g.term}</dt>
+                <dd className="t-body text-[var(--text-2)] mt-0.5">{g.text}</dd>
+              </div>
+            ))}
+          </dl>
         </Sheet>
       )}
 

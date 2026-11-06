@@ -19,6 +19,9 @@ import {
   INITIAL_EVENTS,
   INITIAL_NOTIFICATIONS,
 } from '../data/seedData'
+import { TRANSPORT_LABELS } from '../types'
+import { computeVanAllocation } from '../utils/formatters'
+import { todayISO } from '../utils/dates'
 
 /** v4: provas abertas a crianças, eventos do tipo reunião, nomes de crianças normalizados */
 const STORAGE_KEYS = {
@@ -404,9 +407,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Prova removida.', 'info')
   }
 
+  /** Atletas só mexem em inscrições antes da prova e (fora das sugeridas) antes do prazo; o admin pode sempre. */
+  const registrationOpenFor = (race: Race) => {
+    if (isAdminView) return true
+    const todayLocal = todayISO()
+    if (race.date < todayLocal) return false
+    return !(race.category !== 'individual' && race.registration_deadline && race.registration_deadline < todayLocal)
+  }
+
   const registerForRace = (input: RegisterForRaceInput): ActionResult => {
     const race = races.find((r) => r.id === input.race_id)
     if (!race) return { success: false, message: 'Prova não encontrada.' }
+
+    if (!registrationOpenFor(race)) {
+      const msg = race.date < todayISO() ? 'Esta prova já se realizou.' : 'O prazo de inscrição terminou.'
+      showToast(msg, 'warning')
+      return { success: false, message: msg }
+    }
 
     const actingForOther = input.athlete_id !== currentUser.id
     if (actingForOther && !isAdminView) {
@@ -442,7 +459,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const initialStatus: RegistrationStatus =
       race.category === 'individual' ? 'self_enrolled' : isAdminView ? 'enrolled_by_admin' : 'interested'
 
+    const wantsVan = TRANSPORT_LABELS[transport]?.usesVanSeat
     if (existing) {
+      const hadVan = TRANSPORT_LABELS[existing.transport_mode]?.usesVanSeat
       setRegistrations((prev) =>
         prev.map((reg) =>
           reg.id === existing.id
@@ -450,6 +469,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 ...reg,
                 distance: input.distance,
                 transport_mode: transport,
+                // a fila da carrinha conta a partir do momento em que se pede lugar
+                van_requested_at: wantsVan ? (hadVan && reg.van_requested_at ? reg.van_requested_at : new Date().toISOString()) : undefined,
                 carpool_seats: input.carpool_seats,
                 notes: input.notes,
                 status: reg.status === 'cancelled' ? initialStatus : reg.status,
@@ -473,6 +494,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       distance: input.distance,
       status: initialStatus,
       transport_mode: transport,
+      van_requested_at: wantsVan ? new Date().toISOString() : undefined,
       carpool_seats: input.carpool_seats,
       bib_status: 'pending',
       bib_transfer_available: false,
@@ -497,8 +519,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const allowed =
       isAdminView || reg.athlete_id === currentUser.id || Boolean(child?.associated_adult_ids.includes(currentUser.id))
     if (!allowed) return
+    const race = races.find((r) => r.id === reg.race_id)
+    if (race && !registrationOpenFor(race)) {
+      showToast(race.date < todayISO() ? 'Esta prova já se realizou.' : 'O prazo terminou: fala com o clube para cancelar.', 'warning')
+      return
+    }
+    // lugar na carrinha libertado: quem está em lista de espera sobe
+    let promoted = ''
+    if (race && TRANSPORT_LABELS[reg.transport_mode]?.usesVanSeat) {
+      const active = registrations.filter((r) => r.race_id === race.id && r.status !== 'cancelled')
+      const before = computeVanAllocation(race, active)
+      if (before.confirmedPassengers.some((p) => p.id === reg.id) && before.waitlistPassengers.length > 0) {
+        promoted = before.waitlistPassengers[0].athlete_name
+      }
+    }
     setRegistrations((prev) => prev.filter((r) => r.id !== regId))
-    showToast(`Inscrição de ${reg.athlete_name} cancelada.`, 'info')
+    // o clube já tinha tratado desta inscrição (ou tem a carrinha em jogo): avisa a equipa, para o admin saber
+    if (race && !isAdminView && (reg.status === 'enrolled_by_admin' || reg.bib_status !== 'pending' || promoted)) {
+      pushNotification({
+        title: `Cancelamento: ${race.title}`,
+        message: `${reg.athlete_name} cancelou a inscrição${reg.status === 'enrolled_by_admin' ? ' que o clube já tinha confirmado' : ''}${
+          reg.bib_status !== 'pending' ? ' (o dorsal já estava no clube)' : ''
+        }.${promoted ? ` ${promoted} sobe da lista de espera da carrinha.` : ''} O clube deve verificar.`,
+        type: 'general',
+        related_race_id: race.id,
+      })
+    }
+    showToast(`Inscrição de ${reg.athlete_name} cancelada.${promoted ? ` ${promoted} sobe da lista de espera.` : ''}`, 'info')
   }
 
   const updateRegistrationByAdmin: AppContextValue['updateRegistrationByAdmin'] = (regId, patch) => {

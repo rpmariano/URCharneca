@@ -121,6 +121,8 @@ export interface RaceRegistration {
   trophy_points?: number
   notes?: string
   created_at: string
+  /** Quando pediu lugar na carrinha (define a ordem da lista de espera); sem valor usa `created_at`. */
+  van_requested_at?: string
 }
 
 export type TeamEventType = 'training' | 'social' | 'meeting'
