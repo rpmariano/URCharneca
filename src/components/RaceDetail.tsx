@@ -177,7 +177,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
   const ctaLabel = myRegs.length > 0 ? (registrationOpen ? 'Gerir inscrição' : 'Ver inscrição') : isIndividual ? 'Vou participar' : 'Inscrever'
 
   return (
-    <div className="pb-28">
+    <div className="pb-28 w-full max-w-[480px] mx-auto">
       <ActivityCover kind={race.category} seed={race.id} imageUrl={race.image_url} alt="" className="w-full aspect-[4/3]">
         <div className="absolute top-3 inset-x-4 flex items-center justify-between">
           <IconButton label="Voltar" floating onClick={onBack}>

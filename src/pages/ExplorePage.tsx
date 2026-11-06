@@ -271,6 +271,21 @@ export const ExplorePage: React.FC = () => {
 
   return (
     <div className="pb-28">
+      {/* Identidade do clube */}
+      <div className="flex items-center gap-3 px-5 pt-4">
+        <img
+          src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
+          alt="Emblema da União Recreativa da Charneca"
+          width={44}
+          height={44}
+          className="w-11 h-11 rounded-xl object-cover bg-black border-2 border-[var(--gold)] shrink-0"
+        />
+        <div className="min-w-0">
+          <div className="t-body t-strong text-[var(--text-1)] truncate">U.R. Charneca · Atletismo</div>
+          <div className="t-small text-[var(--text-3)] truncate">Olá, {currentUser.nickname || currentUser.name.split(' ')[0]}</div>
+        </div>
+      </div>
+
       {/* Topo fixo: pesquisa + categorias */}
       <div className="sticky top-0 z-20 border-b border-[var(--border-card)]" style={{ background: 'var(--bg-header)' }}>
         <div className="flex items-center gap-2 px-5 pt-3 pb-2">

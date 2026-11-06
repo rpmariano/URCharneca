@@ -24,7 +24,7 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
   const countdown = countdownLabel(event.date)
 
   return (
-    <div className="pb-28">
+    <div className="pb-28 w-full max-w-[480px] mx-auto">
       <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="w-full aspect-[4/3]">
         <div className="absolute top-3 inset-x-4 flex items-center justify-between">
           <IconButton label="Voltar" floating onClick={onBack}>
