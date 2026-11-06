@@ -7,6 +7,11 @@ const base = process.env.PAGES_BASE || '/'
 
 export default defineConfig({
   base,
+  build: {
+    // Nomes de ficheiros só com letras e números: os hashes em base64 podem gerar nomes como
+    // `Sheet--abc.js`, e o deploy do GitHub Pages falhou com eles.
+    rollupOptions: { output: { hashCharacters: 'hex' } },
+  },
   plugins: [
     react(),
     VitePWA({
