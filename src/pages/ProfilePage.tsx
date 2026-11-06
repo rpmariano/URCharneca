@@ -125,11 +125,11 @@ export const ProfilePage: React.FC = () => {
           <ListRow icon={BookOpen} title="Glossário" description="Escalão, dorsal, carrinha, prazo e outros termos" onClick={() => setSheet('glossary')} />
           <ListRow
             icon={CircleHelp}
-            title="Ver o guia outra vez"
-            description="Volta a mostrar as boas-vindas e as dicas"
+            title="Ver a introdução outra vez"
+            description="Volta a abrir a introdução e as dicas"
             onClick={() => {
               resetOnboarding()
-              showToast('Guia reposto. Está na página Explorar.', 'info')
+              showToast('A introdução abre agora.', 'info')
             }}
           />
           {currentUser.role === 'admin' && (

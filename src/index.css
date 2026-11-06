@@ -357,3 +357,11 @@ textarea:focus-visible {
   background: rgba(120, 132, 153, 0.35);
   border-radius: 9999px;
 }
+
+@keyframes intro-float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@keyframes intro-pulse { 0% { transform: scale(1); opacity: .45 } 100% { transform: scale(1.35); opacity: 0 } }
+@keyframes intro-seat { 0% { transform: scale(.4); opacity: 0 } 70% { transform: scale(1.15) } 100% { transform: scale(1); opacity: 1 } }
+.intro-float { animation: intro-float 3.6s ease-in-out infinite; }
+.intro-pulse { animation: intro-pulse 2.4s ease-out infinite; }
+.intro-seat { animation: intro-seat .45s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .intro-float, .intro-pulse, .intro-seat { animation: none; } }

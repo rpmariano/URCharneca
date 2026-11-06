@@ -22,7 +22,6 @@ import { todayISO } from '../utils/dates'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
-import { WelcomeCard } from '../components/OnboardingCards'
 import { CATEGORIA_LABELS, EVENT_TYPE_LABELS } from '../types'
 import { Sheet } from '../components/Sheet'
 import {
@@ -394,7 +393,6 @@ export const ExplorePage: React.FC = () => {
 
         {showHighlights ? (
           <div className="space-y-10 pt-6 stagger">
-            <WelcomeCard admin={isAdminView} name={currentUser.nickname || currentUser.name.split(' ')[0]} />
             {adminPending > 0 && (
               <button type="button" onClick={() => navigate('/admin')} className="card w-full p-4 flex items-center gap-4 text-left pressable">
                 <ShieldCheck className="w-6 h-6 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
