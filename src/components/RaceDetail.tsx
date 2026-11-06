@@ -35,6 +35,7 @@ import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { ActivityCover } from './ActivityCover'
 import { countdownLabel } from './ActivityItems'
 import { Sheet } from './Sheet'
+import { ContextualHint } from './OnboardingCards'
 import { Avatar, Button, Chip, Field, IconButton, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
 const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
@@ -42,6 +43,21 @@ const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok'
   enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
   self_enrolled: { label: 'Vai', tone: 'info' },
   cancelled: { label: 'Cancelado', tone: 'neutral' },
+}
+
+/** O que cada opção de transporte significa, mostrado por baixo do seletor. */
+const TRANSPORT_HELP: Record<TransportMode, string> = {
+  van_roundtrip: 'Vais e voltas na carrinha do clube. Os lugares são dados por ordem de inscrição; os restantes ficam em lista de espera.',
+  van_return_only: 'Vais por ti e voltas na carrinha do clube (ocupa um lugar).',
+  own_transport: 'Tratas tu do transporte: não ocupas lugar na carrinha.',
+  meeting_point: 'Encontras a equipa no ponto de encontro da prova, à hora combinada.',
+  carpool_offer: 'Vais de carro e levas colegas: indica os lugares livres.',
+  carpool_need: 'Precisas de boleia de um colega: aparece na lista de quem pede boleia.',
+}
+
+const STATUS_HELP: Partial<Record<RaceRegistration['status'], string>> = {
+  interested: 'O pedido foi enviado. O clube trata da inscrição, confirma e avisa nos Comunicados.',
+  enrolled_by_admin: 'O clube já inscreveu. Se não puderes ir, cancela para libertar o lugar.',
 }
 
 const transportOptions = (race: Race): TransportMode[] => {
@@ -286,6 +302,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
                 </div>
               ))}
             </div>
+            {STATUS_HELP[myRegs[0].status] && <p className="t-small text-[var(--text-3)]">{STATUS_HELP[myRegs[0].status]}</p>}
           </section>
         )}
 
@@ -350,6 +367,11 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
         <section className="py-6 space-y-4">
           <SectionTitle title="Quem vai" count={raceRegs.length} />
           {raceRegs.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda ninguém se inscreveu. Sê o primeiro.</p>}
+          {canManage && raceRegs.length > 0 && (
+            <ContextualHint id="admin-select">
+              Escolhe inscrições com a caixa à esquerda para confirmar ou marcar dorsais só de algumas. "Pendentes" e "Todos" escolhem de uma vez.
+            </ContextualHint>
+          )}
           {canManage && raceRegs.length > 0 && (
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Selecionar inscrições">
               <Chip onClick={() => setSelected(new Set(raceRegs.filter((r) => r.status === 'interested').map((r) => r.id)))}>
@@ -594,6 +616,7 @@ const RegistrationRow: React.FC<{
               ))}
             </select>
           </Field>
+          <p className="t-small text-[var(--text-3)] -mt-1">{TRANSPORT_HELP[transport]}</p>
           {transport === 'carpool_offer' && !child && (
             <Field label="Lugares livres no carro">
               <input type="number" min={1} max={8} className={inputClass} value={seats} onChange={(e) => setSeats(Number(e.target.value))} />

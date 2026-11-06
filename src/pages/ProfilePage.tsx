@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react'
-import { Baby, Check, IdCard, Link2, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, UsersRound } from 'lucide-react'
+import { Baby, Check, CircleHelp, IdCard, Link2, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, UsersRound } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { calculateAge } from '../utils/formatters'
 import { AthleteForm, ChildForm, emptyChild } from '../components/PeopleForms'
 import { Sheet } from '../components/Sheet'
+import { resetOnboarding } from '../utils/onboarding'
 import {
   Avatar,
   Button,
@@ -31,6 +32,7 @@ export const ProfilePage: React.FC = () => {
     setActiveRole,
     setCurrentUserById,
     resetDemoData,
+    showToast,
     updateProfile,
     addYouthAthlete,
     updateYouthAthlete,
@@ -120,6 +122,15 @@ export const ProfilePage: React.FC = () => {
         <SectionTitle title="Conta" />
         <div className="divide-soft">
           <ListRow icon={IdCard} title="Dados pessoais" description="Contactos, escalão, emergência e t-shirt" onClick={() => setSheet('data')} />
+          <ListRow
+            icon={CircleHelp}
+            title="Ver o guia outra vez"
+            description="Volta a mostrar as boas-vindas e as dicas"
+            onClick={() => {
+              resetOnboarding()
+              showToast('Guia reposto. Está na página Explorar.', 'info')
+            }}
+          />
           {currentUser.role === 'admin' && (
             <div className="flex items-center gap-4">
               <ShieldCheck className="w-6 h-6 text-[var(--text-1)] shrink-0" strokeWidth={1.8} aria-hidden="true" />
