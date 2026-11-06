@@ -31,7 +31,7 @@ export const RsvpButtons: React.FC<{ event: TeamEvent; compact?: boolean }> = ({
             e.stopPropagation()
             rsvpEvent(event.id, o.value)
           }}
-          className={`py-1.5 rounded-lg text-xs font-bold border flex items-center justify-center gap-1 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`py-1.5 min-h-11 rounded-lg text-xs font-bold border flex items-center justify-center gap-1 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
             mine === o.value
               ? o.value === 'going'
                 ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent'
@@ -81,7 +81,7 @@ export const EventDetailModal: React.FC<{ event: TeamEvent; onClose: () => void 
             </p>
           )}
           {event.description && <p className="text-xs text-[var(--text-3)] leading-relaxed">{event.description}</p>}
-          <p className="text-[11px] text-[var(--text-muted)]">Marcado por {event.created_by_name}</p>
+          <p className="text-xs text-[var(--text-muted)]">Marcado por {event.created_by_name}</p>
         </section>
 
         <section className="space-y-2">

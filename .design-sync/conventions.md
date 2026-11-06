@@ -1,11 +1,11 @@
 # U.R. Charneca Atletismo — como construir com esta biblioteca
 
-App móvel (coluna de ~400 px) para gerir uma equipa de atletismo amador: provas (Troféu de Cascais, provas do clube, provas sugeridas por atletas), treinos, eventos, carrinha do clube, comunicados e perfis infantis. Estilo "run club": fundo preto, cor de destaque volt (`--run`), títulos condensados em maiúsculas, números grandes, movimento curto. Textos da interface em português de Portugal.
+App móvel (coluna de ~400 px) para gerir uma equipa de atletismo amador: provas (Troféu de Cascais, provas do clube, provas sugeridas por atletas), treinos, eventos, carrinha do clube, comunicados e perfis infantis. Estilo "run club" nas cores do clube (azul do equipamento, branco e dourado do emblema): fundo branco, azul como cor de destaque (`--run`) e dourado (`--gold`, texto escuro `--on-gold`) em destaques, Troféu de Cascais e perfil de admin, títulos condensados em maiúsculas, números grandes, movimento curto. Textos da interface em português de Portugal.
 
 ## Setup obrigatório
 - Envolver tudo em `<AppProvider>` (dá os dados de exemplo e o utilizador atual aos componentes da app: `RaceListItem`, `RaceCard`, `EventListItem`, `RsvpButtons`, modais). Sem ele, esses componentes rebentam.
 - Cada ecrã dentro de `<Screen>`: aplica `--bg-app`, a cor do texto e a fonte. Fora dele os componentes ficam sobre fundo branco e os botões `secondary`/`ghost` desaparecem.
-- Tema: atributo `data-theme` no `<html>` — `balanced` (omissão: preto + volt), `light`, `dark`. Não codificar cores; usar as variáveis.
+- Tema: atributo `data-theme` no `<html>` — `balanced` (omissão: azul e branco; `light` é equivalente) e `dark` (azul-marinho + branco). Não codificar cores; usar as variáveis.
 
 ```jsx
 const { AppProvider, Screen, PageHeader, SectionTitle, RaceListItem, Button, demoRaces } = window.URCharneca
@@ -23,7 +23,7 @@ const { AppProvider, Screen, PageHeader, SectionTitle, RaceListItem, Button, dem
 ## Estilo: variáveis CSS (não há tokens em props)
 - Fundos: `--bg-app`, `--bg-sheet`, `--surface-card`, `--surface-raised`. Bordas: `--border-card`, `--border-card-strong`.
 - Texto: `--text-1` (principal), `--text-2`, `--text-3` (secundário), `--text-muted`.
-- Destaque: `--run` (volt) e `--on-accent` (texto sobre volt). Usar o destaque só em ações principais, números e estado ativo.
+- Destaque: `--run` (azul do equipamento) e `--on-accent` (texto sobre o destaque). Usar o destaque só em ações principais, números e estado ativo.
 - Tipos de atividade (sempre esta cor para o mesmo tipo): `--cat-trofeu`, `--cat-clube`, `--cat-sugerida`, `--cat-treino`, `--cat-evento`. Em JS: `KIND_COLOR.trofeu_cascais | equipa | individual | training | event`.
 - Estados: `--tint-{emerald|amber|blue|rose}-{bg|fg|border}`; perigo `--danger`.
 - Fontes: `--font-display` (Barlow Condensed) para títulos e números; `--font-sans` (Inter) para texto.
@@ -31,7 +31,7 @@ const { AppProvider, Screen, PageHeader, SectionTitle, RaceListItem, Button, dem
 ## Classes utilitárias próprias (em `styles.css`)
 - `display` — título condensado, 900, maiúsculas (ex.: `className="display text-[40px]"`). Tamanhos compilados: `text-[22px]`, `text-[28px]`, `text-[32px]`, `text-[40px]`, `text-[44px]`, `text-[48px]`, `text-[56px]`.
 - `stat-num` — número grande condensado tabular; `eyebrow` — rótulo pequeno em maiúsculas espaçadas.
-- `iron-card` — superfície de cartão; `hero-card` — cartão de destaque com brilho volt.
+- `iron-card` — superfície de cartão; `hero-card` — cartão de destaque com brilho azul.
 - `stagger` — entrada escalonada dos filhos; `grow-x` — barra que cresce; `live-dot` — ponto pulsante; `snap-row` — carrossel horizontal com snap.
 - Utilitários Tailwind só existem se a app os usa; para layout próprio preferir `style={{ display: 'grid', gap }}` com `var(--*)`.
 

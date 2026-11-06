@@ -181,7 +181,7 @@ export const RaceDetailModal: React.FC<Props> = ({ race, onClose }) => {
             </p>
           )}
           {race.description && <p className="text-xs leading-relaxed text-[var(--text-3)]">{race.description}</p>}
-          <p className="text-[11px] text-[var(--text-muted)]">{CATEGORIA_LABELS[race.category].desc}</p>
+          <p className="text-xs text-[var(--text-muted)]">{CATEGORIA_LABELS[race.category].desc}</p>
           {race.bib_pickup_info && (
             <p className="text-xs flex items-start gap-2">
               <Ticket className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--text-3)]" />
@@ -199,7 +199,7 @@ export const RaceDetailModal: React.FC<Props> = ({ race, onClose }) => {
             </a>
           )}
           {race.category === 'individual' && (
-            <p className="text-[11px] text-[var(--text-muted)]">Sugerida por {race.created_by_name}</p>
+            <p className="text-xs text-[var(--text-muted)]">Sugerida por {race.created_by_name}</p>
           )}
         </section>
 
@@ -254,7 +254,7 @@ export const RaceDetailModal: React.FC<Props> = ({ race, onClose }) => {
                 )
               })
             ) : (
-              <p className="text-[11px] text-[var(--text-3)]">Esta prova não está aberta a crianças.</p>
+              <p className="text-xs text-[var(--text-3)]">Esta prova não está aberta a crianças.</p>
             ))}
         </section>
 
@@ -290,7 +290,7 @@ export const RaceDetailModal: React.FC<Props> = ({ race, onClose }) => {
                   Lista de espera: {van.waitlistPassengers.map((p) => p.athlete_name).join(', ')}
                 </p>
               )}
-              <p className="text-[11px] text-[var(--text-3)]">
+              <p className="text-xs text-[var(--text-3)]">
                 {van.availableSeats > 0 ? `${van.availableSeats} lugar(es) livre(s).` : 'Carrinha cheia — novos pedidos ficam em lista de espera.'}
               </p>
             </div>
@@ -316,7 +316,7 @@ export const RaceDetailModal: React.FC<Props> = ({ race, onClose }) => {
           {raceRegs.length === 0 && <p className="text-xs text-[var(--text-3)]">Ainda ninguém se inscreveu.</p>}
           {byDistance.map(([dist, list]) => (
             <div key={dist} className="space-y-1.5">
-              <div className="text-[11px] font-bold text-[var(--text-3)]">
+              <div className="text-xs font-bold text-[var(--text-3)]">
                 {dist} · {list.length}
               </div>
               {list.map((r) => (
@@ -432,10 +432,10 @@ const RegistrationRow: React.FC<{
         <Avatar name={name} child={child} size={32} />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold text-[var(--text-1)] truncate">
-            {name} {child && <span className="text-[10px] font-semibold text-[var(--tint-amber-fg)]">· criança</span>}
+            {name} {child && <span className="text-xs font-semibold text-[var(--tint-amber-fg)]">· criança</span>}
           </div>
           {existing && !editing && (
-            <div className="text-[11px] text-[var(--text-3)] truncate">
+            <div className="text-xs text-[var(--text-3)] truncate">
               {existing.distance} · {TRANSPORT_LABELS[existing.transport_mode].short}
             </div>
           )}
@@ -488,7 +488,7 @@ const RegistrationRow: React.FC<{
             )}
           </div>
           {!existing && !isIndividual && (
-            <p className="text-[11px] text-[var(--text-3)]">O pedido fica pendente até o clube confirmar a inscrição.</p>
+            <p className="text-xs text-[var(--text-3)]">O pedido fica pendente até o clube confirmar a inscrição.</p>
           )}
         </div>
       ) : (
@@ -533,7 +533,7 @@ const RosterRow: React.FC<{
         <Avatar name={reg.athlete_name} child={reg.is_dependent} size={28} />
         <div className="min-w-0 flex-1">
           <div className="text-xs font-bold text-[var(--text-1)] truncate">{reg.athlete_name}</div>
-          <div className="text-[10px] text-[var(--text-3)] truncate">
+          <div className="text-xs text-[var(--text-3)] truncate">
             {reg.is_dependent && reg.parent_name ? `Resp. ${reg.parent_name} · ` : ''}
             {TRANSPORT_LABELS[reg.transport_mode].short}
             {reg.bib_number ? ` · #${reg.bib_number}` : ''}

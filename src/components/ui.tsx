@@ -75,7 +75,7 @@ export const SectionTitle: React.FC<{
       <button
         type="button"
         onClick={onAction}
-        className="eyebrow text-[var(--run)] cursor-pointer py-1 inline-flex items-center gap-0.5"
+        className="eyebrow text-[var(--run)] cursor-pointer min-h-11 -my-2 pl-3 inline-flex items-center gap-0.5"
       >
         {action} <ChevronRight className="w-3.5 h-3.5" />
       </button>
@@ -110,7 +110,7 @@ export const StatTile: React.FC<{ value: number | string; label: string; highlig
       className="py-3 px-2 text-left cursor-pointer disabled:cursor-default active:scale-95 transition"
     >
       <div className={`stat-num text-[44px] ${on ? 'text-[var(--run)]' : 'text-[var(--text-3)]'}`}>{value}</div>
-      <div className="eyebrow text-[9px] text-[var(--text-3)] mt-1.5">{label}</div>
+      <div className="eyebrow text-xs text-[var(--text-3)] mt-1.5">{label}</div>
     </button>
   )
 }
@@ -133,13 +133,13 @@ export const EmptyState: React.FC<{ text: string; action?: string; onAction?: ()
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
-/** Botão em pílula, maiúsculas a negrito. `primary` usa a cor de destaque (volt); `secondary` contorno; `ghost` só texto; `danger` para ações destrutivas. */
+/** Botão em pílula, maiúsculas a negrito. `primary` usa a cor de destaque (azul do clube); `secondary` contorno; `ghost` só texto; `danger` para ações destrutivas. */
 export const Button: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: 'sm' | 'md'; block?: boolean }
 > = ({ variant = 'primary', size = 'md', block, className = '', type = 'button', ...rest }) => {
   const base =
     'inline-flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wide rounded-full transition active:scale-[0.96] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
-  const sizes = size === 'sm' ? 'text-[11px] px-3.5 py-1.5 min-h-[34px]' : 'text-xs px-5 py-3 min-h-[46px]'
+  const sizes = size === 'sm' ? 'text-xs px-4 py-1.5 min-h-11' : 'text-xs px-5 py-3 min-h-[46px]'
   const variants: Record<ButtonVariant, string> = {
     primary: 'bg-[var(--run)] text-[var(--on-accent)]',
     secondary: 'bg-transparent text-[var(--text-1)] border border-[var(--border-card-strong)]',
@@ -162,7 +162,7 @@ export const Chip: React.FC<{
     type="button"
     onClick={onClick}
     aria-pressed={active}
-    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-bold whitespace-nowrap transition active:scale-95 cursor-pointer ${
+    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 min-h-11 rounded-full border text-xs font-bold whitespace-nowrap transition active:scale-95 cursor-pointer ${
       active
         ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-[var(--text-1)]'
         : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)]'
@@ -176,7 +176,7 @@ export const Chip: React.FC<{
 /** Etiqueta colorida do tipo de atividade: Troféu Cascais, Prova do Clube, Sugerida, Treino ou Evento. */
 export const KindBadge: React.FC<{ kind: ActivityKind; label?: string }> = ({ kind, label }) => (
   <span
-    className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+    className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border"
     style={{
       color: KIND_COLOR[kind],
       borderColor: `color-mix(in srgb, ${KIND_COLOR[kind]} 45%, transparent)`,
@@ -200,7 +200,7 @@ export const Tag: React.FC<{ tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'info
     info: 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] border-[var(--tint-blue-border)]',
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md border ${tones[tone]}`}>
       {children}
     </span>
   )
@@ -212,7 +212,7 @@ export const DateBlock: React.FC<{ date: string; color?: string }> = ({ date, co
   return (
     <div className="w-12 flex flex-col items-center justify-center shrink-0 pt-0.5">
       <span className="stat-num text-[32px] text-[var(--text-1)]">{dm.day}</span>
-      <span className="eyebrow text-[10px] mt-1" style={{ color }}>
+      <span className="eyebrow text-xs mt-1" style={{ color }}>
         {dm.month}
       </span>
     </div>
@@ -226,7 +226,7 @@ export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> 
     style={{
       width: size,
       height: size,
-      fontSize: size * 0.36,
+      fontSize: Math.max(12, size * 0.36),
       background: child ? 'var(--tint-amber-bg)' : 'var(--surface-raised)',
       color: child ? 'var(--tint-amber-fg)' : 'var(--text-1)',
       borderColor: child ? 'var(--tint-amber-border)' : 'var(--border-card)',
@@ -245,7 +245,7 @@ export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> 
 // Formulários
 // ---------------------------------------------------------------------------
 export const inputClass =
-  'w-full rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] px-3 py-2.5 text-sm text-[var(--text-1)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--run)]'
+  'w-full rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] px-3 py-2.5 min-h-11 text-sm text-[var(--text-1)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--run)]'
 
 /** Rótulo de formulário (maiúsculas pequenas) que envolve um input; usar com a classe `inputClass`. */
 export const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode; className?: string }> = ({
@@ -255,9 +255,9 @@ export const Field: React.FC<{ label: string; hint?: string; children: React.Rea
   className = '',
 }) => (
   <label className={`block ${className}`}>
-    <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-3)] mb-1">{label}</span>
+    <span className="block text-xs font-bold uppercase tracking-wider text-[var(--text-3)] mb-1">{label}</span>
     {children}
-    {hint && <span className="block text-[11px] text-[var(--text-muted)] mt-1">{hint}</span>}
+    {hint && <span className="block text-xs text-[var(--text-muted)] mt-1">{hint}</span>}
   </label>
 )
 
@@ -277,7 +277,7 @@ export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void
     />
     <span>
       <span className="block text-sm font-semibold text-[var(--text-1)]">{label}</span>
-      {hint && <span className="block text-[11px] text-[var(--text-3)]">{hint}</span>}
+      {hint && <span className="block text-xs text-[var(--text-3)]">{hint}</span>}
     </span>
   </label>
 )
@@ -325,7 +325,7 @@ export const Segmented = <T extends string>({
         type="button"
         onClick={() => onChange(o.value)}
         aria-pressed={value === o.value}
-        className={`py-2 px-2 rounded-full text-[11px] font-extrabold uppercase tracking-wide transition cursor-pointer ${
+        className={`py-2 px-2 min-h-11 rounded-full text-xs font-extrabold uppercase tracking-wide transition cursor-pointer ${
           value === o.value ? 'bg-[var(--run)] text-[var(--on-accent)]' : 'text-[var(--text-3)]'
         }`}
       >

@@ -79,7 +79,7 @@ export const ProfilePage: React.FC = () => {
                     {reg.is_dependent && <Tag tone="warn">{reg.athlete_name.split(' ')[0]}</Tag>}
                   </div>
                   <div className="text-sm font-bold text-[var(--text-1)] truncate">{race.title}</div>
-                  <div className="text-[11px] text-[var(--text-3)]">
+                  <div className="text-xs text-[var(--text-3)]">
                     {formatShortDate(race.date)} · {reg.distance}
                   </div>
                 </div>
@@ -93,7 +93,7 @@ export const ProfilePage: React.FC = () => {
       {/* Crianças */}
       <section className="space-y-2.5">
         <SectionTitle title="Crianças a meu cargo" count={myChildren.length} />
-        <p className="text-[11px] text-[var(--text-3)] -mt-1">
+        <p className="text-xs text-[var(--text-3)] -mt-1">
           Podes inscrevê-las nas provas abertas a crianças e na carrinha. Cada criança pode ter até 2 adultos responsáveis.
         </p>
 
@@ -124,7 +124,7 @@ export const ProfilePage: React.FC = () => {
                 <Avatar name={child.name} child />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-[var(--text-1)] truncate">{child.name}</div>
-                  <div className="text-[11px] text-[var(--text-3)]">
+                  <div className="text-xs text-[var(--text-3)]">
                     {child.escalao} · {calculateAge(child.birth_date)} anos
                     {others.length > 0 && ` · com ${others.join(', ')}`}
                   </div>
@@ -133,7 +133,7 @@ export const ProfilePage: React.FC = () => {
                   type="button"
                   aria-label={`Editar ${child.name}`}
                   onClick={() => setEditingChild(child.id)}
-                  className="p-2 rounded-lg text-[var(--text-2)] hover:bg-[var(--surface-raised)] cursor-pointer"
+                  className="min-w-11 min-h-11 flex items-center justify-center rounded-lg text-[var(--text-2)] hover:bg-[var(--surface-raised)] cursor-pointer"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -175,7 +175,7 @@ export const ProfilePage: React.FC = () => {
         {childMode === 'link' && (
           <Card className="p-4 space-y-3">
             <h3 className="text-sm font-bold text-[var(--text-1)]">Associar criança já registada</h3>
-            <p className="text-[11px] text-[var(--text-3)]">Para o 2º responsável (ex: mãe ou pai) quando a criança já existe na equipa.</p>
+            <p className="text-xs text-[var(--text-3)]">Para o 2º responsável (ex: mãe ou pai) quando a criança já existe na equipa.</p>
             <Field label="Criança">
               <select className={inputClass} value={linkId} onChange={(e) => setLinkId(e.target.value)}>
                 <option value="">Escolher…</option>
@@ -218,7 +218,7 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
         {myChildren.length === 0 && childMode === 'none' && (
-          <p className="text-[11px] text-[var(--text-muted)] flex items-center gap-1.5">
+          <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
             <Baby className="w-3.5 h-3.5" /> Ainda não tens crianças associadas.
           </p>
         )}
@@ -230,7 +230,7 @@ export const ProfilePage: React.FC = () => {
           type="button"
           onClick={() => setShowData((v) => !v)}
           aria-expanded={showData}
-          className="w-full flex items-center justify-between cursor-pointer"
+          className="w-full min-h-11 flex items-center justify-between cursor-pointer"
         >
           <SectionTitle title="Os meus dados" />
           <ChevronDown className={`w-4 h-4 text-[var(--text-3)] transition-transform ${showData ? 'rotate-180' : ''}`} />

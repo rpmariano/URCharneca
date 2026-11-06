@@ -6,7 +6,6 @@ import {
   Check,
   ShieldCheck,
   User,
-  Sparkles,
   Sun,
   Moon,
 } from 'lucide-react'
@@ -36,20 +35,18 @@ export const Header: React.FC = () => {
     .join('')
 
   const cycleTheme = () => {
-    if (themeMode === 'balanced') setThemeMode('light')
-    else if (themeMode === 'light') setThemeMode('dark')
-    else setThemeMode('balanced')
+    setThemeMode(themeMode === 'dark' ? 'balanced' : 'dark')
   }
 
   return (
     <>
       <header
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 px-4 py-2.5 transition-all border-b"
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 px-4 py-2.5 transition-all border-b-2"
         style={{
           background: 'var(--bg-header)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderColor: 'var(--border-card)',
+          borderColor: 'var(--gold)',
         }}
       >
         <div className="flex items-center justify-between gap-2.5">
@@ -60,12 +57,12 @@ export const Header: React.FC = () => {
             className="flex items-center gap-2.5 text-left group cursor-pointer active:scale-95 transition"
           >
             {/* Brasão URC */}
-            <div className="relative w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-white/15 bg-slate-900/40 shadow-xs">
+            <div className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border-2 border-[var(--gold)] bg-black shadow-xs">
               <img
                 src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
-                alt="URC"
-                width={36}
-                height={36}
+                alt="Emblema da União Recreativa da Charneca"
+                width={44}
+                height={44}
                 loading="eager"
                 decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition"
@@ -73,7 +70,7 @@ export const Header: React.FC = () => {
                   e.currentTarget.style.display = 'none'
                 }}
               />
-              <span className="font-display font-black text-xs tracking-tight text-sky-400 absolute pointer-events-none">
+              <span className="font-display font-black text-xs tracking-tight text-[var(--gold)] absolute pointer-events-none">
                 URC
               </span>
             </div>
@@ -82,7 +79,7 @@ export const Header: React.FC = () => {
               <div className="display text-[22px] text-[var(--text-1)]">
                 UR <span className="text-[var(--run)]">Charneca</span>
               </div>
-              <div className="eyebrow text-[9px] text-[var(--text-3)] mt-0.5">Atletismo</div>
+              <div className="eyebrow text-xs text-[var(--text-3)] mt-0.5">Atletismo</div>
             </div>
           </button>
 
@@ -92,39 +89,38 @@ export const Header: React.FC = () => {
             <button
               type="button"
               onClick={cycleTheme}
-              className="w-9 h-9 min-w-[36px] min-h-[36px] rounded-full flex items-center justify-center text-[var(--text-2)] hover:text-[var(--text-1)] bg-white/5 hover:bg-white/10 border border-[var(--border-card)] transition cursor-pointer active:scale-95"
-              title={`Ambiente atual: ${themeMode === 'balanced' ? 'Meio-Termo (Slate Navy)' : themeMode === 'light' ? 'Luminoso (Claro)' : 'Escuro (Obsidiana)'}. Toca para alternar.`}
+              className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-[var(--text-2)] hover:text-[var(--text-1)] bg-[var(--surface-raised)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-card)] transition cursor-pointer active:scale-95"
+              title={themeMode === 'dark' ? 'Ambiente azul-marinho. Toca para mudar para azul e branco.' : 'Ambiente azul e branco. Toca para mudar para azul-marinho.'}
+              aria-label={themeMode === 'dark' ? 'Mudar para azul e branco' : 'Mudar para azul-marinho'}
             >
-              {themeMode === 'balanced' ? (
-                <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-              ) : themeMode === 'light' ? (
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              {themeMode === 'dark' ? (
+                <Moon className="w-4 h-4 text-[var(--run)]" />
               ) : (
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <Sun className="w-4 h-4 text-[var(--run)]" />
               )}
             </button>
 
             {/* Seletor de Perfil / Utilizador */}
             <div className="relative">
-              <div className="flex items-center gap-0.5 rounded-full border border-[var(--border-card)] bg-white/5 p-1 min-h-[36px] shadow-2xs">
+              <div className="flex items-center gap-0.5 rounded-full border border-[var(--border-card)] bg-[var(--surface-raised)] px-1 min-h-[44px] shadow-2xs">
                 <button
                   type="button"
                   onClick={() => navigate('/perfil')}
                   title="Abrir a minha ficha de perfil"
-                  className="flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full text-xs font-semibold hover:bg-white/10 transition cursor-pointer"
+                  className="flex items-center gap-1.5 pl-1.5 pr-2 min-h-[44px] rounded-full text-xs font-semibold hover:bg-[var(--surface-card-hover)] transition cursor-pointer"
                 >
                   {/* Avatar com Iniciais */}
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 ${
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
                       isAdminView
-                        ? 'bg-amber-400 text-slate-950 shadow-xs'
-                        : 'bg-gradient-to-tr from-sky-400 to-blue-600 text-white shadow-xs'
+                        ? 'bg-[var(--gold)] text-[var(--on-gold)] shadow-xs'
+                        : 'bg-[var(--run)] text-[var(--on-accent)] shadow-xs'
                     }`}
                   >
                     {initials}
                   </span>
 
-                  <span className="max-w-[70px] truncate font-bold text-[11px] text-[var(--text-1)]">
+                  <span className="max-w-[70px] truncate font-bold text-xs text-[var(--text-1)]">
                     {currentUser.nickname || currentUser.name.split(' ')[0]}
                   </span>
                 </button>
@@ -134,10 +130,10 @@ export const Header: React.FC = () => {
                   type="button"
                   onClick={() => setMenuOpen(!menuOpen)}
                   title="Mudar utilizador / simular papel"
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-black uppercase transition cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 min-h-[44px] rounded-full text-xs font-black uppercase transition cursor-pointer ${
                     isAdminView
-                      ? 'bg-amber-400/20 text-amber-300 hover:bg-amber-400/30'
-                      : 'bg-sky-400/20 text-sky-300 hover:bg-sky-400/30'
+                      ? 'bg-[var(--gold)] text-[var(--on-gold)]'
+                      : 'bg-[var(--tint-blue-bg-strong)] text-[var(--tint-blue-fg)]'
                   }`}
                 >
                   <span>{isAdminView ? 'Admin' : 'Atleta'}</span>
@@ -161,70 +157,54 @@ export const Header: React.FC = () => {
                     }}
                   >
                     {/* Header do Menu */}
-                    <div className="pb-2.5 border-b border-white/10 flex items-center justify-between">
+                    <div className="pb-2.5 border-b border-[var(--border-card)] flex items-center justify-between">
                       <div className="min-w-0">
                         <div className="font-extrabold text-[var(--text-1)] text-xs truncate">
                           {currentUser.name}
                         </div>
-                        <div className="text-[11px] text-sky-400 font-semibold mt-0.5">
+                        <div className="text-xs text-[var(--run)] font-semibold mt-0.5">
                           {currentUser.escalao}
                         </div>
                       </div>
                       {currentUser.nif && (
-                        <span className="font-mono text-[11px] text-[var(--text-3)] bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                        <span className="font-mono text-xs text-[var(--text-3)] bg-[var(--surface-raised)] px-2 py-0.5 rounded-md border border-[var(--border-card)]">
                           NIF {currentUser.nif}
                         </span>
                       )}
                     </div>
 
-                    {/* Alternador de Ambiente: Meio-Termo / Claro / Escuro */}
+                    {/* Alternador de ambiente: azul e branco / azul-marinho */}
                     <div>
-                      <div className="text-[11px] font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                      <div className="text-xs font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5 flex items-center justify-between">
                         <span>Ambiente de Design</span>
-                        <span className="text-sky-400 font-bold capitalize">
-                          {themeMode === 'balanced'
-                            ? 'Meio-Termo'
-                            : themeMode === 'light'
-                            ? 'Luminoso'
-                            : 'Escuro'}
+                        <span className="text-[var(--run)] font-bold capitalize">
+                          {themeMode === 'dark' ? 'Azul-marinho' : 'Azul e branco'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                      <div className="grid grid-cols-2 gap-1 bg-[var(--surface-raised)] p-1 rounded-xl border border-[var(--border-card)]">
                         <button
                           type="button"
                           onClick={() => setThemeMode('balanced')}
                           className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                             themeMode === 'balanced'
-                              ? 'bg-sky-500 text-slate-950 shadow-xs'
-                              : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
-                          }`}
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Meio-Termo
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setThemeMode('light')}
-                          className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
-                            themeMode === 'light'
-                              ? 'bg-amber-400 text-slate-950 shadow-xs'
+                              ? 'bg-[var(--run)] text-[var(--on-accent)] shadow-xs'
                               : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                           }`}
                         >
                           <Sun className="w-3.5 h-3.5" />
-                          Claro
+                          Azul e branco
                         </button>
                         <button
                           type="button"
                           onClick={() => setThemeMode('dark')}
                           className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                             themeMode === 'dark'
-                              ? 'bg-indigo-600 text-white shadow-xs'
+                              ? 'bg-[var(--run)] text-[var(--on-accent)] shadow-xs'
                               : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                           }`}
                         >
                           <Moon className="w-3.5 h-3.5" />
-                          Escuro
+                          Azul-marinho
                         </button>
                       </div>
                     </div>
@@ -232,10 +212,10 @@ export const Header: React.FC = () => {
                     {/* Alternador de vista (apenas para quem tem perfil de administrador) */}
                     {currentUser.role === 'admin' && (
                     <div>
-                      <div className="text-[11px] font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
+                      <div className="text-xs font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
                         Modo de Visualização
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
+                      <div className="grid grid-cols-2 gap-1.5 bg-[var(--surface-raised)] p-1 rounded-xl border border-[var(--border-card)]">
                         <button
                           type="button"
                           onClick={() => {
@@ -244,7 +224,7 @@ export const Header: React.FC = () => {
                           }}
                           className={`py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                             activeRole === 'athlete'
-                              ? 'bg-blue-600 text-white shadow-xs'
+                              ? 'bg-[var(--run)] text-[var(--on-accent)] shadow-xs'
                               : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                           }`}
                         >
@@ -259,7 +239,7 @@ export const Header: React.FC = () => {
                           }}
                           className={`py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                             activeRole === 'admin'
-                              ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                              ? 'bg-[var(--gold)] text-[var(--on-gold)] font-black shadow-xs'
                               : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
                           }`}
                         >
@@ -273,7 +253,7 @@ export const Header: React.FC = () => {
 
                     {/* Mudar de utilizador (demonstração) */}
                     <div>
-                      <div className="text-[11px] font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
+                      <div className="text-xs font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
                         Mudar de utilizador (demo)
                       </div>
                       <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
@@ -289,18 +269,18 @@ export const Header: React.FC = () => {
                               }}
                               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-left text-xs transition cursor-pointer border ${
                                 selected
-                                  ? 'bg-sky-500/15 text-sky-300 font-bold border-sky-400/40'
-                                  : 'bg-white/5 text-[var(--text-2)] border-white/5 hover:bg-white/10 hover:text-[var(--text-1)]'
+                                  ? 'bg-[var(--tint-blue-bg-strong)] text-[var(--tint-blue-fg)] font-bold border-[var(--tint-blue-border)]'
+                                  : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)] hover:bg-[var(--surface-card-hover)] hover:text-[var(--text-1)]'
                               }`}
                             >
                               <div className="truncate pr-1">
                                 <div className="truncate">{p.name}</div>
-                                <div className="text-[11px] text-[var(--text-3)] font-normal">
+                                <div className="text-xs text-[var(--text-3)] font-normal">
                                   {p.escalao} {p.dependents.length > 0 ? `• +${p.dependents.length} filho(a)` : ''}
                                 </div>
                               </div>
                               {selected && (
-                                <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 ml-1.5" />
+                                <Check className="w-3.5 h-3.5 text-[var(--run)] shrink-0 ml-1.5" />
                               )}
                             </button>
                           )
@@ -309,14 +289,14 @@ export const Header: React.FC = () => {
                     </div>
 
                     {/* Atalho para a Minha Ficha */}
-                    <div className="pt-2 border-t border-white/10">
+                    <div className="pt-2 border-t border-[var(--border-card)]">
                       <button
                         type="button"
                         onClick={() => {
                           navigate('/perfil')
                           setMenuOpen(false)
                         }}
-                        className="w-full text-center text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline cursor-pointer py-1"
+                        className="w-full text-center text-xs font-bold text-[var(--run)] hover:underline cursor-pointer py-1"
                       >
                         O meu perfil e crianças →
                       </button>

@@ -171,7 +171,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRoleState] = useState<UserRole>(() =>
     loadFromStorage(STORAGE_KEYS.ACTIVE_VIEW_ROLE, 'admin')
   )
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => loadFromStorage(STORAGE_KEYS.THEME, 'balanced'))
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => (loadFromStorage<ThemeMode>(STORAGE_KEYS.THEME, 'balanced') === 'dark' ? 'dark' : 'balanced'))
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   // Persistência local
