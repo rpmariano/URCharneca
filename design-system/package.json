@@ -1,0 +1,12 @@
+{
+  "name": "@urcharneca/ui",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "module": "dist/index.js",
+  "types": "dist/types/design-system/index.d.ts",
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

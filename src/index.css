@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --color-primary: #38bdf8;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
 
   /* Mobile-first column (480px centered on desktop) */
   --breakpoint-sm: 9999px;
@@ -24,24 +24,24 @@
   color-scheme: dark;
 
   /* Fundo e Estrutura */
-  --bg-app: #08080a;
+  --bg-app: #0a0a0a;
   --bg-body-desktop: #000000;
-  --bg-header: rgba(8, 8, 10, 0.95);
-  --bg-nav: rgba(8, 8, 10, 0.96);
-  --bg-sheet: #121215;
+  --bg-header: rgba(10, 10, 10, 0.92);
+  --bg-nav: rgba(10, 10, 10, 0.94);
+  --bg-sheet: #141414;
   --bg-scrim: rgba(0, 0, 0, 0.82);
 
   /* Superfícies dos Cartões */
-  --surface-card: rgba(18, 18, 22, 0.94);
-  --surface-card-hover: rgba(28, 28, 34, 0.98);
-  --surface-raised: rgba(255, 255, 255, 0.06);
-  --border-card: rgba(255, 255, 255, 0.10);
+  --surface-card: #161616;
+  --surface-card-hover: #1d1d1d;
+  --surface-raised: #222222;
+  --border-card: rgba(255, 255, 255, 0.08);
   --border-card-strong: rgba(255, 255, 255, 0.20);
 
   /* Tipografia */
   --text-1: #ffffff;
   --text-2: #d4d4d8;
-  --text-3: #a1a1aa;
+  --text-3: #a3a3a3;
   --text-muted: #71717a;
 
   /* Cores Semânticas Nike+ Run Club (NRC) */
@@ -49,6 +49,12 @@
   --race-deep: #b0d400;
   --race-ink: #000000;
   --run: #d8ff00; /* Volt como protagonista */
+  --on-accent: #000000;
+  --cat-trofeu: #fbbf24;
+  --cat-clube: #38bdf8;
+  --cat-sugerida: #4ade80;
+  --cat-treino: #d8ff00;
+  --cat-evento: #f472b6;
   --coach: #38bdf8;
   --gym: #9ec3d2;
   --ok: #22c55e;
@@ -65,7 +71,7 @@
   --grad-fade: linear-gradient(180deg, rgba(8, 8, 10, 0.85) 0%, rgba(8, 8, 10, 0) 18%, rgba(8, 8, 10, 0) 78%, rgba(8, 8, 10, 0.95) 100%);
   --shadow-fab: 0 0 28px rgba(216, 255, 0, 0.45);
   --glow-pill: 0 0 16px rgba(216, 255, 0, 0.70);
-  --shadow-card: 0 12px 32px -4px rgba(0, 0, 0, 0.60);
+  --shadow-card: none;
 
   --contour-run: #d8ff00;
   --contour-run-op: 0.10;
@@ -122,6 +128,12 @@
   --race-deep: #d97706;
   --race-ink: #ffffff;
   --run: #0284c7;
+  --on-accent: #ffffff;
+  --cat-trofeu: #d97706;
+  --cat-clube: #2563eb;
+  --cat-sugerida: #059669;
+  --cat-treino: #0284c7;
+  --cat-evento: #db2777;
   --coach: #0891b2;
   --gym: #475569;
   --ok: #059669;
@@ -193,6 +205,12 @@
   --race-deep: #d97706;
   --race-ink: #1a1206;
   --run: #2ee0ff;
+  --on-accent: #04121a;
+  --cat-trofeu: #fbbf24;
+  --cat-clube: #60a5fa;
+  --cat-sugerida: #34d399;
+  --cat-treino: #2ee0ff;
+  --cat-evento: #f472b6;
   --coach: #22d3ee;
   --gym: #9ec3d2;
   --ok: #34d399;
@@ -315,11 +333,9 @@ body {
 .iron-card {
   background: var(--surface-card);
   border: 1px solid var(--border-card);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   box-shadow: var(--shadow-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background-color 0.18s ease;
 }
 
 .iron-card-interactive:hover {
@@ -432,7 +448,7 @@ select:focus,
 textarea:focus {
   border-color: var(--run) !important;
   outline: none !important;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--run) 25%, transparent) !important;
 }
 
 /* Indicador de foco acessível para navegação por teclado */
@@ -488,4 +504,101 @@ p {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
+}
+
+/* Carrossel horizontal com snap */
+.snap-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.snap-row::-webkit-scrollbar { display: none; }
+.snap-row > * { scroll-snap-align: start; flex-shrink: 0; }
+
+/* =========================================================================
+   LINGUAGEM VISUAL "RUN CLUB": tipografia condensada, números grandes, movimento curto
+   ========================================================================= */
+.display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+}
+.display-italic { font-style: italic; }
+.stat-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--run) 60%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Entrada escalonada dos blocos de cada ecrã */
+.stagger > * {
+  animation: rise-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger > *:nth-child(2) { animation-delay: 0.05s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.15s; }
+.stagger > *:nth-child(5) { animation-delay: 0.2s; }
+.stagger > *:nth-child(6) { animation-delay: 0.25s; }
+.stagger > *:nth-child(n + 7) { animation-delay: 0.3s; }
+
+.grow-x {
+  transform-origin: left;
+  animation: grow-x 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--run);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+
+/* Cartão de destaque: preto profundo com faixa de cor */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  right: -30%;
+  top: -40%;
+  width: 70%;
+  height: 120%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--run) 22%, transparent), transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *, .grow-x, .live-dot { animation: none !important; }
 }

@@ -10,7 +10,6 @@ import type {
   TransportMode,
   BibStatus,
   RegistrationStatus,
-  DependentAthlete,
 } from '../types'
 import {
   INITIAL_PROFILES,
@@ -21,16 +20,20 @@ import {
   INITIAL_NOTIFICATIONS,
 } from '../data/seedData'
 
+/** v4: provas abertas a crianças, eventos do tipo reunião, nomes de crianças normalizados */
 const STORAGE_KEYS = {
-  PROFILES: 'urc_profiles_v3',
-  YOUTH_ATHLETES: 'urc_youth_athletes_v3',
-  RACES: 'urc_races_v2',
-  REGISTRATIONS: 'urc_registrations_v2',
-  EVENTS: 'urc_events_v2',
-  NOTIFICATIONS: 'urc_notifications_v2',
-  CURRENT_USER_ID: 'urc_current_user_id_v2',
-  ACTIVE_VIEW_ROLE: 'urc_active_view_role_v2',
+  PROFILES: 'urc_profiles_v4',
+  YOUTH_ATHLETES: 'urc_youth_athletes_v4',
+  RACES: 'urc_races_v4',
+  REGISTRATIONS: 'urc_registrations_v4',
+  EVENTS: 'urc_events_v4',
+  NOTIFICATIONS: 'urc_notifications_v4',
+  CURRENT_USER_ID: 'urc_current_user_id_v4',
+  ACTIVE_VIEW_ROLE: 'urc_active_view_role_v4',
+  THEME: 'urc_theme_mode',
 }
+
+export type ThemeMode = 'balanced' | 'light' | 'dark'
 
 interface ToastMessage {
   id: string
@@ -38,8 +41,9 @@ interface ToastMessage {
   type: 'success' | 'info' | 'warning'
 }
 
-interface RegisterForRaceInput {
+export interface RegisterForRaceInput {
   race_id: string
+  /** Adulto responsável pela inscrição (o próprio atleta, ou o encarregado no caso de crianças) */
   athlete_id: string
   athlete_name: string
   is_dependent: boolean
@@ -52,10 +56,15 @@ interface RegisterForRaceInput {
   notes?: string
 }
 
-export interface AssociateChildResult {
+export interface ActionResult {
   success: boolean
   message: string
 }
+
+type NewRace = Omit<Race, 'id' | 'created_by' | 'created_by_name'>
+type NewEvent = Omit<TeamEvent, 'id' | 'created_by_name' | 'attendees'>
+type NewNotification = Omit<AppNotification, 'id' | 'created_at' | 'created_by_name' | 'read_by'>
+type NewChild = Omit<YouthAthlete, 'id' | 'associated_adult_ids'>
 
 interface AppContextValue {
   profiles: AthleteProfile[]
@@ -65,7 +74,7 @@ interface AppContextValue {
   events: TeamEvent[]
   notifications: AppNotification[]
   currentUser: AthleteProfile
-  /** Papel atualmente ativo na UI ('admin' ou 'athlete'). Admins podem alternar para testar a vista de Atleta! */
+  /** Papel ativo na UI. Um administrador pode alternar para a vista de atleta. */
   activeRole: UserRole
   isAdminView: boolean
   unreadNotificationsCount: number
@@ -73,35 +82,48 @@ interface AppContextValue {
   showToast: (text: string, type?: 'success' | 'info' | 'warning') => void
   setCurrentUserById: (id: string) => void
   setActiveRole: (role: UserRole) => void
+  // Atletas (admin)
   updateProfile: (updated: AthleteProfile) => void
-  addAthleteProfile: (profile: Omit<AthleteProfile, 'id'>) => void
-  // Gestão de Crianças / Jovens Atletas (Máx. 2 adultos)
-  addYouthAthlete: (child: Omit<YouthAthlete, 'id' | 'associated_adult_ids'>) => YouthAthlete
+  addAthleteProfile: (profile: Omit<AthleteProfile, 'id' | 'dependents'>) => AthleteProfile | null
+  removeAthleteProfile: (id: string) => void
+  // Crianças
+  /** Cria um perfil infantil. Por omissão fica associado ao utilizador atual. */
+  addYouthAthlete: (child: NewChild, adultIds?: string[]) => YouthAthlete
   updateYouthAthlete: (child: YouthAthlete) => void
   removeYouthAthlete: (childId: string) => void
-  associateChildToAdult: (childId: string, adultId: string) => AssociateChildResult
+  associateChildToAdult: (childId: string, adultId: string) => ActionResult
   disassociateChildFromAdult: (childId: string, adultId: string) => void
-  addDependent: (athleteId: string, dep: Omit<DependentAthlete, 'id'>) => void
-  removeDependent: (athleteId: string, depId: string) => void
-  createRace: (race: Omit<Race, 'id' | 'created_by' | 'created_by_name'>) => Race
+  // Provas
+  createRace: (race: NewRace) => Race
   updateRace: (race: Race) => void
   deleteRace: (raceId: string) => void
-  registerForRace: (input: RegisterForRaceInput) => void
+  registerForRace: (input: RegisterForRaceInput) => ActionResult
   cancelRegistration: (regId: string) => void
   updateRegistrationByAdmin: (
     regId: string,
-    patch: Partial<Pick<RaceRegistration, 'status' | 'bib_number' | 'bib_status' | 'bib_pickup_by' | 'transport_mode' | 'result_time' | 'trophy_points' | 'notes'>>
+    patch: Partial<
+      Pick<
+        RaceRegistration,
+        'status' | 'bib_number' | 'bib_status' | 'bib_pickup_by' | 'transport_mode' | 'result_time' | 'trophy_points' | 'notes'
+      >
+    >
   ) => void
   confirmAllPendingForRace: (raceId: string) => void
   markAllBibsAtClubForRace: (raceId: string, pickupBy: string) => void
-  createEvent: (evt: Omit<TeamEvent, 'id' | 'created_by_name' | 'attendees'>) => void
+  // Treinos e eventos
+  createEvent: (evt: NewEvent) => TeamEvent | null
+  updateEvent: (evt: TeamEvent) => void
+  deleteEvent: (eventId: string) => void
   rsvpEvent: (eventId: string, status: 'going' | 'maybe' | 'not_going', note?: string) => void
-  sendNotification: (notif: Omit<AppNotification, 'id' | 'created_at' | 'created_by_name' | 'read_by'>) => void
+  // Comunicados
+  sendNotification: (notif: NewNotification) => void
+  deleteNotification: (notifId: string) => void
+  togglePinNotification: (notifId: string) => void
   markNotificationRead: (notifId: string) => void
   markAllNotificationsRead: () => void
   resetDemoData: () => void
-  themeMode: 'balanced' | 'light' | 'dark'
-  setThemeMode: (mode: 'balanced' | 'light' | 'dark') => void
+  themeMode: ThemeMode
+  setThemeMode: (mode: ThemeMode) => void
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined)
@@ -116,30 +138,30 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   }
 }
 
+const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
+/** Os `dependents` de cada perfil são sempre derivados da lista de crianças. */
+const withDependents = (profiles: AthleteProfile[], youth: YouthAthlete[]): AthleteProfile[] =>
+  profiles.map((p) => ({
+    ...p,
+    dependents: youth.filter((c) => c.associated_adult_ids.includes(p.id)),
+  }))
+
+const sortByDate = <T extends { date: string }>(list: T[], timeKey: keyof T) =>
+  [...list].sort((a, b) => `${a.date} ${String(a[timeKey] ?? '')}`.localeCompare(`${b.date} ${String(b[timeKey] ?? '')}`))
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [youthAthletes, setYouthAthletes] = useState<YouthAthlete[]>(() =>
     loadFromStorage(STORAGE_KEYS.YOUTH_ATHLETES, INITIAL_YOUTH_ATHLETES)
   )
-
-  const [profiles, setProfiles] = useState<AthleteProfile[]>(() => {
-    const loadedProfiles = loadFromStorage(STORAGE_KEYS.PROFILES, INITIAL_PROFILES)
-    const initialYouth = loadFromStorage(STORAGE_KEYS.YOUTH_ATHLETES, INITIAL_YOUTH_ATHLETES)
-    // Sincronizar dependentes de cada atleta com as crianças que o associam
-    return loadedProfiles.map((p) => ({
-      ...p,
-      dependents: initialYouth.filter((c) => c.associated_adult_ids.includes(p.id)),
-    }))
-  })
-
-  const [races, setRaces] = useState<Race[]>(() =>
-    loadFromStorage(STORAGE_KEYS.RACES, INITIAL_RACES)
+  const [baseProfiles, setProfiles] = useState<AthleteProfile[]>(() =>
+    loadFromStorage(STORAGE_KEYS.PROFILES, INITIAL_PROFILES)
   )
+  const [races, setRaces] = useState<Race[]>(() => loadFromStorage(STORAGE_KEYS.RACES, INITIAL_RACES))
   const [registrations, setRegistrations] = useState<RaceRegistration[]>(() =>
     loadFromStorage(STORAGE_KEYS.REGISTRATIONS, INITIAL_REGISTRATIONS)
   )
-  const [events, setEvents] = useState<TeamEvent[]>(() =>
-    loadFromStorage(STORAGE_KEYS.EVENTS, INITIAL_EVENTS)
-  )
+  const [events, setEvents] = useState<TeamEvent[]>(() => loadFromStorage(STORAGE_KEYS.EVENTS, INITIAL_EVENTS))
   const [notifications, setNotifications] = useState<AppNotification[]>(() =>
     loadFromStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS)
   )
@@ -149,300 +171,272 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRoleState] = useState<UserRole>(() =>
     loadFromStorage(STORAGE_KEYS.ACTIVE_VIEW_ROLE, 'admin')
   )
-  const [themeMode, setThemeModeState] = useState<'balanced' | 'light' | 'dark'>(() =>
-    loadFromStorage('urc_theme_mode', 'balanced')
-  )
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => loadFromStorage(STORAGE_KEYS.THEME, 'balanced'))
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
+  // Persistência local
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(baseProfiles)), [baseProfiles])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.YOUTH_ATHLETES, JSON.stringify(youthAthletes)), [youthAthletes])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.RACES, JSON.stringify(races)), [races])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations)), [registrations])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events)), [events])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)), [notifications])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, JSON.stringify(currentUserId)), [currentUserId])
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.ACTIVE_VIEW_ROLE, JSON.stringify(activeRole)), [activeRole])
   useEffect(() => {
-    localStorage.setItem('urc_theme_mode', JSON.stringify(themeMode))
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', themeMode)
-    }
+    localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(themeMode))
+    document.documentElement.setAttribute('data-theme', themeMode)
   }, [themeMode])
 
-  const setThemeMode = (mode: 'balanced' | 'light' | 'dark') => {
-    setThemeModeState(mode)
-    showToast(
-      mode === 'balanced'
-        ? 'Design: Meio-Termo (Slate Navy)'
-        : mode === 'light'
-        ? 'Design: Luminoso (Claro)'
-        : 'Design: Escuro (Obsidiana)',
-      'info'
-    )
-  }
+  const profiles = useMemo(() => withDependents(baseProfiles, youthAthletes), [baseProfiles, youthAthletes])
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles))
-  }, [profiles])
+  const currentUser = useMemo(
+    () => profiles.find((p) => p.id === currentUserId) || profiles[0],
+    [profiles, currentUserId]
+  )
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.YOUTH_ATHLETES, JSON.stringify(youthAthletes))
-  }, [youthAthletes])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.RACES, JSON.stringify(races))
-  }, [races])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations))
-  }, [registrations])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events))
-  }, [events])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
-  }, [notifications])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, JSON.stringify(currentUserId))
-  }, [currentUserId])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_VIEW_ROLE, JSON.stringify(activeRole))
-  }, [activeRole])
+  // Um atleta sem papel de admin nunca pode ver a vista de administração
+  const isAdminView = activeRole === 'admin' && currentUser.role === 'admin'
 
   const showToast = (text: string, type: 'success' | 'info' | 'warning' = 'success') => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    const id = uid('toast')
     setToasts((prev) => [...prev, { id, text, type }])
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id))
-    }, 3600)
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3600)
   }
 
-  const currentUser = useMemo(() => {
-    return profiles.find((p) => p.id === currentUserId) || profiles[0]
-  }, [profiles, currentUserId])
+  const requireAdmin = (action: string): boolean => {
+    if (isAdminView) return true
+    showToast(`Apenas administradores podem ${action}.`, 'warning')
+    return false
+  }
 
-  const isAdminView = activeRole === 'admin'
+  const setThemeMode = (mode: ThemeMode) => setThemeModeState(mode)
 
   const setCurrentUserById = (id: string) => {
     const target = profiles.find((p) => p.id === id)
     if (!target) return
     setCurrentUserId(id)
     setActiveRoleState(target.role)
-    showToast(`Sessão ativa: ${target.name} (${target.role === 'admin' ? 'Administrador' : 'Atleta'})`, 'info')
+    showToast(`Sessão: ${target.name} (${target.role === 'admin' ? 'Administrador' : 'Atleta'})`, 'info')
   }
 
   const setActiveRole = (role: UserRole) => {
+    if (role === 'admin' && currentUser.role !== 'admin') {
+      showToast('Este utilizador não tem perfil de administrador.', 'warning')
+      return
+    }
     setActiveRoleState(role)
-    showToast(
-      role === 'admin'
-        ? 'Modo Administrador ativado (gestão de provas, carrinha, dorsais e atletas)'
-        : 'Modo Atleta ativado (vista de inscrição e consulta)',
-      'info'
-    )
+    showToast(role === 'admin' ? 'Vista de Administrador' : 'Vista de Atleta', 'info')
   }
 
-  const unreadNotificationsCount = useMemo(() => {
-    return notifications.filter((n) => !n.read_by.includes(currentUser.id)).length
-  }, [notifications, currentUser.id])
+  const unreadNotificationsCount = useMemo(
+    () => notifications.filter((n) => !n.read_by.includes(currentUser.id)).length,
+    [notifications, currentUser.id]
+  )
 
+  const pushNotification = (n: Omit<AppNotification, 'id' | 'created_at' | 'created_by_name' | 'read_by'>) => {
+    const notif: AppNotification = {
+      ...n,
+      id: uid('notif'),
+      created_by_name: currentUser.name,
+      created_at: new Date().toISOString(),
+      read_by: [currentUser.id],
+    }
+    setNotifications((prev) => [notif, ...prev])
+    return notif
+  }
+
+  // ---------------------------------------------------------------------------
+  // Atletas
+  // ---------------------------------------------------------------------------
   const updateProfile = (updated: AthleteProfile) => {
-    setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-    showToast('Ficha de atleta atualizada com sucesso!')
+    const isSelf = updated.id === currentUser.id
+    if (!isSelf && !requireAdmin('editar outros atletas')) return
+    // Um atleta não pode promover-se a admin
+    const original = baseProfiles.find((p) => p.id === updated.id)
+    const safe = !isAdminView && original ? { ...updated, role: original.role } : updated
+    setProfiles((prev) => prev.map((p) => (p.id === safe.id ? { ...safe, dependents: [] } : p)))
+    showToast(isSelf ? 'Perfil atualizado.' : `Ficha de ${updated.name} atualizada.`)
   }
 
-  const addAthleteProfile = (profile: Omit<AthleteProfile, 'id'>) => {
-    const newProfile: AthleteProfile = {
-      ...profile,
-      id: `ath-${Date.now()}`,
-      dependents: [],
-    }
+  const addAthleteProfile = (profile: Omit<AthleteProfile, 'id' | 'dependents'>) => {
+    if (!requireAdmin('criar atletas')) return null
+    const newProfile: AthleteProfile = { ...profile, id: uid('ath'), dependents: [] }
     setProfiles((prev) => [...prev, newProfile])
-    showToast(`${newProfile.name} adicionado(a) à equipa U.R. Charneca!`)
+    showToast(`${newProfile.name} adicionado(a) à equipa.`)
+    return newProfile
   }
 
-  /**
-   * Associação de Crianças da Lista Predefinida ao Perfil de um Adulto.
-   * Regra rígida: NO MÁXIMO DOIS ADULTOS por criança.
-   */
-  const associateChildToAdult = (childId: string, adultId: string): AssociateChildResult => {
-    const child = youthAthletes.find((c) => c.id === childId)
-    if (!child) return { success: false, message: 'Jovem atleta não encontrado.' }
-
-    if (child.associated_adult_ids.includes(adultId)) {
-      return { success: false, message: `${child.name} já se encontra associada ao teu perfil.` }
+  const removeAthleteProfile = (id: string) => {
+    if (!requireAdmin('remover atletas')) return
+    if (id === currentUser.id) {
+      showToast('Não podes remover o teu próprio perfil.', 'warning')
+      return
     }
-
-    if (child.associated_adult_ids.length >= 2) {
-      const parentNames = child.associated_adult_ids
-        .map((pId) => profiles.find((p) => p.id === pId)?.name || 'Adulto')
-        .join(' e ')
-      const msg = `${child.name} já atingiu o limite máximo de 2 adultos responsáveis (${parentNames}).`
-      showToast(msg, 'warning')
-      return { success: false, message: msg }
-    }
-
-    const updatedChildren = youthAthletes.map((c) =>
-      c.id === childId ? { ...c, associated_adult_ids: [...c.associated_adult_ids, adultId] } : c
+    const p = baseProfiles.find((x) => x.id === id)
+    setProfiles((prev) => prev.filter((x) => x.id !== id))
+    setYouthAthletes((prev) =>
+      prev.map((c) => ({ ...c, associated_adult_ids: c.associated_adult_ids.filter((a) => a !== id) }))
     )
-    setYouthAthletes(updatedChildren)
-
-    // Sincronizar os dependentes nos perfis
-    setProfiles((prev) =>
-      prev.map((p) => ({
-        ...p,
-        dependents: updatedChildren.filter((c) => c.associated_adult_ids.includes(p.id)),
-      }))
-    )
-
-    showToast(`${child.name} associada ao teu perfil com sucesso!`)
-    return { success: true, message: 'Criança associada com sucesso!' }
+    setRegistrations((prev) => prev.filter((r) => r.athlete_id !== id))
+    showToast(`${p?.name || 'Atleta'} removido(a) da equipa.`, 'info')
   }
 
-  /**
-   * Desassocia a criança do perfil do adulto.
-   */
-  const disassociateChildFromAdult = (childId: string, adultId: string) => {
-    const child = youthAthletes.find((c) => c.id === childId)
-    const updatedChildren = youthAthletes.map((c) =>
-      c.id === childId
-        ? { ...c, associated_adult_ids: c.associated_adult_ids.filter((id) => id !== adultId) }
-        : c
-    )
-    setYouthAthletes(updatedChildren)
-
-    // Sincronizar nos perfis
-    setProfiles((prev) =>
-      prev.map((p) => ({
-        ...p,
-        dependents: updatedChildren.filter((c) => c.associated_adult_ids.includes(p.id)),
-      }))
-    )
-
-    showToast(`${child ? child.name : 'Criança'} desassociada do teu perfil.`, 'info')
-  }
-
-  /**
-   * Adiciona nova criança à lista oficial predefinida da U.R. Charneca (gerida por Admins)
-   */
-  const addYouthAthlete = (childInput: Omit<YouthAthlete, 'id' | 'associated_adult_ids'>): YouthAthlete => {
+  // ---------------------------------------------------------------------------
+  // Crianças (máximo 2 adultos responsáveis)
+  // ---------------------------------------------------------------------------
+  const addYouthAthlete = (childInput: NewChild, adultIds?: string[]): YouthAthlete => {
     const newChild: YouthAthlete = {
       ...childInput,
-      id: `dep-${Date.now()}`,
-      associated_adult_ids: [],
+      id: uid('dep'),
+      associated_adult_ids: (adultIds ?? [currentUser.id]).slice(0, 2),
     }
-    const updated = [...youthAthletes, newChild]
-    setYouthAthletes(updated)
-    showToast(`${newChild.name} registada na lista oficial de jovens atletas da U.R. Charneca!`)
+    setYouthAthletes((prev) => [...prev, newChild])
+    showToast(`Perfil de ${newChild.name} criado.`)
     return newChild
   }
 
-  /**
-   * Atualiza dados de uma criança na lista oficial
-   */
+  const canManageChild = (child: YouthAthlete) => isAdminView || child.associated_adult_ids.includes(currentUser.id)
+
   const updateYouthAthlete = (updatedChild: YouthAthlete) => {
-    const updated = youthAthletes.map((c) => (c.id === updatedChild.id ? updatedChild : c))
-    setYouthAthletes(updated)
-    setProfiles((prev) =>
-      prev.map((p) => ({
-        ...p,
-        dependents: updated.filter((c) => c.associated_adult_ids.includes(p.id)),
-      }))
-    )
-    showToast(`Ficha de ${updatedChild.name} atualizada!`)
+    const original = youthAthletes.find((c) => c.id === updatedChild.id)
+    if (!original || !canManageChild(original)) {
+      showToast('Só os responsáveis ou um admin podem editar esta criança.', 'warning')
+      return
+    }
+    setYouthAthletes((prev) => prev.map((c) => (c.id === updatedChild.id ? updatedChild : c)))
+    showToast(`Ficha de ${updatedChild.name} atualizada.`)
   }
 
-  /**
-   * Remove criança da lista oficial da U.R. Charneca
-   */
   const removeYouthAthlete = (childId: string) => {
     const child = youthAthletes.find((c) => c.id === childId)
-    const updated = youthAthletes.filter((c) => c.id !== childId)
-    setYouthAthletes(updated)
-    setProfiles((prev) =>
-      prev.map((p) => ({
-        ...p,
-        dependents: updated.filter((c) => c.associated_adult_ids.includes(p.id)),
-      }))
+    if (!child || !canManageChild(child)) return
+    setYouthAthletes((prev) => prev.filter((c) => c.id !== childId))
+    setRegistrations((prev) => prev.filter((r) => r.dependent_id !== childId))
+    showToast(`Perfil de ${child.name} removido.`, 'info')
+  }
+
+  const associateChildToAdult = (childId: string, adultId: string): ActionResult => {
+    const child = youthAthletes.find((c) => c.id === childId)
+    if (!child) return { success: false, message: 'Criança não encontrada.' }
+    if (child.associated_adult_ids.includes(adultId)) {
+      return { success: false, message: `${child.name} já está associada a este adulto.` }
+    }
+    if (child.associated_adult_ids.length >= 2) {
+      const msg = `${child.name} já tem 2 adultos responsáveis.`
+      showToast(msg, 'warning')
+      return { success: false, message: msg }
+    }
+    setYouthAthletes((prev) =>
+      prev.map((c) => (c.id === childId ? { ...c, associated_adult_ids: [...c.associated_adult_ids, adultId] } : c))
     )
-    showToast(`${child ? child.name : 'Criança'} removida da lista oficial.`, 'info')
+    showToast(`${child.name} associada com sucesso.`)
+    return { success: true, message: 'Criança associada.' }
   }
 
-  // Compatibilidade com funções antigas de dependentes
-  const addDependent = (athleteId: string, dep: Omit<DependentAthlete, 'id'>) => {
-    const newChild = addYouthAthlete(dep)
-    associateChildToAdult(newChild.id, athleteId)
+  const disassociateChildFromAdult = (childId: string, adultId: string) => {
+    const child = youthAthletes.find((c) => c.id === childId)
+    setYouthAthletes((prev) =>
+      prev.map((c) =>
+        c.id === childId ? { ...c, associated_adult_ids: c.associated_adult_ids.filter((id) => id !== adultId) } : c
+      )
+    )
+    showToast(`${child?.name || 'Criança'} desassociada.`, 'info')
   }
 
-  const removeDependent = (athleteId: string, depId: string) => {
-    disassociateChildFromAdult(depId, athleteId)
-  }
-
-  const createRace = (raceInput: Omit<Race, 'id' | 'created_by' | 'created_by_name'>): Race => {
+  // ---------------------------------------------------------------------------
+  // Provas
+  // ---------------------------------------------------------------------------
+  const createRace = (raceInput: NewRace): Race => {
+    // Atletas só podem sugerir provas (inscrição individual)
+    const category = isAdminView ? raceInput.category : 'individual'
     const newRace: Race = {
       ...raceInput,
-      id: `race-${Date.now()}`,
+      category,
+      counts_for_trophy: category === 'trofeu_cascais',
+      van_available: isAdminView ? raceInput.van_available : false,
+      van_capacity: isAdminView ? raceInput.van_capacity : 0,
+      id: uid('race'),
       created_by: currentUser.id,
       created_by_name: currentUser.name,
     }
-    setRaces((prev) => [...prev, newRace].sort((a, b) => a.date.localeCompare(b.date)))
+    setRaces((prev) => sortByDate([...prev, newRace], 'start_time'))
 
-    // Gerar notificação automática para o grupo
-    const isIndividual = newRace.category === 'individual'
-    const notifTitle = isIndividual
-      ? `Nova prova partilhada por ${currentUser.name}: ${newRace.title}`
-      : `Inscrições abertas: ${newRace.title}`
-    const notifBody = isIndividual
-      ? `${currentUser.name} vai participar em "${newRace.title}" (${newRace.date}) e partilhou a prova com a equipa. Clica em "Também vou!" se já te inscreveste!`
-      : `Já te podes inscrever em "${newRace.title}" (${newRace.date} em ${newRace.location}). ${
-          newRace.van_available
-            ? `Carrinha da Charneca disponível (${newRace.van_capacity} lugares, saída às ${newRace.van_departure_time}).`
-            : ''
-        }`
-
-    const autoNotif: AppNotification = {
-      id: `notif-${Date.now()}`,
-      title: notifTitle,
-      message: notifBody,
-      type: isIndividual ? 'individual_share' : 'race_open',
+    const suggested = category === 'individual'
+    pushNotification({
+      title: suggested ? `Prova sugerida por ${currentUser.name}: ${newRace.title}` : `Inscrições abertas: ${newRace.title}`,
+      message: suggested
+        ? `${currentUser.name} sugeriu "${newRace.title}" (${newRace.date}, ${newRace.location}). Inscrição individual — marca presença na app para irmos juntos.`
+        : `Já te podes inscrever em "${newRace.title}" (${newRace.date}, ${newRace.location}).${
+            newRace.van_available ? ` Carrinha do clube com ${newRace.van_capacity} lugares.` : ''
+          }${newRace.open_to_children ? ' Aberta a crianças.' : ''}`,
+      type: suggested ? 'individual_share' : 'race_open',
       related_race_id: newRace.id,
-      created_by_name: currentUser.name,
-      created_at: new Date().toISOString(),
-      pinned: newRace.category === 'trofeu_cascais',
-      read_by: [currentUser.id],
-    }
-    setNotifications((prev) => [autoNotif, ...prev])
-    showToast(`Prova "${newRace.title}" publicada e grupo notificado!`)
+      pinned: category === 'trofeu_cascais',
+    })
+    showToast(suggested ? `Prova "${newRace.title}" sugerida à equipa.` : `Prova "${newRace.title}" publicada.`)
     return newRace
   }
 
   const updateRace = (updated: Race) => {
-    setRaces((prev) =>
-      prev.map((r) => (r.id === updated.id ? updated : r)).sort((a, b) => a.date.localeCompare(b.date))
-    )
-    showToast('Dados da prova e logística atualizados!')
+    if (!isAdminView && updated.created_by !== currentUser.id) {
+      showToast('Só o autor ou um admin pode editar esta prova.', 'warning')
+      return
+    }
+    setRaces((prev) => sortByDate(prev.map((r) => (r.id === updated.id ? updated : r)), 'start_time'))
+    showToast('Prova atualizada.')
   }
 
   const deleteRace = (raceId: string) => {
+    const race = races.find((r) => r.id === raceId)
+    if (!race) return
+    if (!isAdminView && race.created_by !== currentUser.id) {
+      showToast('Só o autor ou um admin pode remover esta prova.', 'warning')
+      return
+    }
     setRaces((prev) => prev.filter((r) => r.id !== raceId))
     setRegistrations((prev) => prev.filter((reg) => reg.race_id !== raceId))
+    setNotifications((prev) => prev.map((n) => (n.related_race_id === raceId ? { ...n, related_race_id: undefined } : n)))
     showToast('Prova removida.', 'info')
   }
 
-  const registerForRace = (input: RegisterForRaceInput) => {
+  const registerForRace = (input: RegisterForRaceInput): ActionResult => {
     const race = races.find((r) => r.id === input.race_id)
-    if (!race) return
+    if (!race) return { success: false, message: 'Prova não encontrada.' }
 
-    // Verificar se já está inscrito (mesmo atleta ou mesmo dependente)
-    const existing = registrations.find(
-      (reg) =>
-        reg.race_id === input.race_id &&
-        reg.athlete_id === input.athlete_id &&
-        reg.is_dependent === input.is_dependent &&
-        (input.is_dependent ? reg.dependent_id === input.dependent_id : true)
-    )
+    const actingForOther = input.athlete_id !== currentUser.id
+    if (actingForOther && !isAdminView) {
+      // Um responsável secundário pode inscrever a criança que partilha
+      const child = input.dependent_id ? youthAthletes.find((c) => c.id === input.dependent_id) : undefined
+      if (!child || !child.associated_adult_ids.includes(currentUser.id)) {
+        const msg = 'Só podes inscrever-te a ti ou às crianças a teu cargo.'
+        showToast(msg, 'warning')
+        return { success: false, message: msg }
+      }
+    }
+
+    if (input.is_dependent && !race.open_to_children) {
+      const msg = 'Esta prova não está aberta a crianças.'
+      showToast(msg, 'warning')
+      return { success: false, message: msg }
+    }
+
+    // Carrinha só existe em provas com carrinha
+    const transport =
+      !race.van_available && (input.transport_mode === 'van_roundtrip' || input.transport_mode === 'van_return_only')
+        ? 'own_transport'
+        : input.transport_mode
+
+    // Uma criança só tem uma inscrição por prova, seja qual for o responsável que a fez
+    const existing = registrations.find((reg) => {
+      if (reg.race_id !== input.race_id) return false
+      return input.is_dependent
+        ? reg.is_dependent && reg.dependent_id === input.dependent_id
+        : !reg.is_dependent && reg.athlete_id === input.athlete_id
+    })
 
     const initialStatus: RegistrationStatus =
-      race.category === 'individual'
-        ? 'self_enrolled'
-        : isAdminView
-        ? 'enrolled_by_admin'
-        : 'interested'
+      race.category === 'individual' ? 'self_enrolled' : isAdminView ? 'enrolled_by_admin' : 'interested'
 
     if (existing) {
       setRegistrations((prev) =>
@@ -451,7 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ? {
                 ...reg,
                 distance: input.distance,
-                transport_mode: input.transport_mode,
+                transport_mode: transport,
                 carpool_seats: input.carpool_seats,
                 notes: input.notes,
                 status: reg.status === 'cancelled' ? initialStatus : reg.status,
@@ -459,12 +453,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : reg
         )
       )
-      showToast('Inscrição e opção de transporte atualizadas!')
-      return
+      showToast('Inscrição atualizada.')
+      return { success: true, message: 'Inscrição atualizada.' }
     }
 
     const newReg: RaceRegistration = {
-      id: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+      id: uid('reg'),
       race_id: input.race_id,
       athlete_id: input.athlete_id,
       athlete_name: input.athlete_name,
@@ -474,208 +468,172 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       escalao: input.escalao,
       distance: input.distance,
       status: initialStatus,
-      transport_mode: input.transport_mode,
+      transport_mode: transport,
       carpool_seats: input.carpool_seats,
       bib_status: 'pending',
       bib_transfer_available: false,
       notes: input.notes,
       created_at: new Date().toISOString(),
     }
-
     setRegistrations((prev) => [...prev, newReg])
-    showToast(
+    const msg =
       race.category === 'individual'
-        ? `Presença confirmada em "${race.title}"!`
-        : `Pedido de inscrição registado para ${input.athlete_name}!`
-    )
+        ? `${input.athlete_name}: presença marcada.`
+        : initialStatus === 'enrolled_by_admin'
+        ? `${input.athlete_name} inscrito(a).`
+        : `Pedido de inscrição de ${input.athlete_name} enviado ao clube.`
+    showToast(msg)
+    return { success: true, message: msg }
   }
 
   const cancelRegistration = (regId: string) => {
+    const reg = registrations.find((r) => r.id === regId)
+    if (!reg) return
+    const child = reg.dependent_id ? youthAthletes.find((c) => c.id === reg.dependent_id) : undefined
+    const allowed =
+      isAdminView || reg.athlete_id === currentUser.id || Boolean(child?.associated_adult_ids.includes(currentUser.id))
+    if (!allowed) return
     setRegistrations((prev) => prev.filter((r) => r.id !== regId))
-    showToast('Inscrição cancelada.', 'info')
+    showToast(`Inscrição de ${reg.athlete_name} cancelada.`, 'info')
   }
 
-  const updateRegistrationByAdmin = (
-    regId: string,
-    patch: Partial<
-      Pick<
-        RaceRegistration,
-        'status' | 'bib_number' | 'bib_status' | 'bib_pickup_by' | 'transport_mode' | 'result_time' | 'trophy_points' | 'notes'
-      >
-    >
-  ) => {
-    setRegistrations((prev) =>
-      prev.map((r) => (r.id === regId ? { ...r, ...patch } : r))
-    )
-    showToast('Registo do atleta atualizado!')
+  const updateRegistrationByAdmin: AppContextValue['updateRegistrationByAdmin'] = (regId, patch) => {
+    if (!requireAdmin('gerir inscrições')) return
+    setRegistrations((prev) => prev.map((r) => (r.id === regId ? { ...r, ...patch } : r)))
   }
 
   const confirmAllPendingForRace = (raceId: string) => {
-    let count = 0
-    setRegistrations((prev) =>
-      prev.map((r) => {
-        if (r.race_id === raceId && r.status === 'interested') {
-          count++
-          return { ...r, status: 'enrolled_by_admin' }
-        }
-        return r
-      })
-    )
+    if (!requireAdmin('confirmar inscrições')) return
     const race = races.find((r) => r.id === raceId)
-    if (count > 0 && race) {
-      const notif: AppNotification = {
-        id: `notif-${Date.now()}`,
-        title: `Inscrições efetuadas: ${race.title}`,
-        message: `${currentUser.name} confirmou a inscrição oficial pela equipa de ${count} atleta(s) na prova "${race.title}".`,
-        type: 'race_open',
-        related_race_id: raceId,
-        created_by_name: currentUser.name,
-        created_at: new Date().toISOString(),
-        read_by: [currentUser.id],
-      }
-      setNotifications((prev) => [notif, ...prev])
-      showToast(`${count} inscrição(ões) marcada(s) como efetuada(s) e atletas notificados!`)
-    } else {
-      showToast('Não existem inscrições pendentes nesta prova.', 'info')
+    const count = registrations.filter((r) => r.race_id === raceId && r.status === 'interested').length
+    if (!race || count === 0) {
+      showToast('Não há inscrições pendentes nesta prova.', 'info')
+      return
     }
+    setRegistrations((prev) =>
+      prev.map((r) => (r.race_id === raceId && r.status === 'interested' ? { ...r, status: 'enrolled_by_admin' } : r))
+    )
+    pushNotification({
+      title: `Inscrições efetuadas: ${race.title}`,
+      message: `O clube confirmou a inscrição de ${count} atleta(s) em "${race.title}".`,
+      type: 'race_open',
+      related_race_id: raceId,
+    })
+    showToast(`${count} inscrição(ões) confirmada(s).`)
   }
 
   const markAllBibsAtClubForRace = (raceId: string, pickupBy: string) => {
-    let count = 0
-    setRegistrations((prev) =>
-      prev.map((r) => {
-        if (r.race_id === raceId && r.bib_status === 'pending') {
-          count++
-          return { ...r, bib_status: 'at_club' as BibStatus, bib_pickup_by: pickupBy }
-        }
-        return r
-      })
-    )
+    if (!requireAdmin('gerir dorsais')) return
     const race = races.find((r) => r.id === raceId)
-    if (count > 0 && race) {
-      const notif: AppNotification = {
-        id: `notif-${Date.now()}`,
-        title: `Dorsais levantados: ${race.title}`,
-        message: `Os dorsais para "${race.title}" já foram levantados por ${pickupBy} e estão prontos para entrega aos atletas!`,
-        type: 'bibs_ready',
-        related_race_id: raceId,
-        created_by_name: currentUser.name,
-        created_at: new Date().toISOString(),
-        pinned: true,
-        read_by: [currentUser.id],
-      }
-      setNotifications((prev) => [notif, ...prev])
-      showToast(`Dorsais marcados como levantados por ${pickupBy} e aviso enviado!`)
-    }
+    const count = registrations.filter((r) => r.race_id === raceId && r.bib_status === 'pending').length
+    if (!race || count === 0) return
+    setRegistrations((prev) =>
+      prev.map((r) =>
+        r.race_id === raceId && r.bib_status === 'pending'
+          ? { ...r, bib_status: 'at_club' as BibStatus, bib_pickup_by: pickupBy }
+          : r
+      )
+    )
+    pushNotification({
+      title: `Dorsais levantados: ${race.title}`,
+      message: `Os dorsais de "${race.title}" foram levantados por ${pickupBy} e estão prontos a entregar.`,
+      type: 'bibs_ready',
+      related_race_id: raceId,
+      pinned: true,
+    })
+    showToast(`${count} dorsais marcados como levantados.`)
   }
 
+  // ---------------------------------------------------------------------------
+  // Treinos e eventos (apenas admin cria)
+  // ---------------------------------------------------------------------------
+  const createEvent = (evtInput: NewEvent): TeamEvent | null => {
+    if (!requireAdmin('criar treinos e eventos')) return null
+    const newEvt: TeamEvent = { ...evtInput, id: uid('evt'), created_by_name: currentUser.name, attendees: [] }
+    setEvents((prev) => sortByDate([...prev, newEvt], 'time'))
+    showToast(`"${newEvt.title}" agendado.`)
+    return newEvt
+  }
 
-  const createEvent = (evtInput: Omit<TeamEvent, 'id' | 'created_by_name' | 'attendees'>) => {
-    const newEvt: TeamEvent = {
-      ...evtInput,
-      id: `evt-${Date.now()}`,
-      created_by_name: currentUser.name,
-      attendees: [
-        {
-          athlete_id: currentUser.id,
-          athlete_name: currentUser.name,
-          status: 'going',
-        },
-      ],
-    }
-    setEvents((prev) => [...prev, newEvt].sort((a, b) => a.date.localeCompare(b.date)))
-    showToast(`Evento "${newEvt.title}" agendado!`)
+  const updateEvent = (evt: TeamEvent) => {
+    if (!requireAdmin('editar eventos')) return
+    setEvents((prev) => sortByDate(prev.map((e) => (e.id === evt.id ? evt : e)), 'time'))
+    showToast('Evento atualizado.')
+  }
+
+  const deleteEvent = (eventId: string) => {
+    if (!requireAdmin('remover eventos')) return
+    setEvents((prev) => prev.filter((e) => e.id !== eventId))
+    showToast('Evento removido.', 'info')
   }
 
   const rsvpEvent = (eventId: string, status: 'going' | 'maybe' | 'not_going', note?: string) => {
     setEvents((prev) =>
-      prev.map((evt) => {
-        if (evt.id !== eventId) return evt
-        const filtered = evt.attendees.filter((a) => a.athlete_id !== currentUser.id)
-        return {
-          ...evt,
-          attendees: [
-            ...filtered,
-            {
-              athlete_id: currentUser.id,
-              athlete_name: currentUser.name,
-              status,
-              note,
-            },
-          ],
-        }
-      })
+      prev.map((evt) =>
+        evt.id !== eventId
+          ? evt
+          : {
+              ...evt,
+              attendees: [
+                ...evt.attendees.filter((a) => a.athlete_id !== currentUser.id),
+                { athlete_id: currentUser.id, athlete_name: currentUser.name, status, note },
+              ],
+            }
+      )
     )
-    showToast(
-      status === 'going'
-        ? 'Presença confirmada!'
-        : status === 'maybe'
-        ? 'Marcado como "Talvez".'
-        : 'Indicado que não podes ir.'
-    )
+    showToast(status === 'going' ? 'Presença confirmada.' : status === 'maybe' ? 'Marcado como talvez.' : 'Indicaste que não vais.')
   }
 
-  const sendNotification = (
-    notifInput: Omit<AppNotification, 'id' | 'created_at' | 'created_by_name' | 'read_by'>
-  ) => {
-    const newNotif: AppNotification = {
-      ...notifInput,
-      id: `notif-${Date.now()}`,
-      created_by_name: currentUser.name,
-      created_at: new Date().toISOString(),
-      read_by: [currentUser.id],
-    }
-    setNotifications((prev) => [newNotif, ...prev])
-
-    // Se o navegador permitir Web Notifications, dispara também uma notificação nativa
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+  // ---------------------------------------------------------------------------
+  // Comunicados (apenas admin cria)
+  // ---------------------------------------------------------------------------
+  const sendNotification = (notifInput: NewNotification) => {
+    if (!requireAdmin('publicar comunicados')) return
+    const notif = pushNotification(notifInput)
+    if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(newNotif.title, {
-          body: newNotif.message,
-          icon: '/favicon.svg',
-        })
+        new Notification(notif.title, { body: notif.message, icon: '/favicon.svg' })
       } catch {
-        // Ignorar se bloqueado
+        // ignorar
       }
     }
+    showToast('Comunicado publicado.')
+  }
 
-    showToast('Notificação enviada para toda a equipa!')
+  const deleteNotification = (notifId: string) => {
+    if (!requireAdmin('remover comunicados')) return
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId))
+    showToast('Comunicado removido.', 'info')
+  }
+
+  const togglePinNotification = (notifId: string) => {
+    if (!requireAdmin('fixar comunicados')) return
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, pinned: !n.pinned } : n)))
   }
 
   const markNotificationRead = (notifId: string) => {
     setNotifications((prev) =>
       prev.map((n) =>
-        n.id === notifId && !n.read_by.includes(currentUser.id)
-          ? { ...n, read_by: [...n.read_by, currentUser.id] }
-          : n
+        n.id === notifId && !n.read_by.includes(currentUser.id) ? { ...n, read_by: [...n.read_by, currentUser.id] } : n
       )
     )
   }
 
   const markAllNotificationsRead = () => {
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.read_by.includes(currentUser.id)
-          ? n
-          : { ...n, read_by: [...n.read_by, currentUser.id] }
-      )
+      prev.map((n) => (n.read_by.includes(currentUser.id) ? n : { ...n, read_by: [...n.read_by, currentUser.id] }))
     )
-    showToast('Todas as notificações marcadas como lidas.', 'info')
+    showToast('Comunicados marcados como lidos.', 'info')
   }
 
   const resetDemoData = () => {
     setYouthAthletes(INITIAL_YOUTH_ATHLETES)
-    setProfiles(
-      INITIAL_PROFILES.map((p) => ({
-        ...p,
-        dependents: INITIAL_YOUTH_ATHLETES.filter((c) => c.associated_adult_ids.includes(p.id)),
-      }))
-    )
+    setProfiles(INITIAL_PROFILES)
     setRaces(INITIAL_RACES)
     setRegistrations(INITIAL_REGISTRATIONS)
     setEvents(INITIAL_EVENTS)
     setNotifications(INITIAL_NOTIFICATIONS)
-    showToast('Dados originais da U.R. Charneca restaurados!', 'info')
+    showToast('Dados de demonstração repostos.', 'info')
   }
 
   return (
@@ -697,13 +655,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveRole,
         updateProfile,
         addAthleteProfile,
+        removeAthleteProfile,
         addYouthAthlete,
         updateYouthAthlete,
         removeYouthAthlete,
         associateChildToAdult,
         disassociateChildFromAdult,
-        addDependent,
-        removeDependent,
         createRace,
         updateRace,
         deleteRace,
@@ -713,8 +670,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         confirmAllPendingForRace,
         markAllBibsAtClubForRace,
         createEvent,
+        updateEvent,
+        deleteEvent,
         rsvpEvent,
         sendNotification,
+        deleteNotification,
+        togglePinNotification,
         markNotificationRead,
         markAllNotificationsRead,
         resetDemoData,

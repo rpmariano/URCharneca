@@ -1,0 +1,154 @@
+{
+  "shape": "package",
+  "pkg": "@urcharneca/ui",
+  "globalName": "URCharneca",
+  "buildCmd": "npm run build:ds",
+  "srcDir": "../src",
+  "cssEntry": "dist/ui.css",
+  "provider": {
+    "component": "AppProvider"
+  },
+  "componentSrcMap": {
+    "AppProvider": null,
+    "Avatar": "../src/components/ui.tsx",
+    "Button": "../src/components/ui.tsx",
+    "Card": "../src/components/ui.tsx",
+    "Chip": "../src/components/ui.tsx",
+    "DateBlock": "../src/components/ui.tsx",
+    "EmptyState": "../src/components/ui.tsx",
+    "KindBadge": "../src/components/ui.tsx",
+    "StatTile": "../src/components/ui.tsx",
+    "Tag": "../src/components/ui.tsx",
+    "PageHeader": "../src/components/ui.tsx",
+    "SectionTitle": "../src/components/ui.tsx",
+    "Segmented": "../src/components/ui.tsx",
+    "Field": "../src/components/ui.tsx",
+    "Toggle": "../src/components/ui.tsx",
+    "SheetHeader": "../src/components/ui.tsx",
+    "Sheet": "../src/components/Sheet.tsx",
+    "RaceCard": "../src/components/ActivityItems.tsx",
+    "RaceListItem": "../src/components/ActivityItems.tsx",
+    "EventListItem": "../src/components/ActivityItems.tsx",
+    "RsvpButtons": "../src/components/EventDetailModal.tsx",
+    "EventDetailModal": "../src/components/EventDetailModal.tsx",
+    "RaceDetailModal": "../src/components/RaceDetailModal.tsx",
+    "CreateRaceModal": "../src/components/CreateRaceModal.tsx",
+    "CreateEventModal": "../src/components/CreateEventModal.tsx",
+    "CreateNoticeModal": "../src/components/CreateNoticeModal.tsx",
+    "AthleteForm": "../src/components/PeopleForms.tsx",
+    "ChildForm": "../src/components/PeopleForms.tsx",
+    "Screen": "../src/components/ui.tsx"
+  },
+  "docsMap": {
+    "Avatar": "../.design-sync/docs/primitives.md",
+    "Button": "../.design-sync/docs/primitives.md",
+    "Card": "../.design-sync/docs/primitives.md",
+    "Chip": "../.design-sync/docs/primitives.md",
+    "DateBlock": "../.design-sync/docs/primitives.md",
+    "EmptyState": "../.design-sync/docs/primitives.md",
+    "KindBadge": "../.design-sync/docs/primitives.md",
+    "StatTile": "../.design-sync/docs/primitives.md",
+    "Tag": "../.design-sync/docs/primitives.md",
+    "PageHeader": "../.design-sync/docs/layout.md",
+    "SectionTitle": "../.design-sync/docs/layout.md",
+    "Segmented": "../.design-sync/docs/layout.md",
+    "Field": "../.design-sync/docs/forms.md",
+    "Toggle": "../.design-sync/docs/forms.md",
+    "AthleteForm": "../.design-sync/docs/forms.md",
+    "ChildForm": "../.design-sync/docs/forms.md",
+    "Sheet": "../.design-sync/docs/overlays.md",
+    "SheetHeader": "../.design-sync/docs/overlays.md",
+    "RaceDetailModal": "../.design-sync/docs/overlays.md",
+    "EventDetailModal": "../.design-sync/docs/overlays.md",
+    "CreateRaceModal": "../.design-sync/docs/overlays.md",
+    "CreateEventModal": "../.design-sync/docs/overlays.md",
+    "CreateNoticeModal": "../.design-sync/docs/overlays.md",
+    "RaceCard": "../.design-sync/docs/activities.md",
+    "RaceListItem": "../.design-sync/docs/activities.md",
+    "EventListItem": "../.design-sync/docs/activities.md",
+    "RsvpButtons": "../.design-sync/docs/activities.md",
+    "Screen": "../.design-sync/docs/layout.md"
+  },
+  "dtsPropsFor": {
+    "Button": "children?: React.ReactNode; variant?: \"primary\" | \"secondary\" | \"ghost\" | \"danger\"; size?: \"sm\" | \"md\"; block?: boolean; onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; disabled?: boolean; type?: \"button\" | \"submit\" | \"reset\"; className?: string; style?: React.CSSProperties; \"aria-label\"?: string;",
+    "Card": "children?: React.ReactNode; interactive?: boolean; accent?: string; onClick?: (e: React.MouseEvent<HTMLDivElement>) => void; className?: string; style?: React.CSSProperties; id?: string;",
+    "Segmented": "value: string; options: { value: string; label: React.ReactNode }[]; onChange: (v: string) => void;",
+    "RaceCard": "race: { id: string; title: string; category: \"trofeu_cascais\" | \"equipa\" | \"individual\"; date: string; start_time: string; location: string; distances: string[]; van_available: boolean; van_capacity: number; van_departure_time?: string; registration_deadline?: string; open_to_children?: boolean; children_distances?: string[]; description?: string; meeting_point?: string; external_url?: string; created_by: string; created_by_name: string }; onOpen?: () => void;",
+    "RaceListItem": "race: { id: string; title: string; category: \"trofeu_cascais\" | \"equipa\" | \"individual\"; date: string; start_time: string; location: string; distances: string[]; van_available: boolean; van_capacity: number; van_departure_time?: string; registration_deadline?: string; open_to_children?: boolean; children_distances?: string[]; description?: string; meeting_point?: string; external_url?: string; created_by: string; created_by_name: string }; onOpen: () => void;",
+    "RaceDetailModal": "race: { id: string; title: string; category: \"trofeu_cascais\" | \"equipa\" | \"individual\"; date: string; start_time: string; location: string; distances: string[]; van_available: boolean; van_capacity: number; van_departure_time?: string; registration_deadline?: string; open_to_children?: boolean; children_distances?: string[]; description?: string; meeting_point?: string; external_url?: string; created_by: string; created_by_name: string }; onClose: () => void;",
+    "CreateRaceModal": "race?: { id: string; title: string; category: \"trofeu_cascais\" | \"equipa\" | \"individual\"; date: string; start_time: string; location: string; distances: string[]; van_available: boolean; van_capacity: number; van_departure_time?: string; registration_deadline?: string; open_to_children?: boolean; children_distances?: string[]; description?: string; meeting_point?: string; external_url?: string; created_by: string; created_by_name: string }; onClose: () => void;",
+    "EventListItem": "event: { id: string; title: string; type: \"training\" | \"social\" | \"meeting\"; date: string; time: string; location: string; description: string; workout_plan?: string; requires_official_kit?: boolean; created_by_name: string; attendees: { athlete_id: string; athlete_name: string; status: \"going\" | \"maybe\" | \"not_going\" }[] }; onOpen: () => void; showRsvp?: boolean;",
+    "EventDetailModal": "event: { id: string; title: string; type: \"training\" | \"social\" | \"meeting\"; date: string; time: string; location: string; description: string; workout_plan?: string; requires_official_kit?: boolean; created_by_name: string; attendees: { athlete_id: string; athlete_name: string; status: \"going\" | \"maybe\" | \"not_going\" }[] }; onClose: () => void;",
+    "RsvpButtons": "event: { id: string; title: string; type: \"training\" | \"social\" | \"meeting\"; date: string; time: string; location: string; description: string; workout_plan?: string; requires_official_kit?: boolean; created_by_name: string; attendees: { athlete_id: string; athlete_name: string; status: \"going\" | \"maybe\" | \"not_going\" }[] }; compact?: boolean;",
+    "CreateEventModal": "event?: { id: string; title: string; type: \"training\" | \"social\" | \"meeting\"; date: string; time: string; location: string; description: string; workout_plan?: string; requires_official_kit?: boolean; created_by_name: string; attendees: { athlete_id: string; athlete_name: string; status: \"going\" | \"maybe\" | \"not_going\" }[] }; defaultType?: \"training\" | \"social\" | \"meeting\"; onClose: () => void;",
+    "AthleteForm": "initial: { name: string; nickname: string; email: string; phone: string; role: \"admin\" | \"athlete\"; gender?: \"M\" | \"F\"; birth_date: string; escalao: string; nif: string; cc_number: string; shirt_size: \"XS\" | \"S\" | \"M\" | \"L\" | \"XL\" | \"XXL\"; has_official_kit: boolean; emergency_name?: string; emergency_phone?: string; medical_notes?: string }; allowRole?: boolean; submitLabel: string; onSubmit: (v: { name: string; nickname: string; email: string; phone: string; role: \"admin\" | \"athlete\"; gender?: \"M\" | \"F\"; birth_date: string; escalao: string; nif: string; cc_number: string; shirt_size: \"XS\" | \"S\" | \"M\" | \"L\" | \"XL\" | \"XXL\"; has_official_kit: boolean; emergency_name?: string; emergency_phone?: string; medical_notes?: string }) => void; onCancel?: () => void;",
+    "ChildForm": "initial: { name: string; birth_date: string; escalao: string; nif: string; cc_number?: string; shirt_size?: string; medical_notes?: string }; submitLabel: string; onSubmit: (v: { name: string; birth_date: string; escalao: string; nif: string; cc_number?: string; shirt_size?: string; medical_notes?: string }) => void; onCancel?: () => void;"
+  },
+  "overrides": {
+    "RaceDetailModal": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "EventDetailModal": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "CreateRaceModal": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "CreateEventModal": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "CreateNoticeModal": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "viewport": "420x820"
+    },
+    "EventListItem": {
+      "cardMode": "column"
+    },
+    "RaceCard": {
+      "cardMode": "column"
+    },
+    "RaceListItem": {
+      "cardMode": "column"
+    },
+    "AthleteForm": {
+      "cardMode": "column"
+    },
+    "ChildForm": {
+      "cardMode": "column"
+    },
+    "PageHeader": {
+      "cardMode": "column"
+    },
+    "Segmented": {
+      "cardMode": "column"
+    },
+    "SheetHeader": {
+      "cardMode": "column"
+    },
+    "Button": {
+      "cardMode": "column"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "Chip": {
+      "cardMode": "column"
+    },
+    "EmptyState": {
+      "cardMode": "column"
+    },
+    "StatTile": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "projectId": "8da5b68c-fed7-4249-8b5c-da9d340a4ead"
+}
