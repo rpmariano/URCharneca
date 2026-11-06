@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Bell,
+
   ChevronDown,
   Check,
   ShieldCheck,
@@ -18,7 +18,7 @@ export const Header: React.FC = () => {
     currentUser,
     activeRole,
     isAdminView,
-    unreadNotificationsCount,
+
     setCurrentUserById,
     setActiveRole,
     themeMode,
@@ -50,7 +50,6 @@ export const Header: React.FC = () => {
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderColor: 'var(--border-card)',
-          boxShadow: 'var(--shadow-card)',
         }}
       >
         <div className="flex items-center justify-between gap-2.5">
@@ -80,15 +79,10 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="min-w-0">
-              <div className="font-display font-black text-sm tracking-tighter uppercase italic text-[var(--text-1)] leading-none flex items-center gap-1.5">
-                <span>UR</span>
-                <span className="text-[var(--run)]">CHARNECA</span>
+              <div className="display text-[22px] text-[var(--text-1)]">
+                UR <span className="text-[var(--run)]">Charneca</span>
               </div>
-              <div className="text-[10px] text-[var(--run)] font-black uppercase tracking-widest mt-0.5 flex items-center gap-1">
-                <span>NRC</span>
-                <span className="opacity-40">•</span>
-                <span className="text-white font-bold">Armada Azul</span>
-              </div>
+              <div className="eyebrow text-[9px] text-[var(--text-3)] mt-0.5">Atletismo</div>
             </div>
           </button>
 
@@ -235,7 +229,8 @@ export const Header: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Alternador Rápido de Papel: Atleta vs Administrador */}
+                    {/* Alternador de vista (apenas para quem tem perfil de administrador) */}
+                    {currentUser.role === 'admin' && (
                     <div>
                       <div className="text-[11px] font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
                         Modo de Visualização
@@ -274,10 +269,12 @@ export const Header: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Mudar de Membro da Armada Azul */}
+                    )}
+
+                    {/* Mudar de utilizador (demonstração) */}
                     <div>
                       <div className="text-[11px] font-bold text-[var(--text-3)] uppercase tracking-wider mb-1.5">
-                        Mudar de Utilizador
+                        Mudar de utilizador (demo)
                       </div>
                       <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
                         {profiles.map((p) => {
@@ -321,28 +318,13 @@ export const Header: React.FC = () => {
                         }}
                         className="w-full text-center text-xs font-bold text-sky-400 hover:text-sky-300 hover:underline cursor-pointer py-1"
                       >
-                        Abrir O Meu Perfil & Dependentes →
+                        O meu perfil e crianças →
                       </button>
                     </div>
                   </div>
                 </>
               )}
             </div>
-
-            {/* Notificações / Avisos */}
-            <button
-              type="button"
-              onClick={() => navigate('/avisos')}
-              className="relative w-9 h-9 min-w-[36px] min-h-[36px] rounded-full flex items-center justify-center text-[var(--text-2)] hover:text-[var(--text-1)] bg-white/5 hover:bg-white/10 border border-[var(--border-card)] shadow-2xs transition cursor-pointer shrink-0 active:scale-95"
-              aria-label="Avisos"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </header>

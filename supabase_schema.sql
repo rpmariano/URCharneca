@@ -45,6 +45,8 @@ create table if not exists public.races (
   bib_pickup_info text,
   counts_for_trophy boolean default false,
   trophy_stage_number integer,
+  open_to_children boolean default false,
+  children_distances text[],
   created_by uuid references public.profiles(id) on delete set null,
   created_by_name text,
   created_at timestamptz default now()

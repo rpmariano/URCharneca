@@ -564,6 +564,8 @@ export const INITIAL_RACES: Race[] = [
     meeting_point: 'Sociedade União Recreativa da Charneca',
     meeting_time: '08:30',
     distances: ['Trail Curto 12 km', 'Trail Longo 20 km', 'Caminhada 8 km'],
+    open_to_children: true,
+    children_distances: ['Caminhada 8 km'],
     registration_deadline: '2026-11-11',
     external_url: 'https://www.instagram.com/urc.atletismo',
     description:
@@ -584,7 +586,9 @@ export const INITIAL_RACES: Race[] = [
     location: 'Cascais (Circuito Municipal)',
     meeting_point: 'Zona de Concentração da U.R. Charneca junto à Meta',
     meeting_time: '08:15',
-    distances: ['Escalões Jovens (Sub-10 a Sub-18)', 'Corrida Principal (Seniores e Veteranos)'],
+    distances: ['Corrida Principal (Seniores e Veteranos)'],
+    open_to_children: true,
+    children_distances: ['Escalões Jovens (Sub-10 a Sub-18)'],
     registration_deadline: '2026-11-18',
     external_url: 'https://www.cascais.pt',
     description:
@@ -652,7 +656,9 @@ export const INITIAL_RACES: Race[] = [
     location: 'São João do Estoril / Carcavelos',
     meeting_point: 'Tenda da U.R. Charneca junto à partida',
     meeting_time: '08:15',
-    distances: ['Escalões Jovens (Sub-10 a Sub-18)', 'Corrida Principal (Seniores e Veteranos)'],
+    distances: ['Corrida Principal (Seniores e Veteranos)'],
+    open_to_children: true,
+    children_distances: ['Escalões Jovens (Sub-10 a Sub-18)'],
     registration_deadline: '2026-12-03',
     external_url: 'https://www.cascais.pt',
     description:
@@ -901,7 +907,7 @@ export const INITIAL_REGISTRATIONS: RaceRegistration[] = [
     id: 'reg-trof1-2',
     race_id: 'race-trofeu-1-2026',
     athlete_id: 'ath-joao-ferrao',
-    athlete_name: 'Sara Ferrão (Filha de João Ferrão)',
+    athlete_name: 'Sara Ferrão',
     is_dependent: true,
     dependent_id: 'dep-sara-ferrao',
     parent_name: 'João Ferrão',
@@ -976,7 +982,7 @@ export const INITIAL_REGISTRATIONS: RaceRegistration[] = [
     id: 'reg-trof1-7',
     race_id: 'race-trofeu-1-2026',
     athlete_id: 'ath-anna',
-    athlete_name: 'Eva (Filha de Anna Schäller)',
+    athlete_name: 'Eva',
     is_dependent: true,
     dependent_id: 'dep-eva',
     parent_name: 'Anna Schäller',
@@ -1067,6 +1073,34 @@ export const INITIAL_EVENTS: TeamEvent[] = [
   },
 ]
 
+const EXTRA_EVENTS: TeamEvent[] = [
+  {
+    id: 'evt-treino-quinta-12',
+    title: 'Treino Oficial de Equipa — Quinta da Marinha',
+    type: 'training',
+    date: '2026-11-12',
+    time: '18:00',
+    location: 'Quinta da Marinha, Cascais',
+    description: 'Treino habitual de quinta-feira às 18:00.',
+    workout_plan: 'Aquecimento 2 km + 6x 800 m + Retorno à calma',
+    requires_official_kit: false,
+    created_by_name: 'João Ferrão',
+    attendees: [],
+  },
+  {
+    id: 'evt-reuniao-epoca',
+    title: 'Reunião de Equipa — Planeamento da Época',
+    type: 'meeting',
+    date: '2026-11-19',
+    time: '21:00',
+    location: 'Sociedade U.R. Charneca',
+    description: 'Balanço do arranque da época, calendário do Troféu de Cascais e equipamentos.',
+    requires_official_kit: false,
+    created_by_name: 'Rodrigo Pedroso',
+    attendees: [],
+  },
+]
+
 export const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'notif-1',
@@ -1116,3 +1150,5 @@ export const INITIAL_NOTIFICATIONS: AppNotification[] = [
     read_by: ['ath-rui-mariano'],
   },
 ]
+
+INITIAL_EVENTS.push(...EXTRA_EVENTS)

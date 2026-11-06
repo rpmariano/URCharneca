@@ -1,5 +1,6 @@
 import type { AthleteProfile, Race, RaceRegistration } from '../types'
 import { TRANSPORT_LABELS } from '../types'
+import { todayISO } from './dates'
 
 const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -7,7 +8,8 @@ const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 export function calculateAge(birthDate: string): number {
   if (!birthDate) return 0
   const [y, m, d] = birthDate.split('-').map(Number)
-  const today = new Date(2026, 10, 5) // Data de referência da época desportiva corrente
+  const [ty, tm, td] = todayISO().split('-').map(Number)
+  const today = new Date(ty, tm - 1, td)
   let age = today.getFullYear() - y
   const mDiff = today.getMonth() - (m - 1)
   if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) {
@@ -31,8 +33,7 @@ export function estimateEscalao(birthDate: string, gender: 'M' | 'F' = 'M'): str
   if (age <= 49) return gender === 'F' ? 'Veteranos F45' : 'Veteranos M45'
   if (age <= 54) return gender === 'F' ? 'Veteranos F50' : 'Veteranos M50'
   if (age <= 59) return gender === 'F' ? 'Veteranos F55' : 'Veteranos M55'
-  if (age <= 64) return gender === 'F' ? 'Veteranos F60' : 'Veteranos M60'
-  return gender === 'F' ? 'Veteranos F65' : 'Veteranos M65'
+  return gender === 'F' ? 'Veteranos F60+' : 'Veteranos M60+'
 }
 
 export function formatShortDate(dateStr: string): string {
@@ -55,7 +56,7 @@ export function formatDayMonth(dateStr: string): { day: string; month: string; w
   }
 }
 
-export function getDaysFromReference(dateStr: string, refDate = '2026-11-05'): number {
+export function getDaysFromReference(dateStr: string, refDate = todayISO()): number {
   const [y1, m1, d1] = dateStr.split('-').map(Number)
   const [y2, m2, d2] = refDate.split('-').map(Number)
   const t1 = new Date(y1, m1 - 1, d1).getTime()
@@ -199,4 +200,63 @@ export function generateAdminInscriptionCSV(
   })
 
   return [headers.join(';'), ...rows].join('\n')
+}
+
+export interface UpcomingBirthday {
+  id: string
+  name: string
+  isChild: boolean
+  date: string // próxima ocorrência YYYY-MM-DD
+  daysAway: number
+  turning: number
+}
+
+/** Próximos aniversários (adultos e crianças), ordenados pela proximidade. */
+export function getUpcomingBirthdays(
+  people: Array<{ id: string; name: string; birth_date: string; isChild: boolean }>,
+  limit = 5,
+  ref = todayISO()
+): UpcomingBirthday[] {
+  const [ry] = ref.split('-').map(Number)
+  return people
+    .filter((p) => p.birth_date)
+    .map((p) => {
+      const [by, bm, bd] = p.birth_date.split('-').map(Number)
+      const mmdd = `${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`
+      let year = ry
+      if (`${ry}-${mmdd}` < ref) year = ry + 1
+      const date = `${year}-${mmdd}`
+      return {
+        id: p.id,
+        name: p.name,
+        isChild: p.isChild,
+        date,
+        daysAway: getDaysFromReference(date, ref),
+        turning: year - by,
+      }
+    })
+    .sort((a, b) => a.daysAway - b.daysAway)
+    .slice(0, limit)
+}
+
+/** Soma `days` dias a uma data YYYY-MM-DD. */
+export function addDaysISO(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+export function formatLongDate(dateStr: string): string {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+export function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0].toUpperCase())
+    .join('')
 }

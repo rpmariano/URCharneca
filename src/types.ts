@@ -92,6 +92,10 @@ export interface Race {
   bib_pickup_info?: string
   counts_for_trophy?: boolean
   trophy_stage_number?: number
+  /** Prova com escalões/distâncias para crianças (permite inscrever perfis infantis) */
+  open_to_children?: boolean
+  /** Distâncias/escalões jovens disponíveis (se vazio usa `distances`) */
+  children_distances?: string[]
   created_by: string
   created_by_name: string
 }
@@ -121,6 +125,27 @@ export interface RaceRegistration {
 }
 
 export type TeamEventType = 'training' | 'social' | 'meeting'
+
+export const EVENT_TYPE_LABELS: Record<TeamEventType, { label: string; short: string }> = {
+  training: { label: 'Treino', short: 'Treino' },
+  social: { label: 'Evento / Convívio', short: 'Evento' },
+  meeting: { label: 'Reunião', short: 'Reunião' },
+}
+
+/**
+ * Tipos de atividade usados nos filtros da agenda.
+ * Provas: Troféu de Cascais, promovidas pelo clube, sugeridas por atletas.
+ * Agenda da equipa: treinos e eventos (convívios/reuniões).
+ */
+export type ActivityKind = 'training' | 'trofeu_cascais' | 'equipa' | 'individual' | 'event'
+
+export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
+  training: 'Treinos',
+  trofeu_cascais: 'Troféu de Cascais',
+  equipa: 'Provas do Clube',
+  individual: 'Sugeridas por Atletas',
+  event: 'Eventos',
+}
 
 export interface EventAttendee {
   athlete_id: string
@@ -171,6 +196,8 @@ export const ESCALOES_ATLETISMO = [
   'Iniciados (Sub-16)',
   'Juvenis (Sub-18)',
   'Juniores (Sub-20)',
+  'Sub-23 M',
+  'Sub-23 F',
   'Seniores M',
   'Seniores F',
   'Veteranos M35',
@@ -190,19 +217,19 @@ export const ESCALOES_ATLETISMO = [
 export const CATEGORIA_LABELS: Record<RaceCategory, { label: string; badge: string; desc: string }> = {
   trofeu_cascais: {
     label: 'Troféu de Cascais',
-    badge: 'Objetivo Principal',
-    desc: 'Prova oficial do Troféu de Atletismo de Cascais. Inscrição facultativa tratada pela equipa e transporte na carrinha da Sociedade.'
+    badge: 'Troféu',
+    desc: 'Prova oficial do Troféu de Atletismo de Cascais. Inscrição tratada pela equipa e transporte na carrinha do clube.',
   },
   equipa: {
-    label: 'Inscrição Equipa',
-    badge: 'Equipa + Transporte',
-    desc: 'Prova fora do Troféu onde a administração da U.R. Charneca inscreve os atletas interessados, levanta dorsais e organiza carrinha/transporte.'
+    label: 'Prova do Clube',
+    badge: 'Clube',
+    desc: 'Prova promovida pelo clube: a administração inscreve os atletas interessados, levanta os dorsais e organiza a carrinha.',
   },
   individual: {
-    label: 'Prova Partilhada',
-    badge: 'Inscrição Individual',
-    desc: 'Prova em que cada atleta se inscreve individualmente e partilha com o grupo para juntar a Armada Azul.'
-  }
+    label: 'Sugerida por Atleta',
+    badge: 'Sugerida',
+    desc: 'Prova sugerida por um atleta. Cada um faz a sua inscrição e marca aqui presença para irmos juntos.',
+  },
 }
 
 export const TRANSPORT_LABELS: Record<TransportMode, { label: string; short: string; usesVanSeat: boolean }> = {
