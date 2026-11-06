@@ -62,7 +62,7 @@ export const Header: React.FC = () => {
             {/* Brasão URC */}
             <div className="relative w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-white/15 bg-slate-900/40 shadow-xs">
               <img
-                src="/urc-emblema.jpg"
+                src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
                 alt="URC"
                 width={36}
                 height={36}

@@ -592,7 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const notif = pushNotification(notifInput)
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(notif.title, { body: notif.message, icon: '/favicon.svg' })
+        new Notification(notif.title, { body: notif.message, icon: `${import.meta.env.BASE_URL}favicon.svg` })
       } catch {
         // ignorar
       }

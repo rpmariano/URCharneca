@@ -108,7 +108,7 @@ const AppShell: React.FC = () => {
 
 export const App: React.FC = () => (
   <AppProvider>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AppShell />
     </BrowserRouter>
   </AppProvider>
