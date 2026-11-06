@@ -22,6 +22,8 @@ import { todayISO } from '../utils/dates'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
+import { WelcomeCard } from '../components/OnboardingCards'
+import { CATEGORIA_LABELS, EVENT_TYPE_LABELS } from '../types'
 import { Sheet } from '../components/Sheet'
 import {
   Avatar,
@@ -65,6 +67,16 @@ const RANGES: Array<{ value: DateRange; label: string; hint: string }> = [
   { value: 'past', label: 'Passadas', hint: 'Atividades já realizadas' },
   { value: 'custom', label: 'Intervalo de datas', hint: 'Escolher o início e o fim' },
 ]
+
+/** Explicação curta de cada categoria, mostrada por baixo do título da lista. */
+const CATEGORY_HELP: Partial<Record<Category, string>> = {
+  provas: 'Todas as provas: do Troféu de Cascais, do clube e sugeridas por atletas.',
+  trofeu_cascais: CATEGORIA_LABELS.trofeu_cascais.desc,
+  equipa: CATEGORIA_LABELS.equipa.desc,
+  individual: CATEGORIA_LABELS.individual.desc,
+  training: 'Treinos da equipa. Diz se vais para o treinador saber quantos são.',
+  event: `${EVENT_TYPE_LABELS.social.label} e ${EVENT_TYPE_LABELS.meeting.label.toLowerCase()}: marca a tua presença.`,
+}
 
 type Item =
   | { kind: ActivityKind; date: string; time: string; id: string; race: Race; event?: undefined }
@@ -376,6 +388,7 @@ export const ExplorePage: React.FC = () => {
 
         {showHighlights ? (
           <div className="space-y-10 pt-6 stagger">
+            <WelcomeCard admin={isAdminView} name={currentUser.nickname || currentUser.name.split(' ')[0]} />
             {adminPending > 0 && (
               <button type="button" onClick={() => navigate('/admin')} className="card w-full p-4 flex items-center gap-4 text-left pressable">
                 <ShieldCheck className="w-6 h-6 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
@@ -512,6 +525,9 @@ export const ExplorePage: React.FC = () => {
                   {list.length} {list.length === 1 ? 'atividade' : 'atividades'}
                   {!selectedDay && ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`}
                 </p>
+                {!query.trim() && !selectedDay && CATEGORY_HELP[category] && (
+                  <p className="t-small text-[var(--text-3)] mt-2 max-w-[44ch]">{CATEGORY_HELP[category]}</p>
+                )}
               </div>
               {selectedDay && (
                 <Button variant="ghost" size="sm" onClick={() => setSelectedDay(null)}>
