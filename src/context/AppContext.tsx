@@ -109,6 +109,8 @@ interface AppContextValue {
     >
   ) => void
   confirmAllPendingForRace: (raceId: string) => void
+  /** Ação do admin sobre inscrições escolhidas: confirmar, dorsal no clube ou dorsal entregue. */
+  applyToRegistrations: (raceId: string, regIds: string[], action: RegistrationBulkAction) => void
   markAllBibsAtClubForRace: (raceId: string, pickupBy: string) => void
   // Treinos e eventos
   createEvent: (evt: NewEvent) => TeamEvent | null
@@ -125,6 +127,8 @@ interface AppContextValue {
   themeMode: ThemeMode
   setThemeMode: (mode: ThemeMode) => void
 }
+
+export type RegistrationBulkAction = 'confirm' | 'bib_at_club' | 'bib_delivered'
 
 const AppContext = createContext<AppContextValue | undefined>(undefined)
 
@@ -522,6 +526,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`${count} inscrição(ões) confirmada(s).`)
   }
 
+  const applyToRegistrations = (raceId: string, regIds: string[], action: RegistrationBulkAction) => {
+    if (!requireAdmin('gerir inscrições')) return
+    const race = races.find((r) => r.id === raceId)
+    const chosen = registrations.filter((r) => r.race_id === raceId && regIds.includes(r.id) && r.status !== 'cancelled')
+    if (!race || chosen.length === 0) return
+    const eligible = chosen.filter((r) =>
+      action === 'confirm' ? r.status === 'interested' : action === 'bib_at_club' ? r.bib_status === 'pending' : r.bib_status !== 'delivered'
+    )
+    if (eligible.length === 0) {
+      showToast('Nenhuma das inscrições escolhidas precisa desta ação.', 'info')
+      return
+    }
+    const ids = new Set(eligible.map((r) => r.id))
+    setRegistrations((prev) =>
+      prev.map((r) => {
+        if (!ids.has(r.id)) return r
+        if (action === 'confirm') return { ...r, status: 'enrolled_by_admin' as RegistrationStatus }
+        if (action === 'bib_at_club') return { ...r, bib_status: 'at_club' as BibStatus, bib_pickup_by: currentUser.name }
+        return { ...r, bib_status: 'delivered' as BibStatus }
+      })
+    )
+    const names = eligible.map((r) => r.athlete_name).join(', ')
+    if (action === 'confirm') {
+      pushNotification({
+        title: `Inscrições efetuadas: ${race.title}`,
+        message: `O clube confirmou a inscrição de ${names} em "${race.title}".`,
+        type: 'race_open',
+        related_race_id: raceId,
+      })
+      showToast(`${eligible.length} inscrição(ões) confirmada(s).`)
+    } else if (action === 'bib_at_club') {
+      pushNotification({
+        title: `Dorsais levantados: ${race.title}`,
+        message: `Os dorsais de ${names} em "${race.title}" foram levantados por ${currentUser.name} e estão prontos a entregar.`,
+        type: 'bibs_ready',
+        related_race_id: raceId,
+      })
+      showToast(`${eligible.length} dorsal(ais) marcado(s) como levantado(s).`)
+    } else {
+      showToast(`${eligible.length} dorsal(ais) marcado(s) como entregue(s).`)
+    }
+  }
+
   const markAllBibsAtClubForRace = (raceId: string, pickupBy: string) => {
     if (!requireAdmin('gerir dorsais')) return
     const race = races.find((r) => r.id === raceId)
@@ -668,6 +715,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cancelRegistration,
         updateRegistrationByAdmin,
         confirmAllPendingForRace,
+        applyToRegistrations,
         markAllBibsAtClubForRace,
         createEvent,
         updateEvent,

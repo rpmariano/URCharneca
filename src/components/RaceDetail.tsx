@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import type { RegistrationBulkAction } from '../context/AppContext'
 import type { Race, RaceRegistration, TransportMode, YouthAthlete } from '../types'
 import { BIB_STATUS_LABELS, CATEGORIA_LABELS, TRANSPORT_LABELS } from '../types'
 import {
@@ -34,7 +35,7 @@ import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { ActivityCover } from './ActivityCover'
 import { countdownLabel } from './ActivityItems'
 import { Sheet } from './Sheet'
-import { Avatar, Button, Field, IconButton, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
+import { Avatar, Button, Chip, Field, IconButton, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
 const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
   interested: { label: 'Aguarda o clube', tone: 'warn' },
@@ -90,10 +91,12 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
     updateRegistrationByAdmin,
     confirmAllPendingForRace,
     markAllBibsAtClubForRace,
+    applyToRegistrations,
     deleteRace,
     showToast,
   } = useApp()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const today = todayISO()
   const isPast = race.date < today
@@ -117,6 +120,23 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
   const van = useMemo(() => computeVanAllocation(race, raceRegs), [race, raceRegs])
   const pendingCount = raceRegs.filter((r) => r.status === 'interested').length
   const pendingBibs = raceRegs.filter((r) => r.bib_status === 'pending').length
+
+  const canManage = isAdminView && !isIndividual
+  const selectedRegs = raceRegs.filter((r) => selected.has(r.id))
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const runOnSelected = (action: RegistrationBulkAction) => {
+    applyToRegistrations(race.id, [...selected], action)
+    setSelected(new Set())
+  }
+  const eligibleConfirm = selectedRegs.filter((r) => r.status === 'interested').length
+  const eligibleAtClub = selectedRegs.filter((r) => r.bib_status === 'pending').length
+  const eligibleDelivered = selectedRegs.filter((r) => r.bib_status !== 'delivered').length
 
   const childDistances = race.children_distances?.length ? race.children_distances : race.distances
   const defaultTransport: TransportMode = race.van_available ? 'van_roundtrip' : 'own_transport'
@@ -330,6 +350,19 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
         <section className="py-6 space-y-4">
           <SectionTitle title="Quem vai" count={raceRegs.length} />
           {raceRegs.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda ninguém se inscreveu. Sê o primeiro.</p>}
+          {canManage && raceRegs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Selecionar inscrições">
+              <Chip onClick={() => setSelected(new Set(raceRegs.filter((r) => r.status === 'interested').map((r) => r.id)))}>
+                Pendentes ({pendingCount})
+              </Chip>
+              <Chip onClick={() => setSelected(new Set(raceRegs.map((r) => r.id)))}>Todos ({raceRegs.length})</Chip>
+              {selected.size > 0 && (
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                  Limpar
+                </Button>
+              )}
+            </div>
+          )}
           {byDistance.map(([dist, list]) => (
             <div key={dist} className="space-y-1">
               <h3 className="t-small t-strong text-[var(--text-3)]">
@@ -340,8 +373,11 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
                   <RosterRow
                     key={r.id}
                     reg={r}
-                    admin={isAdminView && !isIndividual}
+                    admin={canManage}
                     canRemove={isAdminView}
+                    selectable={canManage}
+                    checked={selected.has(r.id)}
+                    onToggle={() => toggleSelected(r.id)}
                     onPatch={(patch) => updateRegistrationByAdmin(r.id, patch)}
                     onRemove={() => cancelRegistration(r.id)}
                   />
@@ -349,6 +385,25 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
               </div>
             </div>
           ))}
+          {canManage && selected.size > 0 && (
+            <div className="card-raised p-4 space-y-3 sheet-in" role="region" aria-label="Ações sobre as inscrições escolhidas">
+              <div className="t-body t-strong text-[var(--text-1)]">
+                {selected.size} {selected.size === 1 ? 'inscrição escolhida' : 'inscrições escolhidas'}
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Button disabled={eligibleConfirm === 0} onClick={() => runOnSelected('confirm')}>
+                  Confirmar inscrição ({eligibleConfirm})
+                </Button>
+                <Button variant="secondary" disabled={eligibleAtClub === 0} onClick={() => runOnSelected('bib_at_club')}>
+                  Dorsal levantado, no clube ({eligibleAtClub})
+                </Button>
+                <Button variant="secondary" disabled={eligibleDelivered === 0} onClick={() => runOnSelected('bib_delivered')}>
+                  Dorsal entregue ao atleta ({eligibleDelivered})
+                </Button>
+              </div>
+              <p className="t-small text-[var(--text-3)]">Os números entre parênteses são as escolhidas a que a ação se aplica.</p>
+            </div>
+          )}
         </section>
 
         {/* Gestão */}
@@ -359,12 +414,12 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
             <div className="grid grid-cols-2 gap-2">
               {!isIndividual && (
                 <Button variant="secondary" size="sm" disabled={pendingCount === 0} onClick={() => confirmAllPendingForRace(race.id)}>
-                  Confirmar pendentes ({pendingCount})
+                  Confirmar todas as pendentes ({pendingCount})
                 </Button>
               )}
               {!isIndividual && (
                 <Button variant="secondary" size="sm" disabled={pendingBibs === 0} onClick={() => markAllBibsAtClubForRace(race.id, currentUser.name)}>
-                  Dorsais no clube ({pendingBibs})
+                  Dorsais levantados, todos ({pendingBibs})
                 </Button>
               )}
               <Button variant="secondary" size="sm" onClick={handleCopyWhatsApp}>
@@ -590,32 +645,52 @@ const RosterRow: React.FC<{
   reg: RaceRegistration
   admin: boolean
   canRemove: boolean
+  selectable?: boolean
+  checked?: boolean
+  onToggle?: () => void
   onPatch: (patch: Partial<RaceRegistration>) => void
   onRemove: () => void
-}> = ({ reg, admin, canRemove, onPatch, onRemove }) => {
+}> = ({ reg, admin, canRemove, selectable, checked, onToggle, onPatch, onRemove }) => {
   const [open, setOpen] = useState(false)
   const [bib, setBib] = useState(reg.bib_number || '')
   const editable = admin || canRemove
   return (
     <div className="py-1">
-      <button
-        type="button"
-        className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer disabled:cursor-default"
-        disabled={!editable}
-        aria-expanded={editable ? open : undefined}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Avatar name={reg.athlete_name} child={reg.is_dependent} />
-        <div className="min-w-0 flex-1">
-          <div className="t-body text-[var(--text-1)] truncate">{reg.athlete_name}</div>
-          <div className="t-small text-[var(--text-3)] truncate">
-            {reg.is_dependent && reg.parent_name ? `Resp. ${reg.parent_name} · ` : ''}
-            {TRANSPORT_LABELS[reg.transport_mode].short}
-            {reg.bib_number ? ` · dorsal ${reg.bib_number}` : ''}
+      <div className="flex items-center">
+        {selectable && (
+          <label className="w-11 h-14 flex items-center justify-center shrink-0 cursor-pointer -ml-2">
+            <input
+              type="checkbox"
+              checked={Boolean(checked)}
+              onChange={onToggle}
+              aria-label={`Selecionar ${reg.athlete_name}`}
+              className="w-5 h-5 accent-[var(--run)] cursor-pointer"
+            />
+          </label>
+        )}
+        <button
+          type="button"
+          className="flex-1 min-w-0 min-h-14 flex items-center gap-4 text-left cursor-pointer disabled:cursor-default"
+          disabled={!editable}
+          aria-expanded={editable ? open : undefined}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <Avatar name={reg.athlete_name} child={reg.is_dependent} />
+          <div className="min-w-0 flex-1">
+            <div className="t-body text-[var(--text-1)] truncate">{reg.athlete_name}</div>
+            <div className="t-small text-[var(--text-3)] truncate">
+              {reg.is_dependent && reg.parent_name ? `Resp. ${reg.parent_name} · ` : ''}
+              {TRANSPORT_LABELS[reg.transport_mode].short}
+              {admin
+                ? ` · dorsal ${reg.bib_number ? reg.bib_number + ' ' : ''}(${BIB_STATUS_LABELS[reg.bib_status].short.toLowerCase()})`
+                : reg.bib_number
+                ? ` · dorsal ${reg.bib_number}`
+                : ''}
+            </div>
           </div>
-        </div>
-        <Tag tone={STATUS_TAG[reg.status].tone}>{STATUS_TAG[reg.status].label}</Tag>
-      </button>
+          <Tag tone={STATUS_TAG[reg.status].tone}>{STATUS_TAG[reg.status].label}</Tag>
+        </button>
+      </div>
       {open && editable && (
         <div className="pb-4 pt-1 space-y-3">
           {admin && (
