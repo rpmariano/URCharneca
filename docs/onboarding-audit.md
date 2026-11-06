@@ -20,11 +20,16 @@ Antes, um atleta novo via a página Explorar com muita informação (comunicado,
 | Prova (admin) | Seleção de inscrições e dorsais descobrível só por acaso | Média | Dica "Escolhe inscrições com a caixa à esquerda…", dispensável |
 | Perfil | Impossível voltar a ver o guia | Média | "Ver o guia outra vez" repõe boas-vindas e dicas |
 
+## Corrigido depois da auditoria
+- **Cancelar** pede confirmação (mais séria se o clube já tinha confirmado) e, quando a inscrição estava confirmada, o dorsal já estava no clube ou um lugar da carrinha é libertado, **avisa a equipa** com um comunicado ("Cancelamento: …") e diz quem sobe da lista de espera.
+- **Prazo e data da prova** passam a ser verificados na própria função de inscrever e de cancelar, não só na interface.
+- **Fila da carrinha**: conta a partir do momento em que se pede lugar (`van_requested_at`), por isso mudar de "meios próprios" para carrinha já não passa à frente de quem pediu antes.
+- **Filtros**: o botão tem agora o texto "Filtros" (o calendário já tinha texto).
+- **Glossário** em Perfil: escalão, Troféu de Cascais, prova do clube e sugerida, "Aguarda o clube", dorsal, carrinha e lista de espera, ponto de encontro e prazo.
+
 ## Por tratar
-- **Cancelar** não pede confirmação nem avisa o clube; cancelar uma inscrição confirmada devia pedir confirmação e avisar o admin.
-- O botão de filtros (ícone) e o do calendário não têm explicação além do rótulo acessível; um teste com utilizadores diria se bastam.
 - A troca de utilizador está em Perfil → Demonstração. Com autenticação real, o primeiro ecrã passa a ser o de entrada e este guia deve vir depois dele.
-- Os termos "escalão", "dorsal" e "Troféu de Cascais" são familiares à equipa; se a app abrir a pais de crianças que nunca correram, convém um glossário.
+- Um teste com utilizadores reais diria se as explicações bastam.
 
 ## Como funciona o guia
 - Guarda no dispositivo (`localStorage`, chave `urc_onboarding_v1`) o que já foi dispensado: `welcome-athlete`, `welcome-admin`, `admin-select`.

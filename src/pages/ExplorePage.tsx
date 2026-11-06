@@ -302,14 +302,20 @@ export const ExplorePage: React.FC = () => {
       <div className="sticky top-0 z-20 border-b border-[var(--border-card)]" style={{ background: 'var(--bg-header)' }}>
         <div className="flex items-center gap-2 px-5 pt-3 pb-2">
           <div className="flex-1 min-w-0">
-            <SearchPill value={query} onChange={setQuery} placeholder="Procurar provas, treinos, locais" />
+            <SearchPill value={query} onChange={setQuery} placeholder="Procurar" />
           </div>
-          <IconButton label={dateFilterActive ? 'Filtros (ativos)' : 'Filtros'} onClick={() => setFiltersOpen(true)} className="relative">
-            <SlidersHorizontal className="w-5 h-5" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-label={dateFilterActive ? 'Filtros (ativos)' : 'Filtros'}
+            className="relative h-11 px-4 rounded-full border border-[var(--border-card)] bg-[var(--surface-card)] text-[var(--text-1)] t-small t-strong inline-flex items-center gap-2 shrink-0 pressable"
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+            Filtros
             {dateFilterActive && (
               <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--run)] border-2 border-[var(--bg-app)]" aria-hidden="true" />
             )}
-          </IconButton>
+          </button>
           {isAdminView && (
             <IconButton label="Criar" onClick={() => setCreateOpen(true)} className="!bg-[var(--run)] !text-[var(--on-accent)] !border-transparent">
               <Plus className="w-5 h-5" aria-hidden="true" />
