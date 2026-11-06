@@ -1,27 +1,51 @@
 import React, { useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import { CalendarPlus, Download, Megaphone, Pencil, Plus, Search, Trophy, UserPlus, Users } from 'lucide-react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { ClipboardCheck, Download, Pencil, Plus, Search, UserPlus, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { AthleteProfile, TransportMode } from '../types'
 import { EVENT_TYPE_LABELS } from '../types'
 import { calculateAge, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
-import { openCreateEvent, openCreateNotice, openCreateRace } from '../utils/appEvents'
-import { RaceDetailModal } from '../components/RaceDetailModal'
+import { openCreateEvent } from '../utils/appEvents'
+import { ActivityCover } from '../components/ActivityCover'
+import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { AthleteForm, ChildForm, emptyAthlete, emptyChild } from '../components/PeopleForms'
-import { Avatar, Button, Card, EmptyState, Field, KIND_COLOR, KindBadge, PageHeader, SectionTitle, Segmented, Tag, inputClass, kindOfEvent } from '../components/ui'
+import { Sheet } from '../components/Sheet'
+import {
+  Avatar,
+  Button,
+  EmptyState,
+  Field,
+  IconButton,
+  PageHeader,
+  SectionTitle,
+  Segmented,
+  SheetHeader,
+  StatTile,
+  Tag,
+  inputClass,
+  kindOfEvent,
+} from '../components/ui'
 
 type Tab = 'panel' | 'athletes' | 'children' | 'agenda'
 
-/** Página de administração (/admin) — apenas para administradores. */
+/** Gerir (/admin) — apenas para administradores: painel, atletas, crianças e agenda. */
 export const AdminPage: React.FC = () => {
   const { isAdminView } = useApp()
   const [tab, setTab] = useState<Tab>('panel')
+  const [createOpen, setCreateOpen] = useState(false)
   if (!isAdminView) return <Navigate to="/" replace />
 
   return (
-    <div className="space-y-4 pb-10 stagger">
-      <PageHeader eyebrow="Administração" title="Gestão da equipa" />
+    <div className="px-5 pb-28 space-y-5">
+      <PageHeader
+        title="Gerir a equipa"
+        action={
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4" aria-hidden="true" /> Criar
+          </Button>
+        }
+      />
       <Segmented<Tab>
         value={tab}
         onChange={setTab}
@@ -32,18 +56,19 @@ export const AdminPage: React.FC = () => {
           { value: 'agenda', label: 'Agenda' },
         ]}
       />
-      {tab === 'panel' && <PanelTab />}
+      {tab === 'panel' && <PanelTab onTab={setTab} />}
       {tab === 'athletes' && <AthletesTab />}
       {tab === 'children' && <ChildrenTab />}
       {tab === 'agenda' && <AgendaTab />}
+      {createOpen && <CreateMenuSheet onClose={() => setCreateOpen(false)} />}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-const PanelTab: React.FC = () => {
+const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
   const { races, registrations, profiles, youthAthletes, currentUser, confirmAllPendingForRace, markAllBibsAtClubForRace } = useApp()
-  const [raceId, setRaceId] = useState<string | null>(null)
+  const navigate = useNavigate()
   const today = todayISO()
 
   const work = races
@@ -59,80 +84,54 @@ const PanelTab: React.FC = () => {
     })
     .filter((x) => x.total > 0)
 
-  const selected = raceId ? races.find((r) => r.id === raceId) || null : null
-  const actions = [
-    { label: 'Prova', icon: Trophy, run: () => openCreateRace() },
-    { label: 'Treino', icon: CalendarPlus, run: () => openCreateEvent('training') },
-    { label: 'Evento', icon: Users, run: () => openCreateEvent('social') },
-    { label: 'Comunicado', icon: Megaphone, run: () => openCreateNotice() },
-  ]
-
   return (
-    <div className="space-y-5">
-      <section className="space-y-2.5">
-        <SectionTitle title="Criar" />
-        <div className="grid grid-cols-4 gap-2">
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              type="button"
-              onClick={a.run}
-              className="iron-card py-3 flex flex-col items-center gap-1.5 text-xs font-bold text-[var(--text-1)] cursor-pointer active:scale-95"
-            >
-              <a.icon className="w-5 h-5 text-[var(--run)]" />
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {[
-          ['Atletas', profiles.length],
-          ['Crianças', youthAthletes.length],
-          ['Provas futuras', races.filter((r) => r.date >= today).length],
-        ].map(([label, n]) => (
-          <Card key={label} className="py-3">
-            <div className="font-display font-black text-xl text-[var(--text-1)]">{n}</div>
-            <div className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">{label}</div>
-          </Card>
-        ))}
+    <div className="space-y-8">
+      <div className="grid grid-cols-3 gap-2">
+        <StatTile value={profiles.length} label="Atletas" onClick={() => onTab('athletes')} />
+        <StatTile value={youthAthletes.length} label="Crianças" onClick={() => onTab('children')} />
+        <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" onClick={() => onTab('agenda')} />
       </div>
 
-      <section className="space-y-2.5">
+      <section className="space-y-2">
         <SectionTitle title="Inscrições e dorsais" />
         {work.length === 0 ? (
-          <EmptyState text="Nada pendente nas próximas provas." />
+          <EmptyState icon={ClipboardCheck} title="Tudo em dia" text="Não há inscrições nem dorsais pendentes nas próximas provas." />
         ) : (
-          work.map(({ race, total, pending, bibs }) => (
-            <Card key={race.id} accent={KIND_COLOR[race.category]} className="p-3.5 space-y-2.5">
-              <button type="button" className="w-full text-left cursor-pointer" onClick={() => setRaceId(race.id)}>
-                <div className="text-sm font-bold text-[var(--text-1)]">{race.title}</div>
-                <div className="text-xs text-[var(--text-3)] flex gap-2 flex-wrap items-center">
-                  {formatShortDate(race.date)} · {total} inscritos
-                  {pending > 0 ? <Tag tone="warn">{pending} por confirmar</Tag> : <Tag tone="ok">Confirmadas</Tag>}
+          <div className="divide-soft">
+            {work.map(({ race, total, pending, bibs }) => (
+              <div key={race.id} className="py-4 space-y-3">
+                <button type="button" className="w-full flex items-center gap-4 text-left pressable" onClick={() => navigate(`/prova/${race.id}`)}>
+                  <ActivityCover kind={race.category} seed={race.id} imageUrl={race.image_url} className="w-14 h-14 rounded-xl shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{race.title}</span>
+                    <span className="block t-small text-[var(--text-3)]">
+                      {formatShortDate(race.date)} · {total} {total === 1 ? 'inscrito' : 'inscritos'}
+                    </span>
+                  </span>
+                </button>
+                <div className="flex flex-wrap gap-1.5">
+                  {pending > 0 ? <Tag tone="warn">{pending} por confirmar</Tag> : <Tag tone="ok">Inscrições confirmadas</Tag>}
                   {bibs > 0 && <Tag>{bibs} dorsais por levantar</Tag>}
                 </div>
-              </button>
-              {(pending > 0 || bibs > 0) && (
-                <div className="flex gap-2">
-                  {pending > 0 && (
-                    <Button size="sm" className="flex-1" onClick={() => confirmAllPendingForRace(race.id)}>
-                      Confirmar {pending}
-                    </Button>
-                  )}
-                  {bibs > 0 && (
-                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => markAllBibsAtClubForRace(race.id, currentUser.name)}>
-                      Dorsais no clube
-                    </Button>
-                  )}
-                </div>
-              )}
-            </Card>
-          ))
+                {(pending > 0 || bibs > 0) && (
+                  <div className="flex gap-2">
+                    {pending > 0 && (
+                      <Button size="sm" className="flex-1" onClick={() => confirmAllPendingForRace(race.id)}>
+                        Confirmar {pending}
+                      </Button>
+                    )}
+                    {bibs > 0 && (
+                      <Button size="sm" variant="secondary" className="flex-1" onClick={() => markAllBibsAtClubForRace(race.id, currentUser.name)}>
+                        Dorsais no clube
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </section>
-      {selected && <RaceDetailModal race={selected} onClose={() => setRaceId(null)} />}
     </div>
   )
 }
@@ -151,6 +150,7 @@ const AthletesTab: React.FC = () => {
       .filter((p) => !s || p.name.toLowerCase().includes(s) || p.escalao.toLowerCase().includes(s) || p.nif.includes(s))
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [profiles, q])
+  const editing = editId ? profiles.find((p) => p.id === editId) || null : null
 
   const exportCSV = () => {
     const header = ['Tipo', 'Nome', 'Escalão', 'Nascimento', 'NIF', 'CC', 'Telefone', 'Email', 'T-shirt', 'Responsáveis']
@@ -181,61 +181,55 @@ const AthletesTab: React.FC = () => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2" />
-          <input className={`${inputClass} pl-9`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nome, escalão, NIF…" aria-label="Pesquisar atletas" />
+          <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <input
+            type="search"
+            className={`${inputClass} pl-11`}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Nome, escalão ou NIF"
+            aria-label="Pesquisar atletas"
+          />
         </div>
-        <Button variant="secondary" onClick={exportCSV} aria-label="Exportar CSV">
-          <Download className="w-4 h-4" />
-        </Button>
+        <IconButton label="Exportar lista em CSV" onClick={exportCSV} className="!w-12 !h-12">
+          <Download className="w-5 h-5" aria-hidden="true" />
+        </IconButton>
       </div>
 
-      {creating ? (
-        <Card className="p-4 space-y-3">
-          <h3 className="text-sm font-bold text-[var(--text-1)]">Novo atleta</h3>
-          <AthleteForm
-            initial={emptyAthlete()}
-            allowRole
-            submitLabel="Criar atleta"
-            onSubmit={(v) => {
-              const created = addAthleteProfile(v)
-              if (created) {
-                setCreating(false)
-                setOpenId(created.id)
-              }
-            }}
-            onCancel={() => setCreating(false)}
-          />
-        </Card>
-      ) : (
-        <Button block onClick={() => setCreating(true)}>
-          <UserPlus className="w-4 h-4" /> Novo atleta
-        </Button>
-      )}
+      <Button block onClick={() => setCreating(true)}>
+        <UserPlus className="w-4 h-4" aria-hidden="true" /> Novo atleta
+      </Button>
 
       <SectionTitle title="Atletas" count={list.length} />
-      <div className="space-y-2">
+      {list.length === 0 && <p className="t-body text-[var(--text-3)]">Nenhum atleta corresponde à pesquisa.</p>}
+      <div className="divide-soft">
         {list.map((p) => {
           const kids = youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id))
           const open = openId === p.id
           return (
-            <Card key={p.id} className="p-3">
-              <button type="button" className="w-full flex items-center gap-3 text-left cursor-pointer" onClick={() => setOpenId(open ? null : p.id)} aria-expanded={open}>
+            <div key={p.id} className="py-1">
+              <button
+                type="button"
+                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
+                onClick={() => setOpenId(open ? null : p.id)}
+                aria-expanded={open}
+              >
                 <Avatar name={p.name} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-[var(--text-1)] truncate">{p.name}</div>
-                  <div className="text-xs text-[var(--text-3)] truncate">
+                <span className="min-w-0 flex-1">
+                  <span className="block t-body text-[var(--text-1)] truncate">{p.name}</span>
+                  <span className="block t-small text-[var(--text-3)] truncate">
                     {p.escalao}
-                    {kids.length > 0 && ` · ${kids.length} criança(s)`}
-                  </div>
-                </div>
+                    {kids.length > 0 && ` · ${kids.length} ${kids.length === 1 ? 'criança' : 'crianças'}`}
+                  </span>
+                </span>
                 {p.role === 'admin' && <Tag tone="warn">Admin</Tag>}
               </button>
-              {open && editId !== p.id && (
-                <div className="pt-3 mt-3 border-t border-[var(--border-card)] space-y-3">
-                  <div className="text-xs text-[var(--text-2)] space-y-0.5">
+              {open && (
+                <div className="pb-4 pt-1 space-y-4">
+                  <div className="t-small text-[var(--text-2)] space-y-0.5">
                     <div>
                       {p.phone} · {p.email}
                     </div>
@@ -247,38 +241,58 @@ const AthletesTab: React.FC = () => {
                   <EnrollInRace athlete={p} />
                   <div className="flex gap-2">
                     <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditId(p.id)}>
-                      <Pencil className="w-3.5 h-3.5" /> Editar
+                      <Pencil className="w-4 h-4" aria-hidden="true" /> Editar
                     </Button>
                     {p.id !== currentUser.id && (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => window.confirm(`Remover ${p.name} da equipa?`) && removeAthleteProfile(p.id)}
-                      >
+                      <Button size="sm" variant="danger" onClick={() => window.confirm(`Remover ${p.name} da equipa?`) && removeAthleteProfile(p.id)}>
                         Remover
                       </Button>
                     )}
                   </div>
                 </div>
               )}
-              {open && editId === p.id && (
-                <div className="pt-3 mt-3 border-t border-[var(--border-card)]">
-                  <AthleteForm
-                    initial={p}
-                    allowRole={p.id !== currentUser.id}
-                    submitLabel="Guardar"
-                    onSubmit={(v) => {
-                      updateProfile({ ...p, ...v })
-                      setEditId(null)
-                    }}
-                    onCancel={() => setEditId(null)}
-                  />
-                </div>
-              )}
-            </Card>
+            </div>
           )
         })}
       </div>
+
+      {creating && (
+        <Sheet onClose={() => setCreating(false)} ariaLabel="Novo atleta">
+          <SheetHeader title="Novo atleta" onClose={() => setCreating(false)} />
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <AthleteForm
+              initial={emptyAthlete()}
+              allowRole
+              submitLabel="Criar atleta"
+              onSubmit={(v) => {
+                const created = addAthleteProfile(v)
+                if (created) {
+                  setCreating(false)
+                  setOpenId(created.id)
+                }
+              }}
+            />
+          </div>
+        </Sheet>
+      )}
+
+      {editing && (
+        <Sheet onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
+          <SheetHeader title={editing.name} subtitle="Editar atleta" onClose={() => setEditId(null)} />
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <AthleteForm
+              key={editing.id}
+              initial={editing}
+              allowRole={editing.id !== currentUser.id}
+              submitLabel="Guardar"
+              onSubmit={(v) => {
+                updateProfile({ ...editing, ...v })
+                setEditId(null)
+              }}
+            />
+          </div>
+        </Sheet>
+      )}
     </div>
   )
 }
@@ -294,7 +308,7 @@ const EnrollInRace: React.FC<{ athlete: AthleteProfile }> = ({ athlete }) => {
   if (available.length === 0) return null
   return (
     <div className="flex gap-2 items-end">
-      <Field label="Inscrever em prova" className="flex-1">
+      <Field label="Inscrever em prova" className="flex-1 min-w-0">
         <select className={inputClass} value={raceId} onChange={(e) => setRaceId(e.target.value)}>
           <option value="">Escolher prova…</option>
           {available.map((r) => (
@@ -305,7 +319,6 @@ const EnrollInRace: React.FC<{ athlete: AthleteProfile }> = ({ athlete }) => {
         </select>
       </Field>
       <Button
-        size="sm"
         disabled={!raceId}
         onClick={() => {
           const race = races.find((r) => r.id === raceId)
@@ -336,126 +349,143 @@ const ChildrenTab: React.FC = () => {
   const [creating, setCreating] = useState(false)
   const [guardian, setGuardian] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
   const [addGuardian, setAddGuardian] = useState<Record<string, string>>({})
   const adults = [...profiles].sort((a, b) => a.name.localeCompare(b.name))
+  const editing = editId ? youthAthletes.find((c) => c.id === editId) || null : null
 
   return (
-    <div className="space-y-3">
-      {creating ? (
-        <Card className="p-4 space-y-3">
-          <h3 className="text-sm font-bold text-[var(--text-1)]">Nova criança</h3>
-          <Field label="Adulto responsável *">
-            <select className={inputClass} value={guardian} onChange={(e) => setGuardian(e.target.value)}>
-              <option value="">Escolher…</option>
-              {adults.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <ChildForm
-            initial={emptyChild()}
-            submitLabel="Criar"
-            onSubmit={(v) => {
-              if (!guardian) return
-              addYouthAthlete(v, [guardian])
-              setCreating(false)
-              setGuardian('')
-            }}
-            onCancel={() => setCreating(false)}
-          />
-        </Card>
-      ) : (
-        <Button block onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4" /> Nova criança
-        </Button>
-      )}
+    <div className="space-y-4">
+      <Button block onClick={() => setCreating(true)}>
+        <Plus className="w-4 h-4" aria-hidden="true" /> Nova criança
+      </Button>
 
       <SectionTitle title="Crianças" count={youthAthletes.length} />
-      {youthAthletes.map((c) => {
-        const guardians = c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
-        if (editId === c.id) {
+      {youthAthletes.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda não há perfis infantis.</p>}
+      <div className="divide-soft">
+        {youthAthletes.map((c) => {
+          const guardians = c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
+          const open = openId === c.id
           return (
-            <Card key={c.id} className="p-4">
-              <ChildForm
-                initial={c}
-                submitLabel="Guardar"
-                onSubmit={(v) => {
-                  updateYouthAthlete({ ...c, ...v })
-                  setEditId(null)
-                }}
-                onCancel={() => setEditId(null)}
-              />
-            </Card>
-          )
-        }
-        return (
-          <Card key={c.id} className="p-3.5 space-y-2.5">
-            <div className="flex items-center gap-3">
-              <Avatar name={c.name} child />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-[var(--text-1)] truncate">{c.name}</div>
-                <div className="text-xs text-[var(--text-3)]">
-                  {c.escalao} · {calculateAge(c.birth_date)} anos
-                </div>
-              </div>
-              <button type="button" aria-label={`Editar ${c.name}`} onClick={() => setEditId(c.id)} className="p-2 rounded-lg text-[var(--text-2)] hover:bg-[var(--surface-raised)] cursor-pointer">
-                <Pencil className="w-4 h-4" />
+            <div key={c.id} className="py-1">
+              <button
+                type="button"
+                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
+                onClick={() => setOpenId(open ? null : c.id)}
+                aria-expanded={open}
+              >
+                <Avatar name={c.name} child />
+                <span className="min-w-0 flex-1">
+                  <span className="block t-body text-[var(--text-1)] truncate">{c.name}</span>
+                  <span className="block t-small text-[var(--text-3)] truncate">
+                    {c.escalao} · {calculateAge(c.birth_date)} anos
+                  </span>
+                </span>
+                {guardians.length === 0 && <Tag tone="danger">Sem responsável</Tag>}
               </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {guardians.length === 0 && <Tag tone="danger">Sem responsável</Tag>}
-              {guardians.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => disassociateChildFromAdult(c.id, g.id)}
-                  title="Remover responsável"
-                  className="cursor-pointer"
-                >
-                  <Tag>{g.name} ✕</Tag>
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              {guardians.length < 2 && (
-                <>
-                  <select
-                    className={`${inputClass} flex-1`}
-                    aria-label="Adicionar responsável"
-                    value={addGuardian[c.id] || ''}
-                    onChange={(e) => setAddGuardian((s) => ({ ...s, [c.id]: e.target.value }))}
-                  >
-                    <option value="">+ Responsável…</option>
-                    {adults
-                      .filter((p) => !c.associated_adult_ids.includes(p.id))
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={!addGuardian[c.id]}
-                    onClick={() => {
-                      associateChildToAdult(c.id, addGuardian[c.id])
-                      setAddGuardian((s) => ({ ...s, [c.id]: '' }))
-                    }}
-                  >
-                    Associar
-                  </Button>
-                </>
+              {open && (
+                <div className="pb-4 pt-1 space-y-3">
+                  <div className="space-y-1">
+                    <div className="t-small t-strong text-[var(--text-1)]">Responsáveis</div>
+                    {guardians.length === 0 && <p className="t-small text-[var(--text-3)]">Nenhum adulto associado.</p>}
+                    {guardians.map((g) => (
+                      <div key={g.id} className="flex items-center gap-3">
+                        <span className="t-body text-[var(--text-2)] flex-1 min-w-0 truncate">{g.name}</span>
+                        <IconButton label={`Remover ${g.name} como responsável`} onClick={() => disassociateChildFromAdult(c.id, g.id)}>
+                          <X className="w-4 h-4" aria-hidden="true" />
+                        </IconButton>
+                      </div>
+                    ))}
+                  </div>
+                  {guardians.length < 2 && (
+                    <div className="flex gap-2">
+                      <select
+                        className={`${inputClass} flex-1 min-w-0`}
+                        aria-label="Adicionar responsável"
+                        value={addGuardian[c.id] || ''}
+                        onChange={(e) => setAddGuardian((s) => ({ ...s, [c.id]: e.target.value }))}
+                      >
+                        <option value="">Adicionar responsável…</option>
+                        {adults
+                          .filter((p) => !c.associated_adult_ids.includes(p.id))
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                      </select>
+                      <Button
+                        variant="secondary"
+                        disabled={!addGuardian[c.id]}
+                        onClick={() => {
+                          associateChildToAdult(c.id, addGuardian[c.id])
+                          setAddGuardian((s) => ({ ...s, [c.id]: '' }))
+                        }}
+                      >
+                        Associar
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditId(c.id)}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /> Editar
+                    </Button>
+                    <Button size="sm" variant="danger" onClick={() => window.confirm(`Apagar ${c.name}?`) && removeYouthAthlete(c.id)}>
+                      Apagar
+                    </Button>
+                  </div>
+                </div>
               )}
-              <Button size="sm" variant="danger" onClick={() => window.confirm(`Apagar ${c.name}?`) && removeYouthAthlete(c.id)}>
-                Apagar
-              </Button>
             </div>
-          </Card>
-        )
-      })}
+          )
+        })}
+      </div>
+
+      {creating && (
+        <Sheet onClose={() => setCreating(false)} ariaLabel="Nova criança">
+          <SheetHeader title="Nova criança" onClose={() => setCreating(false)} />
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <Field label="Adulto responsável *">
+              <select className={inputClass} value={guardian} onChange={(e) => setGuardian(e.target.value)}>
+                <option value="">Escolher…</option>
+                {adults.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <ChildForm
+              initial={emptyChild()}
+              submitLabel="Criar"
+              onSubmit={(v) => {
+                if (!guardian) return
+                addYouthAthlete(v, [guardian])
+                setCreating(false)
+                setGuardian('')
+              }}
+            />
+            {!guardian && <p className="t-small text-[var(--text-3)]">Escolhe o adulto responsável antes de criar.</p>}
+          </div>
+        </Sheet>
+      )}
+
+      {editing && (
+        <Sheet onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
+          <SheetHeader title={editing.name} subtitle="Editar perfil infantil" onClose={() => setEditId(null)} />
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <ChildForm
+              key={editing.id}
+              initial={editing}
+              submitLabel="Guardar"
+              onSubmit={(v) => {
+                updateYouthAthlete({ ...editing, ...v })
+                setEditId(null)
+              }}
+            />
+          </div>
+        </Sheet>
+      )}
     </div>
   )
 }
@@ -463,37 +493,47 @@ const ChildrenTab: React.FC = () => {
 // ---------------------------------------------------------------------------
 const AgendaTab: React.FC = () => {
   const { races, events } = useApp()
-  const [raceId, setRaceId] = useState<string | null>(null)
+  const navigate = useNavigate()
   const today = todayISO()
   const items = [
     ...races.filter((r) => r.date >= today).map((r) => ({ id: r.id, date: r.date, time: r.start_time, title: r.title, race: r })),
     ...events.filter((e) => e.date >= today).map((e) => ({ id: e.id, date: e.date, time: e.time, title: e.title, event: e })),
   ].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
-  const selected = raceId ? races.find((r) => r.id === raceId) || null : null
 
   return (
     <div className="space-y-2">
       <SectionTitle title="Próximas atividades" count={items.length} />
-      {items.map((i) => {
-        const race = 'race' in i ? i.race : undefined
-        const event = 'event' in i ? i.event : undefined
-        const kind = race ? race.category : kindOfEvent(event!)
-        return (
-          <Card key={i.id} accent={KIND_COLOR[kind]} className="p-3 flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <KindBadge kind={kind} label={event ? EVENT_TYPE_LABELS[event.type].short : undefined} />
-              <div className="text-sm font-bold text-[var(--text-1)] truncate mt-0.5">{i.title}</div>
-              <div className="text-xs text-[var(--text-3)]">
-                {formatShortDate(i.date)} · {i.time}
-              </div>
+      {items.length === 0 && <p className="t-body text-[var(--text-3)]">Não há atividades agendadas.</p>}
+      <div className="divide-soft">
+        {items.map((i) => {
+          const race = 'race' in i ? i.race : undefined
+          const event = 'event' in i ? i.event : undefined
+          const kind = race ? race.category : kindOfEvent(event!)
+          return (
+            <div key={i.id} className="py-3 flex items-center gap-4">
+              <button
+                type="button"
+                className="flex-1 min-w-0 flex items-center gap-4 text-left pressable"
+                onClick={() => navigate(race ? `/prova/${race.id}` : `/evento/${event!.id}`)}
+              >
+                <ActivityCover kind={kind} seed={i.id} imageUrl={race?.image_url || event?.image_url} className="w-14 h-14 rounded-xl shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="t-body text-[var(--text-1)] line-clamp-2">{i.title}</span>
+                  <span className="block t-small text-[var(--text-3)] truncate">
+                    {formatShortDate(i.date)} · {i.time}
+                    {event ? ` · ${EVENT_TYPE_LABELS[event.type].short}` : ''}
+                  </span>
+                </span>
+              </button>
+              {event && (
+                <IconButton label={`Editar ${i.title}`} onClick={() => openCreateEvent(event.type, event)}>
+                  <Pencil className="w-4 h-4" aria-hidden="true" />
+                </IconButton>
+              )}
             </div>
-            <Button size="sm" variant="secondary" onClick={() => (race ? setRaceId(race.id) : event && openCreateEvent(event.type, event))}>
-              {race ? 'Gerir' : 'Editar'}
-            </Button>
-          </Card>
-        )
-      })}
-      {selected && <RaceDetailModal race={selected} onClose={() => setRaceId(null)} />}
+          )
+        })}
+      </div>
     </div>
   )
 }

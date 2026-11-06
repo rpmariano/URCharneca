@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
-import { CheckCheck, ChevronRight, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { CheckCheck, ChevronRight, Inbox, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { formatShortDate } from '../utils/formatters'
 import { openCreateNotice } from '../utils/appEvents'
-import { RaceDetailModal } from '../components/RaceDetailModal'
-import { Button, Card, EmptyState, PageHeader, Segmented, Tag } from '../components/ui'
+import { Avatar, Button, EmptyState, PageHeader, Segmented } from '../components/ui'
 
-/** Comunicados da equipa (/comunicados). Só administradores publicam. */
+/** Comunicados da equipa (/comunicados), em lista tipo caixa de entrada. Só administradores publicam. */
 export const NotificationsPage: React.FC = () => {
   const {
     notifications,
@@ -20,10 +19,10 @@ export const NotificationsPage: React.FC = () => {
     togglePinNotification,
   } = useApp()
   const location = useLocation()
+  const navigate = useNavigate()
   const focusId = (location.state as { focusId?: string } | null)?.focusId
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [expanded, setExpanded] = useState<string | null>(focusId || null)
-  const [raceId, setRaceId] = useState<string | null>(null)
 
   useEffect(() => {
     if (focusId) document.getElementById(`notice-${focusId}`)?.scrollIntoView({ block: 'center' })
@@ -37,100 +36,97 @@ export const NotificationsPage: React.FC = () => {
     [notifications, filter, currentUser.id]
   )
   const unread = notifications.filter((n) => !n.read_by.includes(currentUser.id)).length
-  const race = raceId ? races.find((r) => r.id === raceId) || null : null
 
   return (
-    <div className="space-y-4 pb-10 stagger">
+    <div className="px-5 pb-28 space-y-5">
       <PageHeader
-        eyebrow="Equipa"
         title="Comunicados"
         action={
           isAdminView ? (
             <Button size="sm" onClick={() => openCreateNotice()}>
-              <Plus className="w-4 h-4" /> Novo
+              <Plus className="w-4 h-4" aria-hidden="true" /> Novo
             </Button>
           ) : undefined
         }
       />
 
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <Segmented
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: 'all', label: `Todos (${notifications.length})` },
-              { value: 'unread', label: `Por ler (${unread})` },
-            ]}
-          />
-        </div>
-        {unread > 0 && (
-          <Button size="sm" variant="secondary" onClick={markAllNotificationsRead} aria-label="Marcar todos como lidos">
-            <CheckCheck className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      <Segmented
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: 'all', label: `Todos (${notifications.length})` },
+          { value: 'unread', label: `Por ler (${unread})` },
+        ]}
+      />
+
+      {unread > 0 && (
+        <Button size="sm" variant="ghost" onClick={markAllNotificationsRead} className="-ml-4">
+          <CheckCheck className="w-4 h-4" aria-hidden="true" /> Marcar todos como lidos
+        </Button>
+      )}
 
       {list.length === 0 ? (
-        <EmptyState text={filter === 'unread' ? 'Está tudo lido.' : 'Ainda não há comunicados.'} />
+        <EmptyState
+          icon={Inbox}
+          title={filter === 'unread' ? 'Está tudo lido' : 'Sem comunicados'}
+          text={filter === 'unread' ? 'Não tens comunicados por ler.' : 'Os avisos da equipa vão aparecer aqui.'}
+          action={filter === 'unread' ? 'Ver todos' : undefined}
+          onAction={() => setFilter('all')}
+        />
       ) : (
-        <div className="space-y-2.5">
+        <div className="divide-soft">
           {list.map((n) => {
             const isUnread = !n.read_by.includes(currentUser.id)
             const isOpen = expanded === n.id
             const related = n.related_race_id ? races.find((r) => r.id === n.related_race_id) : undefined
             return (
-              <Card
-                key={n.id}
-                id={`notice-${n.id}`}
-                interactive
-                className="p-4 space-y-1.5"
-                onClick={() => {
-                  setExpanded(isOpen ? null : n.id)
-                  markNotificationRead(n.id)
-                }}
-              >
-                <div className="flex items-center gap-1.5 text-xs text-[var(--text-3)]">
-                  {n.pinned && <Pin className="w-3 h-3 text-[var(--run)]" />}
-                  <span>{n.created_by_name}</span>
-                  <span>· {formatShortDate(n.created_at.slice(0, 10))}</span>
-                  {isUnread && <Tag tone="info">Novo</Tag>}
-                </div>
-                <h3 className={`text-sm leading-snug ${isUnread ? 'font-bold text-[var(--text-1)]' : 'font-semibold text-[var(--text-2)]'}`}>
-                  {n.title}
-                </h3>
-                <p className={`text-xs text-[var(--text-3)] whitespace-pre-line ${isOpen ? '' : 'line-clamp-2'}`}>{n.message}</p>
-                {isOpen && (
-                  <div className="flex flex-wrap gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
+              <article key={n.id} id={`notice-${n.id}`} className="py-1">
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => {
+                    setExpanded(isOpen ? null : n.id)
+                    markNotificationRead(n.id)
+                  }}
+                  className="w-full py-3 flex items-start gap-4 text-left cursor-pointer"
+                >
+                  <Avatar name={n.created_by_name} size={48} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5 t-small text-[var(--text-3)]">
+                      {n.pinned && <Pin className="w-3.5 h-3.5 text-[var(--gold-ink)] shrink-0" aria-label="Fixado" />}
+                      <span className="truncate">{n.created_by_name}</span>
+                      <span className="shrink-0">· {formatShortDate(n.created_at.slice(0, 10))}</span>
+                    </span>
+                    <span className={`block t-body text-[var(--text-1)] ${isUnread ? 't-strong' : ''}`}>{n.title}</span>
+                    <span className={`t-small text-[var(--text-3)] whitespace-pre-line ${isOpen ? 'block pt-1' : 'line-clamp-2'}`}>{n.message}</span>
+                  </span>
+                  {isUnread && <span className="w-2.5 h-2.5 rounded-full bg-[var(--run)] shrink-0 mt-2" aria-label="Por ler" role="img" />}
+                </button>
+                {isOpen && (related || isAdminView) && (
+                  <div className="flex flex-wrap gap-2 pb-4 pl-16">
                     {related && (
-                      <Button size="sm" variant="secondary" onClick={() => setRaceId(related.id)}>
-                        {related.title} <ChevronRight className="w-3.5 h-3.5" />
+                      <Button size="sm" variant="secondary" onClick={() => navigate(`/prova/${related.id}`)} className="max-w-full">
+                        <span className="truncate">{related.title}</span> <ChevronRight className="w-4 h-4 shrink-0" aria-hidden="true" />
                       </Button>
                     )}
                     {isAdminView && (
                       <>
-                        <Button size="sm" variant="ghost" onClick={() => togglePinNotification(n.id)}>
-                          {n.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                        <Button size="sm" variant="secondary" onClick={() => togglePinNotification(n.id)}>
+                          {n.pinned ? <PinOff className="w-4 h-4" aria-hidden="true" /> : <Pin className="w-4 h-4" aria-hidden="true" />}
                           {n.pinned ? 'Desafixar' : 'Fixar'}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => window.confirm('Remover este comunicado?') && deleteNotification(n.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Remover
+                        <Button size="sm" variant="danger" onClick={() => window.confirm('Remover este comunicado?') && deleteNotification(n.id)}>
+                          <Trash2 className="w-4 h-4" aria-hidden="true" /> Remover
                         </Button>
                       </>
                     )}
                   </div>
                 )}
-              </Card>
+              </article>
             )
           })}
         </div>
       )}
-
-      {race && <RaceDetailModal race={race} onClose={() => setRaceId(null)} />}
     </div>
   )
 }

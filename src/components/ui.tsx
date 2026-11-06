@@ -1,15 +1,17 @@
 /**
  * Primitivas de interface partilhadas. Usam apenas as variáveis de tema
- * (index.css), para que os três temas fiquem coerentes em todos os ecrãs.
+ * (index.css), para que os temas fiquem coerentes em todos os ecrãs.
+ * Estilo "explorar": um só tipo de letra, cantos arredondados, muito espaço em branco.
  */
 import React from 'react'
-import { ChevronRight, X } from 'lucide-react'
+import { CalendarHeart, ChevronRight, Dumbbell, Lightbulb, Search, Shield, Sparkles, Trophy, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { formatDayMonth } from '../utils/formatters'
 
 export const KIND_SINGULAR: Record<ActivityKind, string> = {
-  trofeu_cascais: 'Troféu Cascais',
-  equipa: 'Prova do Clube',
+  trofeu_cascais: 'Troféu de Cascais',
+  equipa: 'Prova do clube',
   individual: 'Sugerida',
   training: 'Treino',
   event: 'Evento',
@@ -23,12 +25,20 @@ export const KIND_COLOR: Record<ActivityKind, string> = {
   event: 'var(--cat-evento)',
 }
 
+export const KIND_ICON: Record<ActivityKind, LucideIcon> = {
+  trofeu_cascais: Trophy,
+  equipa: Shield,
+  individual: Lightbulb,
+  training: Dumbbell,
+  event: CalendarHeart,
+}
+
 export const kindOfRace = (r: Race): ActivityKind => r.category
 export const kindOfEvent = (e: TeamEvent): ActivityKind => (e.type === 'training' ? 'training' : 'event')
 
 /**
  * Fundo de ecrã da app: aplica a cor de fundo, a cor do texto e a fonte do tema.
- * Envolver cada ecrã (ou composição) num `Screen` — fora dele os componentes ficam sobre fundo branco.
+ * Envolver cada ecrã (ou composição) num `Screen`.
  */
 export const Screen: React.FC<{ children?: React.ReactNode; padded?: boolean; className?: string; style?: React.CSSProperties }> = ({
   children,
@@ -37,64 +47,64 @@ export const Screen: React.FC<{ children?: React.ReactNode; padded?: boolean; cl
   style,
 }) => (
   <div
-    className={`${padded ? 'p-4' : ''} ${className}`}
+    className={`${padded ? 'p-5' : ''} ${className}`}
     style={{ background: 'var(--bg-app)', color: 'var(--text-1)', fontFamily: 'var(--font-sans)', minHeight: '100%', ...style }}
   >
     {children}
   </div>
 )
 
-/** Cabeçalho de página: sobretítulo pequeno na cor de destaque + título grande condensado em maiúsculas, com ação opcional à direita. */
-export const PageHeader: React.FC<{ eyebrow?: string; title: string; action?: React.ReactNode }> = ({
-  eyebrow,
+/** Topo de página: título grande em minúsculas, subtítulo opcional e ação à direita. */
+export const PageHeader: React.FC<{ title: string; subtitle?: string; action?: React.ReactNode }> = ({
+  subtitle,
   title,
   action,
 }) => (
-  <div className="flex items-end justify-between gap-3 pt-3">
+  <div className="flex items-start justify-between gap-3 pt-6 pb-2">
     <div className="min-w-0">
-      {eyebrow && <div className="eyebrow text-[var(--run)] mb-1">{eyebrow}</div>}
-      <h1 className="display text-[40px] text-[var(--text-1)]">{title}</h1>
+      <h1 className="t-title text-[var(--text-1)]">{title}</h1>
+      {subtitle && <p className="t-body text-[var(--text-3)] mt-1">{subtitle}</p>}
     </div>
     {action}
   </div>
 )
 
-/** Título de secção condensado em maiúsculas, com contador opcional e ligação "ver todos" na cor de destaque. */
+/** Título de secção com contador opcional e ligação ("Ver tudo") à direita. */
 export const SectionTitle: React.FC<{
   title: string
   count?: number
   action?: string
   onAction?: () => void
 }> = ({ title, count, action, onAction }) => (
-  <div className="flex items-center justify-between">
-    <h2 className="display text-xl text-[var(--text-1)]">
+  <div className="flex items-center justify-between gap-3">
+    <h2 className="t-heading text-[var(--text-1)]">
       {title}
-      {count !== undefined && <span className="ml-1.5 text-[var(--text-3)]">{count}</span>}
+      {count !== undefined && <span className="ml-1.5 font-normal text-[var(--text-3)]">{count}</span>}
     </h2>
     {action && onAction && (
       <button
         type="button"
         onClick={onAction}
-        className="eyebrow text-[var(--run)] cursor-pointer min-h-11 -my-2 pl-3 inline-flex items-center gap-0.5"
+        className="t-small t-strong text-[var(--text-1)] underline underline-offset-2 cursor-pointer min-h-11 -my-2 pl-3 inline-flex items-center gap-0.5 shrink-0"
       >
-        {action} <ChevronRight className="w-3.5 h-3.5" />
+        {action} <ChevronRight className="w-4 h-4" aria-hidden="true" />
       </button>
     )}
   </div>
 )
 
-/** Superfície base (cartão escuro com borda subtil). `interactive` dá feedback ao toque; `accent` desenha uma faixa colorida à esquerda. */
+/** Superfície base. `interactive` dá feedback ao toque; `accent` desenha uma faixa colorida à esquerda. */
 export const Card: React.FC<
   React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean; accent?: string }
 > = ({ interactive, accent, className = '', style, ...rest }) => (
   <div
     {...rest}
-    className={`iron-card ${interactive ? 'iron-card-interactive cursor-pointer active:scale-[0.99]' : ''} ${className}`}
+    className={`card ${interactive ? 'pressable' : ''} ${className}`}
     style={accent ? { borderLeft: `4px solid ${accent}`, ...style } : style}
   />
 )
 
-/** Número grande com etiqueta (painel de estatísticas, estilo app de corrida). */
+/** Número com etiqueta (painel de gestão). */
 export const StatTile: React.FC<{ value: number | string; label: string; highlight?: boolean; onClick?: () => void }> = ({
   value,
   label,
@@ -107,24 +117,30 @@ export const StatTile: React.FC<{ value: number | string; label: string; highlig
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className="py-3 px-2 text-left cursor-pointer disabled:cursor-default active:scale-95 transition"
+      className="card p-4 text-left min-h-11 pressable disabled:cursor-default disabled:active:transform-none disabled:active:opacity-100"
     >
-      <div className={`stat-num text-[44px] ${on ? 'text-[var(--run)]' : 'text-[var(--text-3)]'}`}>{value}</div>
-      <div className="eyebrow text-xs text-[var(--text-3)] mt-1.5">{label}</div>
+      <div className={`t-title t-num ${on ? 'text-[var(--text-1)]' : 'text-[var(--text-3)]'}`}>{value}</div>
+      <div className="t-small text-[var(--text-3)] mt-0.5">{label}</div>
     </button>
   )
 }
 
-/** Estado vazio dentro de um cartão, com ação opcional. */
-export const EmptyState: React.FC<{ text: string; action?: string; onAction?: () => void }> = ({
+/** Estado vazio com título, texto de orientação e ação opcional. */
+export const EmptyState: React.FC<{ title?: string; text: string; action?: string; onAction?: () => void; icon?: LucideIcon }> = ({
+  title,
   text,
   action,
   onAction,
+  icon: Icon = Sparkles,
 }) => (
-  <div className="iron-card p-5 text-center text-xs text-[var(--text-3)] space-y-3">
-    <p>{text}</p>
+  <div className="py-10 px-4 text-center flex flex-col items-center gap-3">
+    <span className="w-12 h-12 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-[var(--text-2)]">
+      <Icon className="w-5 h-5" aria-hidden="true" />
+    </span>
+    {title && <h3 className="t-heading text-[var(--text-1)]">{title}</h3>}
+    <p className="t-body text-[var(--text-3)] max-w-[30ch]">{text}</p>
     {action && onAction && (
-      <Button size="sm" onClick={onAction}>
+      <Button variant="secondary" onClick={onAction} className="mt-1">
         {action}
       </Button>
     )}
@@ -133,25 +149,44 @@ export const EmptyState: React.FC<{ text: string; action?: string; onAction?: ()
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
-/** Botão em pílula, maiúsculas a negrito. `primary` usa a cor de destaque (azul do clube); `secondary` contorno; `ghost` só texto; `danger` para ações destrutivas. */
+/** Botão de cantos arredondados. `primary` usa o azul do clube; `secondary` contorno; `ghost` texto sublinhado; `danger` para ações destrutivas. */
 export const Button: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; size?: 'sm' | 'md'; block?: boolean }
 > = ({ variant = 'primary', size = 'md', block, className = '', type = 'button', ...rest }) => {
   const base =
-    'inline-flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wide rounded-full transition active:scale-[0.96] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed'
-  const sizes = size === 'sm' ? 'text-xs px-4 py-1.5 min-h-11' : 'text-xs px-5 py-3 min-h-[46px]'
+    'inline-flex items-center justify-center gap-2 t-strong rounded-xl pressable disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap'
+  const sizes = size === 'sm' ? 't-small px-4 min-h-11' : 't-body px-6 min-h-12'
   const variants: Record<ButtonVariant, string> = {
     primary: 'bg-[var(--run)] text-[var(--on-accent)]',
-    secondary: 'bg-transparent text-[var(--text-1)] border border-[var(--border-card-strong)]',
-    ghost: 'text-[var(--text-2)] hover:bg-[var(--surface-raised)]',
-    danger: 'bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)] border border-[var(--tint-rose-border)]',
+    secondary: 'bg-[var(--surface-card)] text-[var(--text-1)] border border-[var(--text-1)]',
+    ghost: 'text-[var(--text-1)] underline underline-offset-2 hover:bg-[var(--surface-raised)]',
+    danger: 'bg-[var(--surface-card)] text-[var(--tint-rose-fg)] border border-[var(--tint-rose-border)]',
   }
   return (
     <button type={type} {...rest} className={`${base} ${sizes} ${variants[variant]} ${block ? 'w-full' : ''} ${className}`} />
   )
 }
 
-/** Filtro em pílula com estado ativo (fundo invertido) e ponto de cor opcional por tipo de atividade. */
+/** Botão redondo só com ícone (44 px). `floating` é a versão branca com sombra para usar sobre capas. */
+export const IconButton: React.FC<
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string; floating?: boolean }
+> = ({ label, floating, className = '', type = 'button', children, ...rest }) => (
+  <button
+    type={type}
+    aria-label={label}
+    title={label}
+    {...rest}
+    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 pressable ${
+      floating
+        ? 'bg-[var(--surface-card)] text-[var(--text-1)] shadow-[var(--shadow-float)]'
+        : 'bg-[var(--surface-card)] text-[var(--text-1)] border border-[var(--border-card)]'
+    } ${className}`}
+  >
+    {children}
+  </button>
+)
+
+/** Filtro em pílula com estado ativo (contorno escuro) e ponto de cor opcional. */
 export const Chip: React.FC<{
   active?: boolean
   color?: string
@@ -162,30 +197,32 @@ export const Chip: React.FC<{
     type="button"
     onClick={onClick}
     aria-pressed={active}
-    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 min-h-11 rounded-full border text-xs font-bold whitespace-nowrap transition active:scale-95 cursor-pointer ${
+    className={`shrink-0 inline-flex items-center gap-2 px-4 min-h-11 rounded-full border t-small whitespace-nowrap pressable ${
       active
-        ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-[var(--text-1)]'
-        : 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)]'
+        ? 'bg-[var(--surface-raised)] text-[var(--text-1)] border-[var(--text-1)] t-strong shadow-[inset_0_0_0_1px_var(--text-1)]'
+        : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
     }`}
   >
-    {color && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />}
+    {color && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} aria-hidden="true" />}
     {children}
   </button>
 )
 
-/** Etiqueta colorida do tipo de atividade: Troféu Cascais, Prova do Clube, Sugerida, Treino ou Evento. */
-export const KindBadge: React.FC<{ kind: ActivityKind; label?: string }> = ({ kind, label }) => (
-  <span
-    className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border"
-    style={{
-      color: KIND_COLOR[kind],
-      borderColor: `color-mix(in srgb, ${KIND_COLOR[kind]} 45%, transparent)`,
-      background: `color-mix(in srgb, ${KIND_COLOR[kind]} 12%, transparent)`,
-    }}
-  >
-    {label || KIND_SINGULAR[kind]}
-  </span>
-)
+/** Etiqueta do tipo de atividade com ícone: Troféu de Cascais, Prova do clube, Sugerida, Treino ou Evento. `solid` é a versão branca para usar sobre capas. */
+export const KindBadge: React.FC<{ kind: ActivityKind; label?: string; solid?: boolean }> = ({ kind, label, solid }) => {
+  const Icon = KIND_ICON[kind]
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 t-small t-strong px-2.5 py-1 rounded-full ${
+        solid ? 'bg-[var(--surface-card)] shadow-[var(--shadow-card)]' : 'bg-[var(--surface-raised)]'
+      }`}
+      style={{ color: KIND_COLOR[kind] }}
+    >
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      {label || KIND_SINGULAR[kind]}
+    </span>
+  )
+}
 
 /** Etiqueta pequena de estado (neutral, ok, warn, danger, info). */
 export const Tag: React.FC<{ tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'info'; children: React.ReactNode }> = ({
@@ -193,44 +230,42 @@ export const Tag: React.FC<{ tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'info
   children,
 }) => {
   const tones = {
-    neutral: 'bg-[var(--surface-raised)] text-[var(--text-2)] border-[var(--border-card)]',
-    ok: 'bg-[var(--tint-emerald-bg)] text-[var(--tint-emerald-fg)] border-[var(--tint-emerald-border)]',
-    warn: 'bg-[var(--tint-amber-bg)] text-[var(--tint-amber-fg)] border-[var(--tint-amber-border)]',
-    danger: 'bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)] border-[var(--tint-rose-border)]',
-    info: 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] border-[var(--tint-blue-border)]',
+    neutral: 'bg-[var(--surface-raised)] text-[var(--text-2)]',
+    ok: 'bg-[var(--tint-emerald-bg)] text-[var(--tint-emerald-fg)]',
+    warn: 'bg-[var(--tint-amber-bg)] text-[var(--tint-amber-fg)]',
+    danger: 'bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)]',
+    info: 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)]',
   }
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md border ${tones[tone]}`}>
-      {children}
-    </span>
+    <span className={`inline-flex items-center gap-1 t-small t-strong px-2 py-0.5 rounded-md ${tones[tone]}`}>{children}</span>
   )
 }
 
-/** Bloco de data: dia em número grande condensado + mês abreviado na cor do tipo. */
+/** Bloco de data compacto: mês abreviado por cima do dia. */
 export const DateBlock: React.FC<{ date: string; color?: string }> = ({ date, color = 'var(--run)' }) => {
   const dm = formatDayMonth(date)
   return (
-    <div className="w-12 flex flex-col items-center justify-center shrink-0 pt-0.5">
-      <span className="stat-num text-[32px] text-[var(--text-1)]">{dm.day}</span>
-      <span className="eyebrow text-xs mt-1" style={{ color }}>
+    <div className="w-12 h-12 rounded-xl bg-[var(--surface-raised)] flex flex-col items-center justify-center shrink-0">
+      <span className="text-xs leading-none t-strong uppercase" style={{ color }} aria-hidden="true">
         {dm.month}
       </span>
+      <span className="t-heading t-num leading-tight text-[var(--text-1)]">{dm.day}</span>
     </div>
   )
 }
 
-/** Avatar circular com iniciais; `child` usa o tom de destaque dos perfis infantis. */
-export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> = ({ name, child, size = 36 }) => (
+/** Avatar circular com iniciais; `child` usa o tom dourado dos perfis infantis. */
+export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> = ({ name, child, size = 40 }) => (
   <div
-    className="rounded-full flex items-center justify-center font-bold shrink-0 border"
+    className="rounded-full flex items-center justify-center t-strong shrink-0"
     style={{
       width: size,
       height: size,
       fontSize: Math.max(12, size * 0.36),
-      background: child ? 'var(--tint-amber-bg)' : 'var(--surface-raised)',
-      color: child ? 'var(--tint-amber-fg)' : 'var(--text-1)',
-      borderColor: child ? 'var(--tint-amber-border)' : 'var(--border-card)',
+      background: child ? 'var(--tint-amber-bg-strong)' : 'var(--text-1)',
+      color: child ? 'var(--tint-amber-fg)' : 'var(--bg-app)',
     }}
+    aria-hidden="true"
   >
     {name
       .split(' ')
@@ -242,12 +277,122 @@ export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> 
 )
 
 // ---------------------------------------------------------------------------
+// Explorar
+// ---------------------------------------------------------------------------
+
+/** Pílula de pesquisa com sombra suave (topo da página Explorar). */
+export const SearchPill: React.FC<{
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  trailing?: React.ReactNode
+}> = ({ value, onChange, placeholder = 'Procurar', trailing }) => (
+  <div className="flex items-center gap-2 pl-5 pr-1.5 min-h-14 rounded-full bg-[var(--surface-card)] border border-[var(--border-card)] shadow-[var(--shadow-card)]">
+    <Search className="w-5 h-5 text-[var(--text-1)] shrink-0" aria-hidden="true" />
+    <input
+      type="search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      className="flex-1 min-w-0 h-11 bg-transparent t-body t-strong text-[var(--text-1)] placeholder:text-[var(--text-3)] placeholder:font-normal border-0 focus:shadow-none"
+      style={{ boxShadow: 'none' }}
+    />
+    {value && (
+      <button
+        type="button"
+        onClick={() => onChange('')}
+        aria-label="Limpar pesquisa"
+        className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--text-2)] cursor-pointer shrink-0"
+      >
+        <X className="w-4 h-4" aria-hidden="true" />
+      </button>
+    )}
+    {trailing}
+  </div>
+)
+
+/** Fila de categorias com ícone e sublinhado no item ativo. */
+export const CategoryTabs = <T extends string>({
+  value,
+  options,
+  onChange,
+  label = 'Categorias',
+}: {
+  value: T
+  options: Array<{ value: T; label: string; icon: LucideIcon }>
+  onChange: (v: T) => void
+  label?: string
+}) => (
+  <div className="scroll-row gap-1 px-3" role="tablist" aria-label={label}>
+    {options.map((o) => {
+      const active = value === o.value
+      return (
+        <button
+          key={o.value}
+          type="button"
+          role="tab"
+          aria-selected={active}
+          onClick={() => onChange(o.value)}
+          className={`shrink-0 min-w-[64px] min-h-[60px] px-2 pt-2 pb-2.5 flex flex-col items-center gap-1.5 cursor-pointer border-b-2 transition-colors ${
+            active ? 'border-[var(--text-1)] text-[var(--text-1)]' : 'border-transparent text-[var(--text-3)]'
+          }`}
+        >
+          <o.icon className="w-6 h-6" strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
+          <span className={`text-xs whitespace-nowrap ${active ? 't-strong' : ''}`}>{o.label}</span>
+        </button>
+      )
+    })}
+  </div>
+)
+
+/** Linha de lista com ícone, título, descrição e seta (menus do Perfil e de Gerir). */
+export const ListRow: React.FC<{
+  icon?: LucideIcon
+  title: string
+  description?: string
+  trailing?: React.ReactNode
+  onClick?: () => void
+  danger?: boolean
+}> = ({ icon: Icon, title, description, trailing, onClick, danger }) => {
+  const body = (
+    <>
+      {Icon && <Icon className={`w-6 h-6 shrink-0 ${danger ? 'text-[var(--tint-rose-fg)]' : 'text-[var(--text-1)]'}`} strokeWidth={1.8} aria-hidden="true" />}
+      <span className="flex-1 min-w-0 text-left">
+        <span className={`block t-body ${danger ? 'text-[var(--tint-rose-fg)]' : 'text-[var(--text-1)]'}`}>{title}</span>
+        {description && <span className="block t-small text-[var(--text-3)]">{description}</span>}
+      </span>
+      {trailing}
+      {onClick && <ChevronRight className="w-5 h-5 text-[var(--text-2)] shrink-0" aria-hidden="true" />}
+    </>
+  )
+  return onClick ? (
+    <button type="button" onClick={onClick} className="w-full min-h-14 py-3 flex items-center gap-4 cursor-pointer">
+      {body}
+    </button>
+  ) : (
+    <div className="w-full min-h-14 py-3 flex items-center gap-4">{body}</div>
+  )
+}
+
+/** Barra de ação fixa no fundo de uma página de detalhe: resumo à esquerda, botão principal à direita. */
+export const StickyActionBar: React.FC<{ children: React.ReactNode; summary?: React.ReactNode }> = ({ children, summary }) => (
+  <div
+    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-30 px-5 pt-3 flex items-center justify-between gap-4 border-t border-[var(--border-card)]"
+    style={{ background: 'var(--bg-nav)', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
+  >
+    <div className="min-w-0 flex-1">{summary}</div>
+    {children}
+  </div>
+)
+
+// ---------------------------------------------------------------------------
 // Formulários
 // ---------------------------------------------------------------------------
 export const inputClass =
-  'w-full rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] px-3 py-2.5 min-h-11 text-sm text-[var(--text-1)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--run)]'
+  'w-full rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3.5 py-2.5 min-h-12 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]'
 
-/** Rótulo de formulário (maiúsculas pequenas) que envolve um input; usar com a classe `inputClass`. */
+/** Rótulo de formulário que envolve um input; usar com a classe `inputClass`. */
 export const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode; className?: string }> = ({
   label,
   hint,
@@ -255,57 +400,75 @@ export const Field: React.FC<{ label: string; hint?: string; children: React.Rea
   className = '',
 }) => (
   <label className={`block ${className}`}>
-    <span className="block text-xs font-bold uppercase tracking-wider text-[var(--text-3)] mb-1">{label}</span>
+    <span className="block t-small t-strong text-[var(--text-1)] mb-1.5">{label}</span>
     {children}
-    {hint && <span className="block text-xs text-[var(--text-muted)] mt-1">{hint}</span>}
+    {hint && <span className="block t-small text-[var(--text-3)] mt-1">{hint}</span>}
   </label>
 )
 
-/** Caixa de seleção com rótulo e descrição. */
+/** Interruptor com rótulo e descrição. */
 export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }> = ({
   checked,
   onChange,
   label,
   hint,
 }) => (
-  <label className="flex items-start gap-3 cursor-pointer py-1">
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className="mt-0.5 w-4 h-4 accent-[var(--run)] shrink-0"
-    />
-    <span>
-      <span className="block text-sm font-semibold text-[var(--text-1)]">{label}</span>
-      {hint && <span className="block text-xs text-[var(--text-3)]">{hint}</span>}
+  <label className="flex items-center gap-4 cursor-pointer min-h-12 py-1.5">
+    <span className="flex-1 min-w-0">
+      <span className="block t-body text-[var(--text-1)]">{label}</span>
+      {hint && <span className="block t-small text-[var(--text-3)]">{hint}</span>}
+    </span>
+    <span className="relative shrink-0 w-12 h-8">
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer absolute inset-x-0 -inset-y-1.5 w-full h-11 opacity-0 cursor-pointer"
+      />
+      <span
+        className="absolute inset-0 rounded-full transition-colors bg-[var(--border-card-strong)] peer-checked:bg-[var(--text-1)] peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--run)] peer-focus-visible:outline-offset-2"
+        aria-hidden="true"
+      />
+      <span
+        className="absolute top-1 left-1 w-6 h-6 rounded-full bg-[var(--bg-app)] transition-transform peer-checked:translate-x-4"
+        aria-hidden="true"
+      />
     </span>
   </label>
 )
 
-/** Cabeçalho fixo de um bottom-sheet: título grande condensado, subtítulo e botão fechar. */
+/** Cabeçalho de um bottom-sheet: botão fechar à esquerda, título centrado e subtítulo. */
 export const SheetHeader: React.FC<{ title: string; subtitle?: string; onClose: () => void; children?: React.ReactNode }> = ({
   title,
   subtitle,
   onClose,
   children,
 }) => (
-  <div className="px-5 pt-2 pb-3 border-b border-[var(--border-card)] flex items-start justify-between gap-3 shrink-0">
-    <div className="min-w-0">
-      {children}
-      <h2 className="display text-[28px] text-[var(--text-1)]">{title}</h2>
-      {subtitle && <p className="text-xs text-[var(--text-3)] mt-0.5">{subtitle}</p>}
+  <div className="px-3 pt-1 pb-3 border-b border-[var(--border-card)] shrink-0">
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Fechar"
+        className="w-11 h-11 rounded-full flex items-center justify-center text-[var(--text-1)] cursor-pointer shrink-0 hover:bg-[var(--surface-raised)]"
+      >
+        <X className="w-5 h-5" aria-hidden="true" />
+      </button>
+      <div className="min-w-0 flex-1 pr-11 text-center">
+        <h2 className="t-body t-strong text-[var(--text-1)] truncate">{title}</h2>
+      </div>
     </div>
-    <button
-      type="button"
-      onClick={onClose}
-      aria-label="Fechar"
-      className="p-2 rounded-full bg-[var(--surface-raised)] text-[var(--text-2)] cursor-pointer shrink-0"
-    >
-      <X className="w-5 h-5" />
-    </button>
+    {(subtitle || children) && (
+      <div className="px-2 pt-1 text-center">
+        {children}
+        {subtitle && <p className="t-small text-[var(--text-3)]">{subtitle}</p>}
+      </div>
+    )}
   </div>
 )
 
+/** Seletor segmentado (2 a 4 opções). */
 export const Segmented = <T extends string>({
   value,
   options,
@@ -316,7 +479,7 @@ export const Segmented = <T extends string>({
   onChange: (v: T) => void
 }) => (
   <div
-    className="grid gap-1 p-1 rounded-full bg-[var(--surface-raised)]"
+    className="grid gap-1 p-1 rounded-xl bg-[var(--surface-raised)]"
     style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
   >
     {options.map((o) => (
@@ -325,8 +488,8 @@ export const Segmented = <T extends string>({
         type="button"
         onClick={() => onChange(o.value)}
         aria-pressed={value === o.value}
-        className={`py-2 px-2 min-h-11 rounded-full text-xs font-extrabold uppercase tracking-wide transition cursor-pointer ${
-          value === o.value ? 'bg-[var(--run)] text-[var(--on-accent)]' : 'text-[var(--text-3)]'
+        className={`px-2 min-h-11 rounded-lg t-small transition-colors cursor-pointer ${
+          value === o.value ? 'bg-[var(--surface-card)] text-[var(--text-1)] t-strong shadow-[var(--shadow-card)]' : 'text-[var(--text-2)]'
         }`}
       >
         {o.label}
