@@ -395,10 +395,10 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
                   Confirmar inscrição ({eligibleConfirm})
                 </Button>
                 <Button variant="secondary" disabled={eligibleAtClub === 0} onClick={() => runOnSelected('bib_at_club')}>
-                  Dorsal levantado, no clube ({eligibleAtClub})
+                  Dorsal no clube ({eligibleAtClub})
                 </Button>
                 <Button variant="secondary" disabled={eligibleDelivered === 0} onClick={() => runOnSelected('bib_delivered')}>
-                  Dorsal entregue ao atleta ({eligibleDelivered})
+                  Dorsal entregue ({eligibleDelivered})
                 </Button>
               </div>
               <p className="t-small text-[var(--text-3)]">Os números entre parênteses são as escolhidas a que a ação se aplica.</p>
@@ -419,7 +419,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void }> = ({ race,
               )}
               {!isIndividual && (
                 <Button variant="secondary" size="sm" disabled={pendingBibs === 0} onClick={() => markAllBibsAtClubForRace(race.id, currentUser.name)}>
-                  Dorsais levantados, todos ({pendingBibs})
+                  Dorsais no clube, todos ({pendingBibs})
                 </Button>
               )}
               <Button variant="secondary" size="sm" onClick={handleCopyWhatsApp}>
@@ -681,10 +681,8 @@ const RosterRow: React.FC<{
             <div className="t-small text-[var(--text-3)] truncate">
               {reg.is_dependent && reg.parent_name ? `Resp. ${reg.parent_name} · ` : ''}
               {TRANSPORT_LABELS[reg.transport_mode].short}
-              {admin
-                ? ` · dorsal ${reg.bib_number ? reg.bib_number + ' ' : ''}(${BIB_STATUS_LABELS[reg.bib_status].short.toLowerCase()})`
-                : reg.bib_number
-                ? ` · dorsal ${reg.bib_number}`
+              {reg.bib_status !== 'pending' || reg.bib_number
+                ? ` · dorsal${reg.bib_number ? ' ' + reg.bib_number : ''}${admin && reg.bib_status !== 'pending' ? ' · ' + BIB_STATUS_LABELS[reg.bib_status].short.toLowerCase() : ''}`
                 : ''}
             </div>
           </div>
@@ -712,11 +710,9 @@ const RosterRow: React.FC<{
                     value={reg.bib_status}
                     onChange={(e) => onPatch({ bib_status: e.target.value as RaceRegistration['bib_status'] })}
                   >
-                    {Object.entries(BIB_STATUS_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v.short}
-                      </option>
-                    ))}
+                    <option value="pending">—</option>
+                    <option value="at_club">{BIB_STATUS_LABELS.at_club.short}</option>
+                    <option value="delivered">{BIB_STATUS_LABELS.delivered.short}</option>
                   </select>
                 </Field>
               </div>

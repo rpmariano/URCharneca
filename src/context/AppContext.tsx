@@ -558,12 +558,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast(`${eligible.length} inscrição(ões) confirmada(s).`)
     } else if (action === 'bib_at_club') {
       pushNotification({
-        title: `Dorsais levantados: ${race.title}`,
-        message: `Os dorsais de ${names} em "${race.title}" foram levantados por ${currentUser.name} e estão prontos a entregar.`,
+        title: `Dorsais no clube: ${race.title}`,
+        message: `Os dorsais de ${names} em "${race.title}" estão no clube (levantados por ${currentUser.name}) e prontos a entregar.`,
         type: 'bibs_ready',
         related_race_id: raceId,
       })
-      showToast(`${eligible.length} dorsal(ais) marcado(s) como levantado(s).`)
+      showToast(`${eligible.length} dorsal(ais) marcado(s) como no clube.`)
     } else {
       showToast(`${eligible.length} dorsal(ais) marcado(s) como entregue(s).`)
     }
@@ -582,13 +582,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     )
     pushNotification({
-      title: `Dorsais levantados: ${race.title}`,
-      message: `Os dorsais de "${race.title}" foram levantados por ${pickupBy} e estão prontos a entregar.`,
+      title: `Dorsais no clube: ${race.title}`,
+      message: `Os dorsais de "${race.title}" estão no clube (levantados por ${pickupBy}) e prontos a entregar.`,
       type: 'bibs_ready',
       related_race_id: raceId,
       pinned: true,
     })
-    showToast(`${count} dorsais marcados como levantados.`)
+    showToast(`${count} dorsais marcados como no clube.`)
   }
 
   // ---------------------------------------------------------------------------

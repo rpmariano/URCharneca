@@ -112,7 +112,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
                 </button>
                 <div className="flex flex-wrap gap-1.5">
                   {pending > 0 ? <Tag tone="warn">{pending} por confirmar</Tag> : <Tag tone="ok">Inscrições confirmadas</Tag>}
-                  {bibs > 0 && <Tag>{bibs} dorsais por levantar</Tag>}
+                  {bibs > 0 && <Tag>{bibs} sem dorsal no clube</Tag>}
                 </div>
                 {(pending > 0 || bibs > 0) && (
                   <div className="flex gap-2">
