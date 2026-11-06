@@ -16,11 +16,8 @@ export type TransportMode =
   | 'meeting_point'      // Ponto de encontro (ex: Estação Comboio / Partida)
   | 'own_transport'      // Transporte próprio direto
 
-export type BibStatus =
-  | 'pending'            // Por levantar junto da organização
-  | 'at_club'            // Levantado pela equipa / pronto a entregar ao atleta
-  | 'delivered'          // Entregue ao atleta
-  | 'transferred'        // Cedido a outro colega
+/** Dorsal: `pending` = ainda sem dorsal (inicial); depois só há dois estados, no clube e entregue. */
+export type BibStatus = 'pending' | 'at_club' | 'delivered'
 
 export interface YouthAthlete {
   id: string
@@ -269,25 +266,8 @@ export const TRANSPORT_LABELS: Record<TransportMode, { label: string; short: str
   },
 }
 
-export const BIB_STATUS_LABELS: Record<BibStatus, { label: string; short: string; colorClass: string }> = {
-  pending: {
-    label: 'Por levantar',
-    short: 'Por levantar',
-    colorClass: 'bg-slate-50 text-slate-500 border-slate-200'
-  },
-  at_club: {
-    label: 'No clube (pronto)',
-    short: 'No clube',
-    colorClass: 'bg-amber-50 text-amber-900 border-amber-200'
-  },
-  delivered: {
-    label: 'Entregue',
-    short: 'Entregue',
-    colorClass: 'bg-emerald-50 text-emerald-800 border-emerald-200'
-  },
-  transferred: {
-    label: 'Dorsal cedido',
-    short: 'Cedido',
-    colorClass: 'bg-blue-50 text-blue-800 border-blue-200'
-  }
+export const BIB_STATUS_LABELS: Record<BibStatus, { label: string; short: string }> = {
+  pending: { label: 'Sem dorsal', short: 'Sem dorsal' },
+  at_club: { label: 'No clube', short: 'No clube' },
+  delivered: { label: 'Entregue', short: 'Entregue' },
 }

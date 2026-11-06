@@ -6,7 +6,7 @@ import type { AthleteProfile, TransportMode } from '../types'
 import { EVENT_TYPE_LABELS } from '../types'
 import { calculateAge, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
-import { openCreateEvent } from '../utils/appEvents'
+import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { ActivityCover } from '../components/ActivityCover'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { AthleteForm, ChildForm, emptyAthlete, emptyChild } from '../components/PeopleForms'
@@ -21,6 +21,7 @@ import {
   SectionTitle,
   Segmented,
   SheetHeader,
+  KIND_SINGULAR,
   StatTile,
   Tag,
   inputClass,
@@ -111,7 +112,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
                 </button>
                 <div className="flex flex-wrap gap-1.5">
                   {pending > 0 ? <Tag tone="warn">{pending} por confirmar</Tag> : <Tag tone="ok">Inscrições confirmadas</Tag>}
-                  {bibs > 0 && <Tag>{bibs} dorsais por levantar</Tag>}
+                  {bibs > 0 && <Tag>{bibs} sem dorsal no clube</Tag>}
                 </div>
                 {(pending > 0 || bibs > 0) && (
                   <div className="flex gap-2">
@@ -495,15 +496,27 @@ const AgendaTab: React.FC = () => {
   const { races, events } = useApp()
   const navigate = useNavigate()
   const today = todayISO()
-  const items = [
-    ...races.filter((r) => r.date >= today).map((r) => ({ id: r.id, date: r.date, time: r.start_time, title: r.title, race: r })),
-    ...events.filter((e) => e.date >= today).map((e) => ({ id: e.id, date: e.date, time: e.time, title: e.title, event: e })),
-  ].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+  const [when, setWhen] = useState<'upcoming' | 'past'>('upcoming')
+  const all = [
+    ...races.map((r) => ({ id: r.id, date: r.date, time: r.start_time, title: r.title, race: r })),
+    ...events.map((e) => ({ id: e.id, date: e.date, time: e.time, title: e.title, event: e })),
+  ]
+  const upcoming = all.filter((i) => i.date >= today).sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+  const past = all.filter((i) => i.date < today).sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`))
+  const items = when === 'upcoming' ? upcoming : past
 
   return (
-    <div className="space-y-2">
-      <SectionTitle title="Próximas atividades" count={items.length} />
-      {items.length === 0 && <p className="t-body text-[var(--text-3)]">Não há atividades agendadas.</p>}
+    <div className="space-y-4">
+      <Segmented
+        value={when}
+        onChange={setWhen}
+        options={[
+          { value: 'upcoming', label: `Próximas (${upcoming.length})` },
+          { value: 'past', label: `Passadas (${past.length})` },
+        ]}
+      />
+      <p className="t-small text-[var(--text-3)]">Toca numa atividade para a abrir. O lápis edita provas, treinos e eventos.</p>
+      {items.length === 0 && <p className="t-body text-[var(--text-3)]">Não há atividades {when === 'upcoming' ? 'agendadas' : 'passadas'}.</p>}
       <div className="divide-soft">
         {items.map((i) => {
           const race = 'race' in i ? i.race : undefined
@@ -518,18 +531,19 @@ const AgendaTab: React.FC = () => {
               >
                 <ActivityCover kind={kind} seed={i.id} imageUrl={race?.image_url || event?.image_url} className="w-14 h-14 rounded-xl shrink-0" />
                 <span className="min-w-0 flex-1">
-                  <span className="t-body text-[var(--text-1)] line-clamp-2">{i.title}</span>
+                  <span className="block t-body text-[var(--text-1)] line-clamp-2">{i.title}</span>
                   <span className="block t-small text-[var(--text-3)] truncate">
                     {formatShortDate(i.date)} · {i.time}
-                    {event ? ` · ${EVENT_TYPE_LABELS[event.type].short}` : ''}
+                    {race ? ` · ${KIND_SINGULAR[race.category]}` : event ? ` · ${EVENT_TYPE_LABELS[event.type].short}` : ''}
                   </span>
                 </span>
               </button>
-              {event && (
-                <IconButton label={`Editar ${i.title}`} onClick={() => openCreateEvent(event.type, event)}>
-                  <Pencil className="w-4 h-4" aria-hidden="true" />
-                </IconButton>
-              )}
+              <IconButton
+                label={`Editar ${i.title}`}
+                onClick={() => (race ? openCreateRace(race) : event && openCreateEvent(event.type, event))}
+              >
+                <Pencil className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
             </div>
           )
         })}
