@@ -25,6 +25,7 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
   const [workoutPlan, setWorkoutPlan] = useState(event?.workout_plan || '')
   const [description, setDescription] = useState(event?.description || '')
   const [requiresKit, setRequiresKit] = useState(event?.requires_official_kit || false)
+  const [imageUrl, setImageUrl] = useState(event?.image_url || '')
   const [notify, setNotify] = useState(!editing && type !== 'training')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,6 +40,7 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
       description: description.trim(),
       workout_plan: type === 'training' ? workoutPlan.trim() || undefined : undefined,
       requires_official_kit: requiresKit,
+      image_url: imageUrl.trim() || undefined,
     }
     if (event) {
       updateEvent({ ...event, ...payload })
@@ -106,6 +108,10 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
             />
           </Field>
         )}
+
+        <Field label="Imagem de capa" hint="Opcional. Cola o link de uma imagem; sem ele usa-se a capa do tipo de atividade.">
+          <input type="url" className={inputClass} value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://" />
+        </Field>
 
         <Field label="Descrição">
           <textarea rows={3} className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} />

@@ -10,32 +10,39 @@ export {
   Avatar,
   Button,
   Card,
+  CategoryTabs,
   Chip,
   DateBlock,
   EmptyState,
   Field,
+  IconButton,
   KindBadge,
+  ListRow,
   PageHeader,
+  SearchPill,
   SectionTitle,
   Segmented,
   Screen,
   SheetHeader,
   StatTile,
+  StickyActionBar,
   Tag,
   Toggle,
   KIND_COLOR,
+  KIND_ICON,
   KIND_SINGULAR,
   inputClass,
   kindOfEvent,
   kindOfRace,
 } from '../components/ui'
 export { Sheet } from '../components/Sheet'
+export { ActivityCover } from '../components/ActivityCover'
 
 // Componentes da app (precisam do AppProvider)
 export { AppProvider, useApp } from '../context/AppContext'
-export { RaceCard, RaceListItem, EventListItem } from '../components/ActivityItems'
-export { RsvpButtons, EventDetailModal } from '../components/EventDetailModal'
-export { RaceDetailModal } from '../components/RaceDetailModal'
+export { RaceCard, RaceListItem, EventListItem, RsvpButtons } from '../components/ActivityItems'
+export { RaceDetail } from '../components/RaceDetail'
+export { EventDetail } from '../components/EventDetail'
 export { CreateRaceModal } from '../components/CreateRaceModal'
 export { CreateEventModal } from '../components/CreateEventModal'
 export { CreateNoticeModal } from '../components/CreateNoticeModal'

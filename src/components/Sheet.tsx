@@ -123,7 +123,7 @@ export const Sheet: React.FC<SheetProps> = ({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex justify-center backdrop-blur-xs animate-in fade-in duration-150 ${
+      className={`fixed inset-0 z-[100] flex justify-center fade-in ${
         isBottom ? 'items-end' : 'items-center p-4'
       }`}
       style={{ background: 'var(--bg-scrim)' }}
@@ -139,8 +139,8 @@ export const Sheet: React.FC<SheetProps> = ({
         onClick={(e) => e.stopPropagation()}
         className={`relative w-full shadow-2xl ${
           isBottom
-            ? 'max-w-[480px] max-h-[90dvh] rounded-t-[28px] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200'
-            : 'max-w-md max-h-[85dvh] rounded-3xl animate-in zoom-in-95 duration-150'
+            ? 'max-w-[480px] max-h-[90dvh] rounded-t-[24px] flex flex-col overflow-hidden sheet-in'
+            : 'max-w-md max-h-[85dvh] rounded-3xl pop-in'
         } ${panelClassName}`}
         style={{
           background: 'var(--bg-sheet)',

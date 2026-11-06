@@ -84,6 +84,8 @@ export interface Race {
   distances: string[]
   registration_deadline?: string // YYYY-MM-DD
   external_url?: string
+  /** Link de uma imagem de capa (opcional). Sem ele, usa-se a capa gerada pelo tipo de prova. */
+  image_url?: string
   description?: string
   van_available: boolean
   van_capacity: number
@@ -165,6 +167,8 @@ export interface TeamEvent {
   description: string
   workout_plan?: string
   requires_official_kit?: boolean
+  /** Link de uma imagem de capa (opcional). */
+  image_url?: string
   created_by_name: string
   attendees: EventAttendee[]
 }

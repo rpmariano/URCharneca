@@ -1,13 +1,12 @@
 import React from 'react'
-import { Baby, Bus, CheckCircle2, MapPin, Users } from 'lucide-react'
-import { CATEGORIA_LABELS } from '../types'
+import { Baby, Check, CircleHelp, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
-import type { Race, TeamEvent } from '../types'
+import type { ActivityKind, Race, TeamEvent } from '../types'
 import { EVENT_TYPE_LABELS } from '../types'
 import { computeVanAllocation, formatShortDate, getDaysFromReference } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
-import { Card, DateBlock, KIND_COLOR, KindBadge, Tag, kindOfEvent } from './ui'
-import { RsvpButtons } from './EventDetailModal'
+import { ActivityCover } from './ActivityCover'
+import { KindBadge, Tag, kindOfEvent } from './ui'
 
 /** Inscrições ativas do utilizador (e das crianças a seu cargo) numa prova */
 export const useMyRaceRegs = (raceId: string) => {
@@ -21,153 +20,230 @@ export const useMyRaceRegs = (raceId: string) => {
   )
 }
 
-/** Linha de prova na agenda: data, tipo, título, local, nº de inscritos, ocupação da carrinha e "Inscrito". Requer AppProvider. */
-export const RaceListItem: React.FC<{ race: Race; onOpen: () => void }> = ({ race, onOpen }) => {
+/** "Hoje", "Amanhã" ou "Faltam N dias" (até duas semanas); vazio para datas mais distantes ou passadas. */
+export const countdownLabel = (date: string): string => {
+  const days = getDaysFromReference(date)
+  if (days < 0 || days > 14) return ''
+  if (days === 0) return 'Hoje'
+  if (days === 1) return 'Amanhã'
+  return `Faltam ${days} dias`
+}
+
+type CardVariant = 'full' | 'wide' | 'row'
+
+/**
+ * Cartão base de uma atividade: capa com etiquetas por cima e texto por baixo.
+ * `full` ocupa a largura (listas), `wide` é o cartão de carrossel e `row` é a linha compacta com miniatura.
+ */
+const ActivityCard: React.FC<{
+  variant: CardVariant
+  kind: ActivityKind
+  kindLabel?: string
+  seed: string
+  imageUrl?: string
+  title: string
+  when: string
+  where: string
+  meta?: React.ReactNode
+  status?: React.ReactNode
+  extraBadge?: React.ReactNode
+  dimmed?: boolean
+  onOpen?: () => void
+  footer?: React.ReactNode
+  ariaLabel: string
+}> = ({ variant, kind, kindLabel, seed, imageUrl, title, when, where, meta, status, extraBadge, dimmed, onOpen, footer, ariaLabel }) => {
+  if (variant === 'row') {
+    return (
+      <div className={dimmed ? 'opacity-60' : ''}>
+        <button type="button" onClick={onOpen} aria-label={ariaLabel} className="w-full flex items-center gap-4 text-left pressable py-1">
+          <ActivityCover kind={kind} seed={seed} imageUrl={imageUrl} className="w-[72px] h-[72px] rounded-xl shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{title}</span>
+            <span className="block t-small text-[var(--text-3)] truncate">{when}</span>
+            <span className="block t-small text-[var(--text-3)] truncate">{where}</span>
+          </span>
+          {status}
+        </button>
+        {footer && <div className="pt-3">{footer}</div>}
+      </div>
+    )
+  }
+
+  const wide = variant === 'wide'
+  return (
+    <div className={`${wide ? 'w-[78%] max-w-[320px]' : 'w-full'} ${dimmed ? 'opacity-60' : ''}`} role={wide ? 'listitem' : undefined}>
+      <button type="button" onClick={onOpen} aria-label={ariaLabel} className="w-full text-left pressable block">
+        <ActivityCover kind={kind} seed={seed} imageUrl={imageUrl} className={`w-full rounded-2xl ${wide ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
+          <span className="absolute top-3 left-3 flex flex-wrap gap-1.5 pr-3">
+            <KindBadge kind={kind} label={kindLabel} solid />
+            {extraBadge}
+          </span>
+          {status && <span className="absolute bottom-3 left-3">{status}</span>}
+        </ActivityCover>
+        <span className="block pt-3">
+          <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{title}</span>
+          <span className="block t-body text-[var(--text-3)] truncate">{when}</span>
+          <span className="block t-body text-[var(--text-3)] truncate">{where}</span>
+          {meta && <span className="block t-body text-[var(--text-1)] pt-1">{meta}</span>}
+        </span>
+      </button>
+      {footer && <div className="pt-3">{footer}</div>}
+    </div>
+  )
+}
+
+const StatusPill: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="inline-flex items-center gap-1 t-small t-strong px-2.5 py-1 rounded-full bg-[var(--text-1)] text-[var(--bg-app)]">
+    <Check className="w-3.5 h-3.5" aria-hidden="true" />
+    {children}
+  </span>
+)
+
+const useRaceCardData = (race: Race) => {
   const { registrations, isAdminView } = useApp()
   const regs = registrations.filter((r) => r.race_id === race.id && r.status !== 'cancelled')
   const mine = useMyRaceRegs(race.id)
   const van = computeVanAllocation(race, regs)
   const pending = regs.filter((r) => r.status === 'interested').length
-  const past = race.date < todayISO()
+  const countdown = countdownLabel(race.date)
+  const metaParts = [
+    regs.length === 0 ? 'Sê o primeiro a inscrever-te' : `${regs.length} ${regs.length === 1 ? 'inscrito' : 'inscritos'}`,
+    race.van_available ? (van.availableSeats > 0 ? `carrinha ${van.confirmedPassengers.length}/${van.capacity}` : 'carrinha cheia') : '',
+  ].filter(Boolean)
 
+  return {
+    when: `${formatShortDate(race.date)} · ${race.start_time}${countdown ? ` · ${countdown}` : ''}`,
+    meta: (
+      <>
+        <span className="t-strong">{metaParts[0]}</span>
+        {metaParts[1] ? ` · ${metaParts[1]}` : ''}
+      </>
+    ),
+    status: mine.length > 0 ? <StatusPill>{mine.length > 1 ? `${mine.length} inscrições` : 'Inscrito'}</StatusPill> : undefined,
+    extraBadge: (
+      <>
+        {race.open_to_children && (
+          <span className="inline-flex items-center gap-1 t-small t-strong px-2.5 py-1 rounded-full bg-[var(--surface-card)] text-[var(--text-1)] shadow-[var(--shadow-card)]">
+            <Baby className="w-3.5 h-3.5" aria-hidden="true" /> Crianças
+          </span>
+        )}
+        {isAdminView && pending > 0 && <Tag tone="danger">{pending} por confirmar</Tag>}
+      </>
+    ),
+    dimmed: race.date < todayISO(),
+    ariaLabel: `${race.title}, ${formatShortDate(race.date)}, ${race.location}`,
+  }
+}
+
+/** Cartão de prova para listas: capa, título, data, local, inscritos e carrinha. Requer AppProvider. */
+export const RaceListItem: React.FC<{ race: Race; onOpen: () => void; compact?: boolean }> = ({ race, onOpen, compact }) => {
+  const d = useRaceCardData(race)
   return (
-    <Card interactive accent={KIND_COLOR[race.category]} className={`p-3.5 ${past ? 'opacity-60' : ''}`} onClick={onOpen}>
-      <div className="flex items-start gap-3">
-        <DateBlock date={race.date} color={KIND_COLOR[race.category]} />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <KindBadge kind={race.category} />
-            {race.open_to_children && (
-              <Tag tone="warn">
-                <Baby className="w-3 h-3" />
-              </Tag>
-            )}
-            {isAdminView && pending > 0 && <Tag tone="danger">{pending} por confirmar</Tag>}
-          </div>
-          <h3 className="display text-[22px] text-[var(--text-1)]">{race.title}</h3>
-          <p className="text-xs text-[var(--text-3)] flex items-center gap-1 truncate">
-            <MapPin className="w-3 h-3 shrink-0" />
-            {race.start_time} · {race.location}
-          </p>
-          <div className="flex items-center gap-3 text-xs text-[var(--text-2)]">
-            <span className="flex items-center gap-1">
-              <Users className="w-3 h-3" /> {regs.length}
-            </span>
-            {race.van_available && (
-              <span className="flex items-center gap-1">
-                <Bus className="w-3 h-3" /> {van.confirmedPassengers.length}/{van.capacity}
-              </span>
-            )}
-            {mine.length > 0 && (
-              <span className="ml-auto flex items-center gap-1 font-bold text-[var(--run)]">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Inscrito{mine.length > 1 ? ` (${mine.length})` : ''}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Card>
+    <ActivityCard
+      variant={compact ? 'row' : 'full'}
+      kind={race.category}
+      seed={race.id}
+      imageUrl={race.image_url}
+      title={race.title}
+      where={race.location}
+      onOpen={onOpen}
+      {...d}
+      status={compact ? (d.status ? <Tag tone="ok">Inscrito</Tag> : undefined) : d.status}
+    />
   )
 }
 
-/** Linha de treino/evento/reunião com botões de presença (Vou / Talvez / Não). Requer AppProvider. */
-export const EventListItem: React.FC<{ event: TeamEvent; onOpen: () => void; showRsvp?: boolean }> = ({
+/** Cartão de prova para carrossel horizontal (Destaques). Requer AppProvider. */
+export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, onOpen }) => {
+  const d = useRaceCardData(race)
+  return (
+    <ActivityCard
+      variant="wide"
+      kind={race.category}
+      seed={race.id}
+      imageUrl={race.image_url}
+      title={race.title}
+      where={race.location}
+      onOpen={onOpen}
+      {...d}
+    />
+  )
+}
+
+/** Cartão de treino/evento/reunião. `compact` mostra a linha com miniatura; `showRsvp` junta os botões de presença. Requer AppProvider. */
+export const EventListItem: React.FC<{ event: TeamEvent; onOpen: () => void; showRsvp?: boolean; compact?: boolean }> = ({
   event,
   onOpen,
-  showRsvp = true,
+  showRsvp = false,
+  compact,
 }) => {
+  const { currentUser } = useApp()
   const kind = kindOfEvent(event)
   const going = event.attendees.filter((a) => a.status === 'going').length
+  const mine = event.attendees.find((a) => a.athlete_id === currentUser.id)?.status
   const past = event.date < todayISO()
+  const countdown = countdownLabel(event.date)
+  const mineLabel = mine === 'going' ? 'Vais' : mine === 'maybe' ? 'Talvez' : ''
+
   return (
-    <Card interactive accent={KIND_COLOR[kind]} className={`p-3.5 space-y-2.5 ${past ? 'opacity-60' : ''}`} onClick={onOpen}>
-      <div className="flex items-start gap-3">
-        <DateBlock date={event.date} color={KIND_COLOR[kind]} />
-        <div className="min-w-0 flex-1 space-y-1">
-          <KindBadge kind={kind} label={EVENT_TYPE_LABELS[event.type].short} />
-          <h3 className="display text-[22px] text-[var(--text-1)]">{event.title}</h3>
-          <p className="text-xs text-[var(--text-3)] flex items-center gap-1 truncate">
-            <MapPin className="w-3 h-3 shrink-0" />
-            {event.time} · {event.location}
-          </p>
-          <p className="text-xs text-[var(--text-2)] flex items-center gap-1">
-            <Users className="w-3 h-3" /> {going} confirmados
-          </p>
-        </div>
-      </div>
-      {showRsvp && !past && <RsvpButtons event={event} compact />}
-    </Card>
+    <ActivityCard
+      variant={compact ? 'row' : 'full'}
+      kind={kind}
+      kindLabel={EVENT_TYPE_LABELS[event.type].short}
+      seed={event.id}
+      imageUrl={event.image_url}
+      title={event.title}
+      when={`${formatShortDate(event.date)} · ${event.time}${countdown ? ` · ${countdown}` : ''}`}
+      where={event.location}
+      meta={<span className="t-strong">{going === 0 ? 'Ainda sem confirmações' : `${going} ${going === 1 ? 'confirmado' : 'confirmados'}`}</span>}
+      status={
+        mineLabel ? compact ? showRsvp ? undefined : <Tag tone="ok">{mineLabel}</Tag> : <StatusPill>{mineLabel}</StatusPill> : undefined
+      }
+      dimmed={past}
+      onOpen={onOpen}
+      footer={showRsvp && !past ? <RsvpButtons event={event} /> : undefined}
+      ariaLabel={`${event.title}, ${formatShortDate(event.date)}, ${event.location}`}
+    />
   )
 }
 
-/** Cartão de destaque de uma prova (carrossel da página inicial): contagem decrescente, carrinha e estado da inscrição. */
-export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, onOpen }) => {
-  const { registrations } = useApp()
-  const regs = registrations.filter((r) => r.race_id === race.id && r.status !== 'cancelled')
-  const mine = useMyRaceRegs(race.id)
-  const van = computeVanAllocation(race, regs)
-  const days = getDaysFromReference(race.date)
-
+/** Três botões de presença (Vou / Talvez / Não vou) para um treino ou evento. Requer AppProvider. */
+export const RsvpButtons: React.FC<{ event: TeamEvent; compact?: boolean }> = ({ event }) => {
+  const { currentUser, rsvpEvent } = useApp()
+  const mine = event.attendees.find((a) => a.athlete_id === currentUser.id)?.status
+  const past = event.date < todayISO()
+  const opts = [
+    { value: 'going' as const, label: 'Vou', icon: Check },
+    { value: 'maybe' as const, label: 'Talvez', icon: CircleHelp },
+    { value: 'not_going' as const, label: 'Não vou', icon: X },
+  ]
   return (
-    <button
-      type="button"
-      role="listitem"
-      onClick={onOpen}
-      className="hero-card w-[82%] shrink-0 text-left p-5 flex flex-col gap-4 cursor-pointer active:scale-[0.98] transition"
-      aria-label={`${race.title}, ${CATEGORIA_LABELS[race.category].label}`}
-    >
-      <div className="flex items-start justify-between gap-2 relative z-10">
-        <KindBadge kind={race.category} />
-        <div className="text-right">
-          {days <= 1 ? (
-            <span className="display text-[28px] text-[var(--run)]">{days === 0 ? 'Hoje' : 'Amanhã'}</span>
-          ) : (
-            <>
-              <span className="stat-num text-[48px] text-[var(--run)]">{days}</span>
-              <div className="eyebrow text-xs text-[var(--text-3)] mt-1">dias</div>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="space-y-1.5 flex-1 relative z-10">
-        <h3 className="display text-[28px] text-[var(--text-1)] line-clamp-3">{race.title}</h3>
-        <p className="text-xs text-[var(--text-3)]">
-          {formatShortDate(race.date)} · {race.start_time}
-        </p>
-        <p className="text-xs text-[var(--text-3)] flex items-center gap-1 truncate">
-          <MapPin className="w-3 h-3 shrink-0" /> {race.location}
-        </p>
-      </div>
-      {race.van_available && (
-        <div className="space-y-1.5 relative z-10">
-          <div className="flex justify-between eyebrow text-xs text-[var(--text-3)]">
-            <span className="flex items-center gap-1">
-              <Bus className="w-3 h-3" /> Carrinha
-            </span>
-            <span>
-              {van.confirmedPassengers.length}/{van.capacity}
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-[var(--surface-raised)] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[var(--run)] grow-x"
-              style={{ width: `${Math.min(100, (van.confirmedPassengers.length / Math.max(1, van.capacity)) * 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-      <div className="flex items-center justify-between relative z-10">
-        <span className="text-xs text-[var(--text-2)] flex items-center gap-1">
-          <Users className="w-3.5 h-3.5" /> {regs.length} da equipa
-        </span>
-        <span
-          className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wide ${
-            mine.length ? 'bg-transparent border border-[var(--run)] text-[var(--run)]' : 'bg-[var(--run)] text-[var(--on-accent)]'
-          }`}
-        >
-          {mine.length ? 'Inscrito' : 'Inscrever'}
-        </span>
-      </div>
-    </button>
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label="A tua presença">
+      {opts.map((o) => {
+        const on = mine === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            disabled={past}
+            aria-pressed={on}
+            onClick={(e) => {
+              e.stopPropagation()
+              rsvpEvent(event.id, o.value)
+            }}
+            className={`min-h-11 rounded-xl t-small border flex items-center justify-center gap-1.5 pressable disabled:opacity-40 disabled:cursor-not-allowed ${
+              on
+                ? o.value === 'going'
+                  ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent t-strong'
+                  : 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent t-strong'
+                : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card-strong)]'
+            }`}
+          >
+            <o.icon className="w-4 h-4" aria-hidden="true" />
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }

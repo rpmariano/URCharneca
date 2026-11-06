@@ -47,6 +47,7 @@ create table if not exists public.races (
   trophy_stage_number integer,
   open_to_children boolean default false,
   children_distances text[],
+  image_url text,
   created_by uuid references public.profiles(id) on delete set null,
   created_by_name text,
   created_at timestamptz default now()
@@ -88,6 +89,7 @@ create table if not exists public.team_events (
   location text not null,
   description text,
   workout_plan text,
+  image_url text,
   requires_official_kit boolean default false,
   created_by_name text,
   attendees jsonb not null default '[]'::jsonb,

@@ -1,12 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --color-primary: #0a5fc0;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Um só tipo de letra: os títulos usam a mesma família. */
+  --font-display: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Mobile-first column (480px centered on desktop) */
+  /* Coluna mobile-first (480px centrada em desktop) */
   --breakpoint-sm: 9999px;
   --breakpoint-md: 9999px;
   --breakpoint-lg: 9999px;
@@ -15,184 +16,154 @@
 }
 
 /* =========================================================================
-   1. TEMA PADRÃO: AZUL E BRANCO (cores do clube U.R. Charneca)
-   Fundo branco, azul do clube como cor de destaque, azul-marinho no texto.
-   Estilo "run club": títulos condensados, números grandes, movimento curto.
+   1. TEMA PADRÃO: branco, azul do equipamento e dourado do emblema
+   Estilo "explorar": muito espaço em branco, cartões com capa, sombras suaves.
+   Regra 60/30/10: branco / texto azul-marinho / azul (ações) + dourado (destaque).
    ========================================================================= */
 :root, [data-theme="balanced"], [data-theme="light"] {
   color-scheme: light;
 
-  /* Fundo e Estrutura */
-  --bg-app: #f5f8ff;
-  --bg-body-desktop: #e6edfb;
-  --bg-header: rgba(255, 255, 255, 0.94);
-  --bg-nav: rgba(255, 255, 255, 0.96);
+  --bg-app: #ffffff;
+  --bg-body-desktop: #eef1f5;
+  --bg-header: rgba(255, 255, 255, 0.96);
+  --bg-nav: rgba(255, 255, 255, 0.98);
   --bg-sheet: #ffffff;
-  --bg-scrim: rgba(10, 31, 68, 0.50);
+  --bg-scrim: rgba(16, 28, 54, 0.48);
 
-  /* Superfícies dos Cartões */
   --surface-card: #ffffff;
-  --surface-card-hover: #eef4ff;
-  --surface-raised: #eaf1ff;
-  --border-card: rgba(10, 95, 192, 0.14);
-  --border-card-strong: rgba(10, 95, 192, 0.32);
+  --surface-card-hover: #f6f8fb;
+  --surface-raised: #f2f4f8;
+  --border-card: #e2e6ec;
+  --border-card-strong: #b4bcc9;
 
-  /* Tipografia (contraste >= 4.5:1 sobre o fundo) */
-  --text-1: #0a1f44;
-  --text-2: #26385f;
-  --text-3: #44587f;
-  --text-muted: #566a90;
+  /* Texto (>= 4.5:1 sobre branco e sobre surface-raised) */
+  --text-1: #101c36;
+  --text-2: #36435c;
+  --text-3: #586479;
+  --text-muted: #5f6b80;
 
-  /* Cores do clube e tipos de atividade */
-  --race: #0a5fc0;
-  --race-deep: #084a96;
-  --race-ink: #ffffff;
-  --run: #0a5fc0; /* azul do equipamento: ações principais, números e estado ativo */
+  --run: #0a5fc0; /* azul do equipamento: ações principais e estado ativo */
+  --run-deep: #084a96;
   --on-accent: #ffffff;
-  --gold: #d0a838; /* dourado do emblema: destaques, preenchimentos e bordas */
+  --gold: #d0a838; /* dourado do emblema: preenchimentos e bordas de destaque */
   --gold-ink: #7a5806; /* dourado legível como texto sobre branco */
-  --on-gold: #0a1f44;
-  --cat-trofeu: #8a6508;
-  --cat-clube: #0e7490;
-  --cat-sugerida: #4f46e5;
-  --cat-treino: #0a2a6b;
-  --cat-evento: #475f8a;
-  --coach: #0e7490;
-  --gym: #475f8a;
-  --ok: #059669;
+  --on-gold: #101c36;
+
+  --cat-trofeu: #7a5806;
+  --cat-clube: #0a5fc0;
+  --cat-sugerida: #4338ca;
+  --cat-treino: #0e7490;
+  --cat-evento: #9d174d;
+  --ok: #047857;
   --warn: #b45309;
-  --danger: #dc2626;
+  --danger: #c81e1e;
 
-  /* Gradientes & Sombras */
-  --grad-race: linear-gradient(135deg, #0a5fc0, #0a2a6b);
-  --grad-run: linear-gradient(135deg, #0a5fc0, #0a2a6b);
-  --grad-nav-pill: linear-gradient(90deg, #0a5fc0, #d0a838);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(10, 95, 192, 0.10) 0%, transparent 60%),
-                  radial-gradient(95% 45% at 95% 25%, rgba(59, 130, 246, 0.07) 0%, transparent 60%),
-                  radial-gradient(130% 60% at 50% 100%, rgba(10, 95, 192, 0.05) 0%, transparent 60%);
-  --grad-fade: linear-gradient(180deg, rgba(245, 248, 255, 0.85) 0%, rgba(245, 248, 255, 0) 18%, rgba(245, 248, 255, 0) 80%, rgba(245, 248, 255, 0.95) 100%);
-  --shadow-fab: 0 8px 24px -4px rgba(10, 95, 192, 0.50);
-  --glow-pill: 0 2px 10px rgba(10, 95, 192, 0.40);
-  --shadow-card: 0 4px 20px -4px rgba(10, 31, 68, 0.08), 0 1px 3px rgba(10, 31, 68, 0.06);
+  --shadow-card: 0 6px 20px rgba(16, 28, 54, 0.08), 0 1px 3px rgba(16, 28, 54, 0.06);
+  --shadow-float: 0 8px 28px rgba(16, 28, 54, 0.18), 0 2px 6px rgba(16, 28, 54, 0.08);
+  --shadow-bar: 0 -1px 0 var(--border-card);
 
-  --contour-run: #0a5fc0;
-  --contour-run-op: 0.06;
-  --contour-race: #d0a838;
-  --contour-race-op: 0.05;
+  --tint-amber-bg: #fdf6e3;
+  --tint-amber-bg-strong: #f8e9bd;
+  --tint-amber-border: #ecd28a;
+  --tint-amber-fg: #6b4c05;
 
-  /* Tints Semânticos */
-  --tint-amber-bg: #fffbeb;
-  --tint-amber-bg-strong: #fef3c7;
-  --tint-amber-border: #fde68a;
-  --tint-amber-fg: #78350f;
-
-  --tint-blue-bg: #eaf1ff;
-  --tint-blue-bg-strong: #d6e4ff;
-  --tint-blue-border: #bcd0f5;
+  --tint-blue-bg: #eaf2fc;
+  --tint-blue-bg-strong: #d5e5f9;
+  --tint-blue-border: #b5d0f2;
   --tint-blue-fg: #084a96;
 
-  --tint-emerald-bg: #ecfdf5;
-  --tint-emerald-bg-strong: #d1fae5;
-  --tint-emerald-border: #a7f3d0;
-  --tint-emerald-fg: #064e3b;
+  --tint-emerald-bg: #e8f7f0;
+  --tint-emerald-bg-strong: #d0efe0;
+  --tint-emerald-border: #a3dcc1;
+  --tint-emerald-fg: #065f46;
 
-  --tint-rose-bg: #fff1f2;
-  --tint-rose-bg-strong: #ffe4e6;
-  --tint-rose-border: #fecdd3;
-  --tint-rose-fg: #881337;
+  --tint-rose-bg: #fdecec;
+  --tint-rose-bg-strong: #fad6d6;
+  --tint-rose-border: #f3b4b4;
+  --tint-rose-fg: #9b1c1c;
 }
 
 /* =========================================================================
-   2. TEMA ESCURO: AZUL-MARINHO E BRANCO
+   2. TEMA ESCURO: azul-marinho, branco e dourado
    ========================================================================= */
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-app: #07142e;
-  --bg-body-desktop: #030a1a;
-  --bg-header: rgba(7, 20, 46, 0.94);
-  --bg-nav: rgba(7, 20, 46, 0.96);
-  --bg-sheet: #0c1d40;
-  --bg-scrim: rgba(2, 8, 23, 0.78);
+  --bg-app: #0a1730;
+  --bg-body-desktop: #050d1e;
+  --bg-header: rgba(10, 23, 48, 0.96);
+  --bg-nav: rgba(10, 23, 48, 0.98);
+  --bg-sheet: #0f2040;
+  --bg-scrim: rgba(2, 8, 23, 0.72);
 
-  --surface-card: #0e2147;
-  --surface-card-hover: #132a58;
-  --surface-raised: #17306a;
-  --border-card: rgba(255, 255, 255, 0.12);
-  --border-card-strong: rgba(255, 255, 255, 0.26);
+  --surface-card: #112447;
+  --surface-card-hover: #162c55;
+  --surface-raised: #1a3261;
+  --border-card: #25407a;
+  --border-card-strong: #5673b0;
 
   --text-1: #ffffff;
   --text-2: #dbe6ff;
-  --text-3: #b4c5e8;
-  --text-muted: #94a8d4;
+  --text-3: #b7c7e8;
+  --text-muted: #a3b5da;
 
-  --race: #6ea8ff;
-  --race-deep: #3b82f6;
-  --race-ink: #04122e;
-  --run: #6ea8ff;
+  --run: #7cb2ff;
+  --run-deep: #4c8ff0;
   --on-accent: #04122e;
   --gold: #e0b94a;
-  --gold-ink: #e8c866;
-  --on-gold: #0a1f44;
-  --cat-trofeu: #e8c866;
-  --cat-clube: #5ccfe6;
-  --cat-sugerida: #a5b4fc;
-  --cat-treino: #cfe0ff;
-  --cat-evento: #9fb3dd;
-  --coach: #5ccfe6;
-  --gym: #9fb3dd;
+  --gold-ink: #ecd07a;
+  --on-gold: #0a1730;
+
+  --cat-trofeu: #ecd07a;
+  --cat-clube: #7cb2ff;
+  --cat-sugerida: #b4bcff;
+  --cat-treino: #6fd8ea;
+  --cat-evento: #f9a8d4;
   --ok: #34d399;
   --warn: #fbbf24;
   --danger: #f87171;
 
-  --grad-race: linear-gradient(135deg, #3b82f6, #6ea8ff);
-  --grad-run: linear-gradient(135deg, #3b82f6, #6ea8ff);
-  --grad-nav-pill: linear-gradient(90deg, #3b82f6, #e0b94a);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(59, 130, 246, 0.22) 0%, transparent 58%),
-                  radial-gradient(95% 45% at 95% 30%, rgba(110, 168, 255, 0.12) 0%, transparent 62%),
-                  radial-gradient(130% 60% at 50% 104%, rgba(10, 95, 192, 0.20) 0%, transparent 62%);
-  --grad-fade: linear-gradient(180deg, rgba(7, 20, 46, 0.80) 0%, rgba(7, 20, 46, 0) 20%, rgba(7, 20, 46, 0) 78%, rgba(7, 20, 46, 0.90) 100%);
-  --shadow-fab: 0 4px 22px rgba(110, 168, 255, 0.45);
-  --glow-pill: 0 0 12px rgba(110, 168, 255, 0.60);
-  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.32);
+  --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-bar: 0 -1px 0 var(--border-card);
 
-  --contour-run: #6ea8ff;
-  --contour-run-op: 0.12;
-  --contour-race: #e0b94a;
-  --contour-race-op: 0.06;
+  --tint-amber-bg: rgba(224, 185, 74, 0.14);
+  --tint-amber-bg-strong: rgba(224, 185, 74, 0.24);
+  --tint-amber-border: rgba(224, 185, 74, 0.4);
+  --tint-amber-fg: #f3dc94;
 
-  --tint-amber-bg: rgba(251, 191, 36, 0.12);
-  --tint-amber-bg-strong: rgba(251, 191, 36, 0.20);
-  --tint-amber-border: rgba(251, 191, 36, 0.32);
-  --tint-amber-fg: #fde68a;
+  --tint-blue-bg: rgba(124, 178, 255, 0.14);
+  --tint-blue-bg-strong: rgba(124, 178, 255, 0.24);
+  --tint-blue-border: rgba(124, 178, 255, 0.4);
+  --tint-blue-fg: #c2dbff;
 
-  --tint-blue-bg: rgba(110, 168, 255, 0.12);
-  --tint-blue-bg-strong: rgba(110, 168, 255, 0.22);
-  --tint-blue-border: rgba(110, 168, 255, 0.35);
-  --tint-blue-fg: #b8d4ff;
-
-  --tint-emerald-bg: rgba(52, 211, 153, 0.12);
-  --tint-emerald-bg-strong: rgba(52, 211, 153, 0.20);
-  --tint-emerald-border: rgba(52, 211, 153, 0.32);
+  --tint-emerald-bg: rgba(52, 211, 153, 0.14);
+  --tint-emerald-bg-strong: rgba(52, 211, 153, 0.22);
+  --tint-emerald-border: rgba(52, 211, 153, 0.36);
   --tint-emerald-fg: #a7f3d0;
 
-  --tint-rose-bg: rgba(251, 113, 133, 0.12);
-  --tint-rose-bg-strong: rgba(251, 113, 133, 0.20);
-  --tint-rose-border: rgba(251, 113, 133, 0.32);
-  --tint-rose-fg: #fecdd3;
+  --tint-rose-bg: rgba(248, 113, 113, 0.14);
+  --tint-rose-bg-strong: rgba(248, 113, 113, 0.22);
+  --tint-rose-border: rgba(248, 113, 113, 0.38);
+  --tint-rose-fg: #fecaca;
 }
 
 /* =========================================================================
-   ESTILOS GLOBAIS DE ESTRUTURA
+   Estrutura
    ========================================================================= */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
   background-color: var(--bg-body-desktop);
   color: var(--text-1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 #root {
@@ -202,160 +173,101 @@ body {
   margin: 0 auto;
   position: relative;
   background-color: var(--bg-app);
-  box-shadow: 0 10px 45px -10px rgba(0, 0, 0, 0.35);
-  border-left: 1px solid var(--border-card);
-  border-right: 1px solid var(--border-card);
-  overflow-x: hidden;
-  transition: background-color 0.25s ease;
+  box-shadow: 0 0 40px rgba(16, 28, 54, 0.08);
 }
 
-.font-display {
-  font-family: var(--font-display);
+h1, h2, h3, h4 {
+  margin: 0;
+  text-wrap: balance;
+}
+p {
+  margin: 0;
+  text-wrap: pretty;
 }
 
-/* Fundo Atmosférico IronCoach */
-.app-bg {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  background: var(--bg-app);
-  transition: background-color 0.25s ease;
+/* =========================================================================
+   Tipografia: 4 tamanhos (26 / 18 / 15 / 13) e 2 pesos (400 / 600)
+   ========================================================================= */
+.t-title {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.t-heading {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.t-body {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.t-small {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.t-strong {
+  font-weight: 600;
+}
+.t-num {
+  font-variant-numeric: tabular-nums;
 }
 
-.app-bg__ambient {
-  position: absolute;
-  inset: 0;
-  background: var(--grad-ambient);
-}
-
-.app-bg__contours {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.app-bg__fade {
-  position: absolute;
-  inset: 0;
-  background: var(--grad-fade);
-}
-
-/* Micro-interação do FAB de 5 colunas IronCoach */
-.fab-icon {
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.fab-open .fab-icon {
-  transform: rotate(45deg);
-}
-
-/* Cartões IronCoach com vidro adaptável */
-.iron-card {
+/* =========================================================================
+   Superfícies
+   ========================================================================= */
+.card {
   background: var(--surface-card);
   border: 1px solid var(--border-card);
-  border-radius: 1rem;
+  border-radius: 16px;
+}
+.card-raised {
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+  border-radius: 20px;
   box-shadow: var(--shadow-card);
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background-color 0.18s ease;
+}
+.pressable {
+  cursor: pointer;
+  transition: transform 0.14s ease, opacity 0.14s ease, background-color 0.14s ease;
+}
+.pressable:active {
+  transform: scale(0.98);
+  opacity: 0.92;
 }
 
-.iron-card-interactive:hover {
-  border-color: var(--run);
-  background: var(--surface-card-hover);
-  transform: translateY(-1px);
+/* Linha divisória entre secções de uma página de detalhe ou de uma lista */
+.divide-soft > * + * {
+  border-top: 1px solid var(--border-card);
 }
 
-/* Adaptador para temas escuro e meio-termo (harmonia de cores sem !important) */
-/* Só o tema escuro remapeia utilitários claros do Tailwind (o tema padrão é claro). */
-[data-theme="dark"] {
-  & .bg-white {
-    background-color: var(--surface-card);
-  }
-
-  & .bg-slate-50 {
-    background-color: var(--surface-raised);
-  }
-
-  & .bg-slate-100 {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
-  & .border-slate-100,
-  & .border-slate-200,
-  & .border-slate-200\/80,
-  & .border-slate-200\/90 {
-    border-color: var(--border-card);
-  }
-
-  & .text-slate-900,
-  & .text-slate-800 {
-    color: var(--text-1);
-  }
-
-  & .text-slate-700,
-  & .text-slate-600 {
-    color: var(--text-2);
-  }
-
-  & .text-slate-500,
-  & .text-slate-400 {
-    color: var(--text-3);
-  }
-
-  /* Tints adaptáveis que evitam caixas claras em modo escuro/meio-termo */
-  & .bg-amber-50, & .bg-amber-50\/70, & .bg-amber-50\/80, & .bg-amber-50\/90, & .bg-amber-100, & .bg-amber-100\/70 {
-    background-color: var(--tint-amber-bg);
-  }
-  & .border-amber-200, & .border-amber-200\/60, & .border-amber-200\/70, & .border-amber-200\/80, & .border-amber-200\/90, & .border-amber-300 {
-    border-color: var(--tint-amber-border);
-  }
-  & .text-amber-800, & .text-amber-900, & .text-amber-900\/80, & .text-amber-950 {
-    color: var(--tint-amber-fg);
-  }
-
-  & .bg-blue-50, & .bg-blue-50\/70, & .bg-blue-50\/80, & .bg-blue-100 {
-    background-color: var(--tint-blue-bg);
-  }
-  & .border-blue-100, & .border-blue-200, & .border-blue-300 {
-    border-color: var(--tint-blue-border);
-  }
-  & .text-blue-700, & .text-blue-800, & .text-blue-900, & .text-blue-950 {
-    color: var(--tint-blue-fg);
-  }
-
-  & .bg-emerald-50, & .bg-emerald-50\/70, & .bg-emerald-50\/80, & .bg-emerald-100 {
-    background-color: var(--tint-emerald-bg);
-  }
-  & .border-emerald-200, & .border-emerald-300 {
-    border-color: var(--tint-emerald-border);
-  }
-  & .text-emerald-700, & .text-emerald-800, & .text-emerald-900, & .text-emerald-950 {
-    color: var(--tint-emerald-fg);
-  }
-
-  & .bg-rose-50, & .bg-rose-50\/60, & .bg-rose-50\/70, & .bg-rose-100 {
-    background-color: var(--tint-rose-bg);
-  }
-  & .border-rose-100, & .border-rose-200, & .border-rose-300 {
-    border-color: var(--tint-rose-border);
-  }
-  & .text-rose-700, & .text-rose-800, & .text-rose-800\/80, & .text-rose-900, & .text-rose-950 {
-    color: var(--tint-rose-fg);
-  }
-
-  & .bg-white\/70, & .bg-white\/80 {
-    background-color: var(--surface-card);
-  }
+/* Carrossel horizontal com snap */
+.snap-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 20px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.snap-row::-webkit-scrollbar { display: none; }
+.snap-row > * { scroll-snap-align: start; flex-shrink: 0; }
 
-/* Estilos de formulários e inputs adaptáveis */
+/* Fila horizontal sem snap (categorias, filtros) */
+.scroll-row {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-row::-webkit-scrollbar { display: none; }
+
+/* =========================================================================
+   Formulários
+   ========================================================================= */
 input[type="text"],
 input[type="date"],
 input[type="time"],
@@ -363,19 +275,19 @@ input[type="tel"],
 input[type="email"],
 input[type="number"],
 input[type="search"],
+input[type="url"],
 select,
 textarea {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text-1) !important;
-  border-color: var(--border-card) !important;
+  font-family: inherit;
+  color: var(--text-1);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--run) !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--run) 25%, transparent) !important;
+  border-color: var(--text-1) !important;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--text-1);
 }
 
 /* Indicador de foco acessível para navegação por teclado */
@@ -385,11 +297,43 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--run) !important;
-  outline-offset: 2px !important;
+  outline: 2px solid var(--run);
+  outline-offset: 2px;
 }
 
-/* Sensibilidade ao movimento (prefers-reduced-motion) — Acessibilidade WCAG */
+/* =========================================================================
+   Movimento curto (desliga com prefers-reduced-motion)
+   ========================================================================= */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.stagger > * {
+  animation: rise-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger > *:nth-child(2) { animation-delay: 0.04s; }
+.stagger > *:nth-child(3) { animation-delay: 0.08s; }
+.stagger > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger > *:nth-child(n + 5) { animation-delay: 0.16s; }
+
+.fade-in { animation: fade-in 0.16s ease both; }
+.sheet-in { animation: sheet-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.pop-in { animation: pop-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -399,25 +343,9 @@ textarea:focus-visible {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .animate-in {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .animate-pulse {
-    animation: none !important;
-  }
 }
 
-/* Tipografia: quebra de linhas equilibrada (Matthew Butterick / Impeccable) */
-h1, h2, h3, h4, h5, h6 {
-  text-wrap: balance;
-}
-p {
-  text-wrap: pretty;
-}
-
-/* Custom subtle scrollbar */
+/* Barra de scroll discreta */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -426,106 +354,6 @@ p {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: rgba(120, 132, 153, 0.35);
   border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
-}
-
-/* Carrossel horizontal com snap */
-.snap-row {
-  display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.snap-row::-webkit-scrollbar { display: none; }
-.snap-row > * { scroll-snap-align: start; flex-shrink: 0; }
-
-/* =========================================================================
-   LINGUAGEM VISUAL "RUN CLUB": tipografia condensada, números grandes, movimento curto
-   ========================================================================= */
-.display {
-  font-family: var(--font-display);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  line-height: 0.92;
-}
-.display-italic { font-style: italic; }
-.stat-num {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  line-height: 0.85;
-  letter-spacing: -0.02em;
-}
-.eyebrow {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-}
-
-@keyframes rise-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes grow-x {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-@keyframes live-pulse {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--run) 60%, transparent); }
-  70% { box-shadow: 0 0 0 8px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-
-/* Entrada escalonada dos blocos de cada ecrã */
-.stagger > * {
-  animation: rise-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.stagger > *:nth-child(2) { animation-delay: 0.05s; }
-.stagger > *:nth-child(3) { animation-delay: 0.1s; }
-.stagger > *:nth-child(4) { animation-delay: 0.15s; }
-.stagger > *:nth-child(5) { animation-delay: 0.2s; }
-.stagger > *:nth-child(6) { animation-delay: 0.25s; }
-.stagger > *:nth-child(n + 7) { animation-delay: 0.3s; }
-
-.grow-x {
-  transform-origin: left;
-  animation: grow-x 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: var(--run);
-  animation: live-pulse 1.8s ease-out infinite;
-}
-
-/* Cartão de destaque com faixa de cor */
-.hero-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.25rem;
-  background: var(--surface-card);
-  border: 1px solid var(--border-card);
-}
-.hero-card::after {
-  content: '';
-  position: absolute;
-  right: -30%;
-  top: -40%;
-  width: 70%;
-  height: 120%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--gold) 28%, transparent), transparent);
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stagger > *, .grow-x, .live-dot { animation: none !important; }
 }

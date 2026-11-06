@@ -32,6 +32,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
   const [distances, setDistances] = useState(race?.distances.join(', ') || '10 km')
   const [deadline, setDeadline] = useState(race?.registration_deadline || '')
   const [externalUrl, setExternalUrl] = useState(race?.external_url || '')
+  const [imageUrl, setImageUrl] = useState(race?.image_url || '')
   const [description, setDescription] = useState(race?.description || '')
   const [meetingPoint, setMeetingPoint] = useState(race?.meeting_point || '')
   const [meetingTime, setMeetingTime] = useState(race?.meeting_time || '')
@@ -60,6 +61,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
       distances: distList.length ? distList : ['10 km'],
       registration_deadline: deadline || undefined,
       external_url: externalUrl.trim() || undefined,
+      image_url: imageUrl.trim() || undefined,
       description: description.trim() || undefined,
       meeting_point: meetingPoint.trim() || undefined,
       meeting_time: meetingTime || undefined,
@@ -156,6 +158,10 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
             <input type="url" className={inputClass} value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://" />
           </Field>
         </div>
+
+        <Field label="Imagem de capa" hint="Opcional. Cola o link de uma imagem; sem ele usa-se a capa do tipo de atividade.">
+          <input type="url" className={inputClass} value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://" />
+        </Field>
 
         <Field label="Descrição">
           <textarea rows={3} className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} />
