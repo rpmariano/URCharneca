@@ -45,11 +45,11 @@ export const RaceListItem: React.FC<{ race: Race; onOpen: () => void }> = ({ rac
             {isAdminView && pending > 0 && <Tag tone="danger">{pending} por confirmar</Tag>}
           </div>
           <h3 className="display text-[22px] text-[var(--text-1)]">{race.title}</h3>
-          <p className="text-[11px] text-[var(--text-3)] flex items-center gap-1 truncate">
+          <p className="text-xs text-[var(--text-3)] flex items-center gap-1 truncate">
             <MapPin className="w-3 h-3 shrink-0" />
             {race.start_time} · {race.location}
           </p>
-          <div className="flex items-center gap-3 text-[11px] text-[var(--text-2)]">
+          <div className="flex items-center gap-3 text-xs text-[var(--text-2)]">
             <span className="flex items-center gap-1">
               <Users className="w-3 h-3" /> {regs.length}
             </span>
@@ -86,11 +86,11 @@ export const EventListItem: React.FC<{ event: TeamEvent; onOpen: () => void; sho
         <div className="min-w-0 flex-1 space-y-1">
           <KindBadge kind={kind} label={EVENT_TYPE_LABELS[event.type].short} />
           <h3 className="display text-[22px] text-[var(--text-1)]">{event.title}</h3>
-          <p className="text-[11px] text-[var(--text-3)] flex items-center gap-1 truncate">
+          <p className="text-xs text-[var(--text-3)] flex items-center gap-1 truncate">
             <MapPin className="w-3 h-3 shrink-0" />
             {event.time} · {event.location}
           </p>
-          <p className="text-[11px] text-[var(--text-2)] flex items-center gap-1">
+          <p className="text-xs text-[var(--text-2)] flex items-center gap-1">
             <Users className="w-3 h-3" /> {going} confirmados
           </p>
         </div>
@@ -124,7 +124,7 @@ export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, 
           ) : (
             <>
               <span className="stat-num text-[48px] text-[var(--run)]">{days}</span>
-              <div className="eyebrow text-[9px] text-[var(--text-3)] mt-1">dias</div>
+              <div className="eyebrow text-xs text-[var(--text-3)] mt-1">dias</div>
             </>
           )}
         </div>
@@ -140,7 +140,7 @@ export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, 
       </div>
       {race.van_available && (
         <div className="space-y-1.5 relative z-10">
-          <div className="flex justify-between eyebrow text-[9px] text-[var(--text-3)]">
+          <div className="flex justify-between eyebrow text-xs text-[var(--text-3)]">
             <span className="flex items-center gap-1">
               <Bus className="w-3 h-3" /> Carrinha
             </span>
@@ -161,7 +161,7 @@ export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, 
           <Users className="w-3.5 h-3.5" /> {regs.length} da equipa
         </span>
         <span
-          className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
+          className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wide ${
             mine.length ? 'bg-transparent border border-[var(--run)] text-[var(--run)]' : 'bg-[var(--run)] text-[var(--on-accent)]'
           }`}
         >

@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #38bdf8;
+  --color-primary: #0a5fc0;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
 
@@ -15,156 +15,81 @@
 }
 
 /* =========================================================================
-   1. DEFAULT: NIKE+ RUN CLUB (NRC Black & Volt Athletic)
-   Inspirado nos princípios da app Nike+ Run Club (NRC):
-   Preto obsidian/puro, Volt elétrico (#d8ff00), tipografia com peso e impacto,
-   telemetria rápida, acabamento atlético agressivo e moderno.
+   1. TEMA PADRÃO: AZUL E BRANCO (cores do clube U.R. Charneca)
+   Fundo branco, azul do clube como cor de destaque, azul-marinho no texto.
+   Estilo "run club": títulos condensados, números grandes, movimento curto.
    ========================================================================= */
-:root, [data-theme="balanced"] {
-  color-scheme: dark;
-
-  /* Fundo e Estrutura */
-  --bg-app: #0a0a0a;
-  --bg-body-desktop: #000000;
-  --bg-header: rgba(10, 10, 10, 0.92);
-  --bg-nav: rgba(10, 10, 10, 0.94);
-  --bg-sheet: #141414;
-  --bg-scrim: rgba(0, 0, 0, 0.82);
-
-  /* Superfícies dos Cartões */
-  --surface-card: #161616;
-  --surface-card-hover: #1d1d1d;
-  --surface-raised: #222222;
-  --border-card: rgba(255, 255, 255, 0.08);
-  --border-card-strong: rgba(255, 255, 255, 0.20);
-
-  /* Tipografia */
-  --text-1: #ffffff;
-  --text-2: #d4d4d8;
-  --text-3: #a3a3a3;
-  --text-muted: #71717a;
-
-  /* Cores Semânticas Nike+ Run Club (NRC) */
-  --race: #d8ff00; /* Nike Volt */
-  --race-deep: #b0d400;
-  --race-ink: #000000;
-  --run: #d8ff00; /* Volt como protagonista */
-  --on-accent: #000000;
-  --cat-trofeu: #fbbf24;
-  --cat-clube: #38bdf8;
-  --cat-sugerida: #4ade80;
-  --cat-treino: #d8ff00;
-  --cat-evento: #f472b6;
-  --coach: #38bdf8;
-  --gym: #9ec3d2;
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --danger: #ef4444;
-
-  /* Gradientes & Sombras NRC Volt */
-  --grad-race: linear-gradient(135deg, #d8ff00, #b8e600);
-  --grad-run: linear-gradient(135deg, #d8ff00, #95d400);
-  --grad-nav-pill: linear-gradient(90deg, #d8ff00, #a3e635);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(216, 255, 0, 0.12) 0%, transparent 60%),
-                  radial-gradient(95% 45% at 95% 25%, rgba(56, 189, 248, 0.08) 0%, transparent 60%),
-                  radial-gradient(130% 60% at 50% 100%, rgba(216, 255, 0, 0.06) 0%, transparent 60%);
-  --grad-fade: linear-gradient(180deg, rgba(8, 8, 10, 0.85) 0%, rgba(8, 8, 10, 0) 18%, rgba(8, 8, 10, 0) 78%, rgba(8, 8, 10, 0.95) 100%);
-  --shadow-fab: 0 0 28px rgba(216, 255, 0, 0.45);
-  --glow-pill: 0 0 16px rgba(216, 255, 0, 0.70);
-  --shadow-card: none;
-
-  --contour-run: #d8ff00;
-  --contour-run-op: 0.10;
-  --contour-race: #ffffff;
-  --contour-race-op: 0.06;
-
-  /* Tints Semânticos Adaptáveis */
-  --tint-amber-bg: rgba(216, 255, 0, 0.12);
-  --tint-amber-bg-strong: rgba(216, 255, 0, 0.22);
-  --tint-amber-border: rgba(216, 255, 0, 0.40);
-  --tint-amber-fg: #d8ff00;
-
-  --tint-blue-bg: rgba(56, 189, 248, 0.12);
-  --tint-blue-bg-strong: rgba(56, 189, 248, 0.22);
-  --tint-blue-border: rgba(56, 189, 248, 0.35);
-  --tint-blue-fg: #38bdf8;
-
-  --tint-emerald-bg: rgba(34, 197, 94, 0.12);
-  --tint-emerald-bg-strong: rgba(34, 197, 94, 0.22);
-  --tint-emerald-border: rgba(34, 197, 94, 0.35);
-  --tint-emerald-fg: #4ade80;
-
-  --tint-rose-bg: rgba(239, 68, 68, 0.12);
-  --tint-rose-bg-strong: rgba(239, 68, 68, 0.22);
-  --tint-rose-border: rgba(239, 68, 68, 0.35);
-  --tint-rose-fg: #f87171;
-}
-
-/* =========================================================================
-   2. TEMA CLARO (Luminous)
-   ========================================================================= */
-[data-theme="light"] {
+:root, [data-theme="balanced"], [data-theme="light"] {
   color-scheme: light;
 
-  --bg-app: #f8fafc;
-  --bg-body-desktop: #eef2f6;
-  --bg-header: rgba(255, 255, 255, 0.92);
-  --bg-nav: rgba(255, 255, 255, 0.94);
+  /* Fundo e Estrutura */
+  --bg-app: #f5f8ff;
+  --bg-body-desktop: #e6edfb;
+  --bg-header: rgba(255, 255, 255, 0.94);
+  --bg-nav: rgba(255, 255, 255, 0.96);
   --bg-sheet: #ffffff;
-  --bg-scrim: rgba(15, 23, 42, 0.40);
+  --bg-scrim: rgba(10, 31, 68, 0.50);
 
+  /* Superfícies dos Cartões */
   --surface-card: #ffffff;
-  --surface-card-hover: #f8fafc;
-  --surface-raised: #f1f5f9;
-  --border-card: rgba(226, 232, 240, 0.95);
-  --border-card-strong: #cbd5e1;
+  --surface-card-hover: #eef4ff;
+  --surface-raised: #eaf1ff;
+  --border-card: rgba(10, 95, 192, 0.14);
+  --border-card-strong: rgba(10, 95, 192, 0.32);
 
-  --text-1: #0f172a;
-  --text-2: #334155;
-  --text-3: #64748b;
-  --text-muted: #94a3b8;
+  /* Tipografia (contraste >= 4.5:1 sobre o fundo) */
+  --text-1: #0a1f44;
+  --text-2: #26385f;
+  --text-3: #44587f;
+  --text-muted: #566a90;
 
-  --race: #f59e0b;
-  --race-deep: #d97706;
+  /* Cores do clube e tipos de atividade */
+  --race: #0a5fc0;
+  --race-deep: #084a96;
   --race-ink: #ffffff;
-  --run: #0284c7;
+  --run: #0a5fc0; /* azul do equipamento: ações principais, números e estado ativo */
   --on-accent: #ffffff;
-  --cat-trofeu: #d97706;
-  --cat-clube: #2563eb;
-  --cat-sugerida: #059669;
-  --cat-treino: #0284c7;
-  --cat-evento: #db2777;
-  --coach: #0891b2;
-  --gym: #475569;
+  --gold: #d0a838; /* dourado do emblema: destaques, preenchimentos e bordas */
+  --gold-ink: #7a5806; /* dourado legível como texto sobre branco */
+  --on-gold: #0a1f44;
+  --cat-trofeu: #8a6508;
+  --cat-clube: #0e7490;
+  --cat-sugerida: #4f46e5;
+  --cat-treino: #0a2a6b;
+  --cat-evento: #475f8a;
+  --coach: #0e7490;
+  --gym: #475f8a;
   --ok: #059669;
-  --warn: #ea580c;
+  --warn: #b45309;
   --danger: #dc2626;
 
-  --grad-race: linear-gradient(135deg, #f59e0b, #d97706);
-  --grad-nav-pill: linear-gradient(90deg, #2563eb, #0284c7);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
-                  radial-gradient(95% 45% at 95% 25%, rgba(2, 132, 199, 0.08) 0%, transparent 60%),
-                  radial-gradient(130% 60% at 50% 100%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
-  --grad-fade: linear-gradient(180deg, rgba(248, 250, 252, 0.85) 0%, rgba(248, 250, 252, 0) 18%, rgba(248, 250, 252, 0) 80%, rgba(248, 250, 252, 0.95) 100%);
-  --shadow-fab: 0 8px 24px -2px rgba(217, 119, 6, 0.40);
-  --glow-pill: 0 2px 10px rgba(37, 99, 235, 0.45);
-  --shadow-card: 0 4px 20px -3px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  /* Gradientes & Sombras */
+  --grad-race: linear-gradient(135deg, #0a5fc0, #0a2a6b);
+  --grad-run: linear-gradient(135deg, #0a5fc0, #0a2a6b);
+  --grad-nav-pill: linear-gradient(90deg, #0a5fc0, #d0a838);
+  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(10, 95, 192, 0.10) 0%, transparent 60%),
+                  radial-gradient(95% 45% at 95% 25%, rgba(59, 130, 246, 0.07) 0%, transparent 60%),
+                  radial-gradient(130% 60% at 50% 100%, rgba(10, 95, 192, 0.05) 0%, transparent 60%);
+  --grad-fade: linear-gradient(180deg, rgba(245, 248, 255, 0.85) 0%, rgba(245, 248, 255, 0) 18%, rgba(245, 248, 255, 0) 80%, rgba(245, 248, 255, 0.95) 100%);
+  --shadow-fab: 0 8px 24px -4px rgba(10, 95, 192, 0.50);
+  --glow-pill: 0 2px 10px rgba(10, 95, 192, 0.40);
+  --shadow-card: 0 4px 20px -4px rgba(10, 31, 68, 0.08), 0 1px 3px rgba(10, 31, 68, 0.06);
 
-  --contour-run: #0284c7;
-  --contour-run-op: 0.08;
-  --contour-race: #d97706;
-  --contour-race-op: 0.07;
+  --contour-run: #0a5fc0;
+  --contour-run-op: 0.06;
+  --contour-race: #d0a838;
+  --contour-race-op: 0.05;
 
-  /* Tints Modo Claro */
+  /* Tints Semânticos */
   --tint-amber-bg: #fffbeb;
   --tint-amber-bg-strong: #fef3c7;
   --tint-amber-border: #fde68a;
   --tint-amber-fg: #78350f;
 
-  --tint-blue-bg: #eff6ff;
-  --tint-blue-bg-strong: #dbeafe;
-  --tint-blue-border: #bfdbfe;
-  --tint-blue-fg: #1e3a8a;
+  --tint-blue-bg: #eaf1ff;
+  --tint-blue-bg-strong: #d6e4ff;
+  --tint-blue-border: #bcd0f5;
+  --tint-blue-fg: #084a96;
 
   --tint-emerald-bg: #ecfdf5;
   --tint-emerald-bg-strong: #d1fae5;
@@ -178,79 +103,82 @@
 }
 
 /* =========================================================================
-   3. TEMA ESCURO PROFUNDO (Obsidiana)
+   2. TEMA ESCURO: AZUL-MARINHO E BRANCO
    ========================================================================= */
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-app: #0b1120;
-  --bg-body-desktop: #050811;
-  --bg-header: rgba(4, 8, 15, 0.88);
-  --bg-nav: rgba(11, 17, 32, 0.82);
-  --bg-sheet: #0f172a;
-  --bg-scrim: rgba(2, 6, 12, 0.72);
+  --bg-app: #07142e;
+  --bg-body-desktop: #030a1a;
+  --bg-header: rgba(7, 20, 46, 0.94);
+  --bg-nav: rgba(7, 20, 46, 0.96);
+  --bg-sheet: #0c1d40;
+  --bg-scrim: rgba(2, 8, 23, 0.78);
 
-  --surface-card: rgba(15, 23, 42, 0.75);
-  --surface-card-hover: rgba(15, 23, 42, 0.90);
-  --surface-raised: rgba(255, 255, 255, 0.06);
-  --border-card: rgba(255, 255, 255, 0.09);
-  --border-card-strong: rgba(255, 255, 255, 0.15);
+  --surface-card: #0e2147;
+  --surface-card-hover: #132a58;
+  --surface-raised: #17306a;
+  --border-card: rgba(255, 255, 255, 0.12);
+  --border-card-strong: rgba(255, 255, 255, 0.26);
 
-  --text-1: #f8fafc;
-  --text-2: #e2e8f0;
-  --text-3: #cbd5e1;
-  --text-muted: #8b96a4;
+  --text-1: #ffffff;
+  --text-2: #dbe6ff;
+  --text-3: #b4c5e8;
+  --text-muted: #94a8d4;
 
-  --race: #fbbf24;
-  --race-deep: #d97706;
-  --race-ink: #1a1206;
-  --run: #2ee0ff;
-  --on-accent: #04121a;
-  --cat-trofeu: #fbbf24;
-  --cat-clube: #60a5fa;
-  --cat-sugerida: #34d399;
-  --cat-treino: #2ee0ff;
-  --cat-evento: #f472b6;
-  --coach: #22d3ee;
-  --gym: #9ec3d2;
+  --race: #6ea8ff;
+  --race-deep: #3b82f6;
+  --race-ink: #04122e;
+  --run: #6ea8ff;
+  --on-accent: #04122e;
+  --gold: #e0b94a;
+  --gold-ink: #e8c866;
+  --on-gold: #0a1f44;
+  --cat-trofeu: #e8c866;
+  --cat-clube: #5ccfe6;
+  --cat-sugerida: #a5b4fc;
+  --cat-treino: #cfe0ff;
+  --cat-evento: #9fb3dd;
+  --coach: #5ccfe6;
+  --gym: #9fb3dd;
   --ok: #34d399;
-  --warn: #fb7c4d;
+  --warn: #fbbf24;
   --danger: #f87171;
 
-  --grad-race: linear-gradient(135deg, #d97706, #fbbf24);
-  --grad-nav-pill: linear-gradient(90deg, #22d3ee, #7fb3c7);
-  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(217, 119, 6, 0.18) 0%, transparent 58%),
-                  radial-gradient(95% 45% at 95% 30%, rgba(14, 165, 233, 0.13) 0%, transparent 62%),
-                  radial-gradient(130% 60% at 50% 104%, rgba(90, 143, 163, 0.16) 0%, transparent 62%);
-  --grad-fade: linear-gradient(180deg, rgba(11, 17, 32, 0.75) 0%, rgba(11, 17, 32, 0) 20%, rgba(11, 17, 32, 0) 78%, rgba(11, 17, 32, 0.85) 100%);
-  --shadow-fab: 0 4px 22px rgba(251, 191, 36, 0.45);
-  --glow-pill: 0 0 10px rgba(34, 211, 238, 0.60);
+  --grad-race: linear-gradient(135deg, #3b82f6, #6ea8ff);
+  --grad-run: linear-gradient(135deg, #3b82f6, #6ea8ff);
+  --grad-nav-pill: linear-gradient(90deg, #3b82f6, #e0b94a);
+  --grad-ambient: radial-gradient(115% 55% at 12% 0%, rgba(59, 130, 246, 0.22) 0%, transparent 58%),
+                  radial-gradient(95% 45% at 95% 30%, rgba(110, 168, 255, 0.12) 0%, transparent 62%),
+                  radial-gradient(130% 60% at 50% 104%, rgba(10, 95, 192, 0.20) 0%, transparent 62%);
+  --grad-fade: linear-gradient(180deg, rgba(7, 20, 46, 0.80) 0%, rgba(7, 20, 46, 0) 20%, rgba(7, 20, 46, 0) 78%, rgba(7, 20, 46, 0.90) 100%);
+  --shadow-fab: 0 4px 22px rgba(110, 168, 255, 0.45);
+  --glow-pill: 0 0 12px rgba(110, 168, 255, 0.60);
   --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.35);
 
-  --contour-run: #2ee0ff;
-  --contour-run-op: 0.14;
-  --contour-race: #fbbf24;
-  --contour-race-op: 0.13;
+  --contour-run: #6ea8ff;
+  --contour-run-op: 0.12;
+  --contour-race: #e0b94a;
+  --contour-race-op: 0.06;
 
-  /* Tints Modo Escuro Profundo */
-  --tint-amber-bg: rgba(251, 191, 36, 0.10);
-  --tint-amber-bg-strong: rgba(251, 191, 36, 0.18);
-  --tint-amber-border: rgba(251, 191, 36, 0.30);
+  --tint-amber-bg: rgba(251, 191, 36, 0.12);
+  --tint-amber-bg-strong: rgba(251, 191, 36, 0.20);
+  --tint-amber-border: rgba(251, 191, 36, 0.32);
   --tint-amber-fg: #fde68a;
 
-  --tint-blue-bg: rgba(56, 189, 248, 0.10);
-  --tint-blue-bg-strong: rgba(56, 189, 248, 0.18);
-  --tint-blue-border: rgba(56, 189, 248, 0.30);
-  --tint-blue-fg: #7dd3fc;
+  --tint-blue-bg: rgba(110, 168, 255, 0.12);
+  --tint-blue-bg-strong: rgba(110, 168, 255, 0.22);
+  --tint-blue-border: rgba(110, 168, 255, 0.35);
+  --tint-blue-fg: #b8d4ff;
 
-  --tint-emerald-bg: rgba(52, 211, 153, 0.10);
-  --tint-emerald-bg-strong: rgba(52, 211, 153, 0.18);
-  --tint-emerald-border: rgba(52, 211, 153, 0.30);
+  --tint-emerald-bg: rgba(52, 211, 153, 0.12);
+  --tint-emerald-bg-strong: rgba(52, 211, 153, 0.20);
+  --tint-emerald-border: rgba(52, 211, 153, 0.32);
   --tint-emerald-fg: #a7f3d0;
 
-  --tint-rose-bg: rgba(251, 113, 133, 0.10);
-  --tint-rose-bg-strong: rgba(251, 113, 133, 0.18);
-  --tint-rose-border: rgba(251, 113, 133, 0.30);
+  --tint-rose-bg: rgba(251, 113, 133, 0.12);
+  --tint-rose-bg-strong: rgba(251, 113, 133, 0.20);
+  --tint-rose-border: rgba(251, 113, 133, 0.32);
   --tint-rose-fg: #fecdd3;
 }
 
@@ -537,7 +465,7 @@ p {
   letter-spacing: -0.02em;
 }
 .eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -580,7 +508,7 @@ p {
   animation: live-pulse 1.8s ease-out infinite;
 }
 
-/* Cartão de destaque: preto profundo com faixa de cor */
+/* Cartão de destaque com faixa de cor */
 .hero-card {
   position: relative;
   overflow: hidden;
@@ -595,7 +523,7 @@ p {
   top: -40%;
   width: 70%;
   height: 120%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--run) 22%, transparent), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--gold) 28%, transparent), transparent);
   pointer-events: none;
 }
 

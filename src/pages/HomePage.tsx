@@ -142,7 +142,7 @@ export const HomePage: React.FC = () => {
                     navigate('/comunicados', { state: { focusId: n.id } })
                   }}
                 >
-                  <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-3)]">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-3)]">
                     {n.pinned ? <Pin className="w-3 h-3 text-[var(--run)]" /> : <Megaphone className="w-3 h-3" />}
                     <span>{n.created_by_name}</span>
                     <span>· {formatShortDate(n.created_at.slice(0, 10))}</span>
@@ -206,7 +206,7 @@ export const HomePage: React.FC = () => {
               <Avatar name={b.name} child={b.isChild} size={32} />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-[var(--text-1)] truncate">{b.name}</div>
-                <div className="text-[11px] text-[var(--text-3)]">
+                <div className="text-xs text-[var(--text-3)]">
                   {formatShortDate(b.date)} · faz {b.turning} anos
                 </div>
               </div>
@@ -215,7 +215,7 @@ export const HomePage: React.FC = () => {
                   <Cake className="w-3 h-3" /> Hoje
                 </Tag>
               ) : (
-                <span className="text-[11px] font-semibold text-[var(--text-3)]">
+                <span className="text-xs font-semibold text-[var(--text-3)]">
                   {b.daysAway === 1 ? 'amanhã' : `em ${b.daysAway} dias`}
                 </span>
               )}

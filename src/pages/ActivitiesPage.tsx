@@ -272,7 +272,7 @@ export const ActivitiesPage: React.FC = () => {
                 <ChevronRight className="w-4 h-4 text-[var(--text-2)]" />
               </button>
             </div>
-            <div className="grid grid-cols-7 text-center text-[10px] font-bold uppercase text-[var(--text-3)]">
+            <div className="grid grid-cols-7 text-center text-xs font-bold uppercase text-[var(--text-3)]">
               {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
                 <span key={d}>{d}</span>
               ))}
@@ -314,7 +314,7 @@ export const ActivitiesPage: React.FC = () => {
                 )
               })}
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--text-3)] pt-1">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-3)] pt-1">
               {KINDS.map((k) => (
                 <span key={k} className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLOR[k] }} />

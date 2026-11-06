@@ -20,7 +20,7 @@ export const BottomNav: React.FC = () => {
   ]
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold transition ${
+    `relative flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-bold transition ${
       isActive ? 'text-[var(--run)]' : 'text-[var(--text-3)]'
     }`
 
@@ -90,9 +90,12 @@ export const BottomNav: React.FC = () => {
           <span className="relative">
             <Megaphone className="w-5 h-5" />
             {unreadNotificationsCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-[var(--danger)] text-white text-[9px] font-black flex items-center justify-center">
+              <span aria-hidden="true" className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 rounded-full bg-[#b91c1c] text-white text-xs font-black leading-none flex items-center justify-center">
                 {unreadNotificationsCount}
               </span>
+            )}
+            {unreadNotificationsCount > 0 && (
+              <span className="sr-only">{unreadNotificationsCount} comunicados por ler</span>
             )}
           </span>
           Comunicados

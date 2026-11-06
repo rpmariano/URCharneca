@@ -117,7 +117,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
                 { value: 'individual', label: 'Sugerida' },
               ]}
             />
-            <span className="block text-[11px] text-[var(--text-3)] mt-1.5">{CATEGORIA_LABELS[category].desc}</span>
+            <span className="block text-xs text-[var(--text-3)] mt-1.5">{CATEGORIA_LABELS[category].desc}</span>
           </Field>
         )}
 

@@ -94,7 +94,7 @@ const PanelTab: React.FC = () => {
         ].map(([label, n]) => (
           <Card key={label} className="py-3">
             <div className="font-display font-black text-xl text-[var(--text-1)]">{n}</div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">{label}</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">{label}</div>
           </Card>
         ))}
       </div>
@@ -108,7 +108,7 @@ const PanelTab: React.FC = () => {
             <Card key={race.id} accent={KIND_COLOR[race.category]} className="p-3.5 space-y-2.5">
               <button type="button" className="w-full text-left cursor-pointer" onClick={() => setRaceId(race.id)}>
                 <div className="text-sm font-bold text-[var(--text-1)]">{race.title}</div>
-                <div className="text-[11px] text-[var(--text-3)] flex gap-2 flex-wrap items-center">
+                <div className="text-xs text-[var(--text-3)] flex gap-2 flex-wrap items-center">
                   {formatShortDate(race.date)} · {total} inscritos
                   {pending > 0 ? <Tag tone="warn">{pending} por confirmar</Tag> : <Tag tone="ok">Confirmadas</Tag>}
                   {bibs > 0 && <Tag>{bibs} dorsais por levantar</Tag>}
@@ -226,7 +226,7 @@ const AthletesTab: React.FC = () => {
                 <Avatar name={p.name} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-bold text-[var(--text-1)] truncate">{p.name}</div>
-                  <div className="text-[11px] text-[var(--text-3)] truncate">
+                  <div className="text-xs text-[var(--text-3)] truncate">
                     {p.escalao}
                     {kids.length > 0 && ` · ${kids.length} criança(s)`}
                   </div>
@@ -396,7 +396,7 @@ const ChildrenTab: React.FC = () => {
               <Avatar name={c.name} child />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-[var(--text-1)] truncate">{c.name}</div>
-                <div className="text-[11px] text-[var(--text-3)]">
+                <div className="text-xs text-[var(--text-3)]">
                   {c.escalao} · {calculateAge(c.birth_date)} anos
                 </div>
               </div>
@@ -483,7 +483,7 @@ const AgendaTab: React.FC = () => {
             <div className="min-w-0 flex-1">
               <KindBadge kind={kind} label={event ? EVENT_TYPE_LABELS[event.type].short : undefined} />
               <div className="text-sm font-bold text-[var(--text-1)] truncate mt-0.5">{i.title}</div>
-              <div className="text-[11px] text-[var(--text-3)]">
+              <div className="text-xs text-[var(--text-3)]">
                 {formatShortDate(i.date)} · {i.time}
               </div>
             </div>
