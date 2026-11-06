@@ -63,6 +63,8 @@ const ScrollToTop: React.FC = () => {
   return null
 }
 
+import { Intro } from './components/Intro'
+
 const TOAST_ICON = { success: CircleCheck, info: Info, warning: CircleAlert }
 
 const AppShell: React.FC = () => {
@@ -97,6 +99,7 @@ const AppShell: React.FC = () => {
       </main>
       {!isDetail && <BottomNav />}
       <EditorHost />
+      <Intro />
 
       <div
         className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"

@@ -34,3 +34,6 @@ Antes, um atleta novo via a página Explorar com muita informação (comunicado,
 ## Como funciona o guia
 - Guarda no dispositivo (`localStorage`, chave `urc_onboarding_v1`) o que já foi dispensado: `welcome-athlete`, `welcome-admin`, `admin-select`.
 - Código: `src/utils/onboarding.ts` (hook `useOnboardingItem`), `src/components/OnboardingCards.tsx` (`WelcomeCard`, `ContextualHint`).
+
+## Atualização: introdução interativa
+O cartão de boas-vindas foi substituído por uma introdução em ecrã inteiro (`src/components/Intro.tsx`): slides deslizáveis com demonstrações em que se toca (categorias, transporte/carrinha, crianças, estados da inscrição) e um slide extra de gestão para administradores. Aparece à primeira abertura e pode ser repetida em Perfil → "Ver a introdução outra vez". As dicas contextuais mantêm-se.
