@@ -278,7 +278,7 @@ export const ExplorePage: React.FC = () => {
           alt="Emblema da União Recreativa da Charneca"
           width={44}
           height={44}
-          className="w-11 h-11 rounded-xl object-cover bg-black border-2 border-[var(--gold)] shrink-0"
+          className="w-11 h-11 rounded-xl object-cover bg-[var(--run)] border-2 border-[var(--gold)] shrink-0"
         />
         <div className="min-w-0">
           <div className="t-body t-strong text-[var(--text-1)] truncate">U.R. Charneca · Atletismo</div>
