@@ -8,6 +8,7 @@ import type {
   AppNotification,
   TrofeuSeasonData,
   TrofeuSyncLog,
+  DirectoryEntry,
 } from '../types'
 
 export interface HydratedSupabaseData {
@@ -19,6 +20,8 @@ export interface HydratedSupabaseData {
   notifications: AppNotification[]
   trofeuSeasons: TrofeuSeasonData[]
   trofeuSyncLogs: TrofeuSyncLog[]
+  /** Nomes de toda a equipa (vista `team_directory`), sem dados sensíveis */
+  directory: DirectoryEntry[]
 }
 
 const toProfileRow = (p: AthleteProfile) => ({
@@ -385,134 +388,235 @@ const fromSyncLogRow = (row: Record<string, unknown>): TrofeuSyncLog => ({
   summary: String(row.summary ?? ''),
 })
 
-function logSupabaseError(op: string, error: { message: string } | null) {
-  if (error) {
-    console.warn(`[Supabase] Erro em ${op}:`, error.message)
+
+// ---------------------------------------------------------------------------
+// Resultados e classificação de erros
+// ---------------------------------------------------------------------------
+/** session = JWT expirado/inválido; permission = RLS ou guarda; network = sem ligação; other = resto */
+export type DbFailureKind = 'session' | 'permission' | 'network' | 'other'
+
+export type DbResult<T = undefined> = { ok: true; data: T } | { ok: false; kind: DbFailureKind; message: string }
+
+interface RawError {
+  message?: string
+  code?: string
+  details?: string
+}
+
+function classifyError(error: RawError | null, status?: number): DbFailureKind {
+  const msg = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
+  const code = error?.code ?? ''
+  if (status === 401 || code === 'PGRST301' || code === 'PGRST303' || /jwt|not authenticated|invalid token/.test(msg)) {
+    return 'session'
   }
-}
-
-export async function upsertProfiles(profiles: AthleteProfile[]) {
-  if (!isSupabaseConfigured || profiles.length === 0) return
-  const { error } = await supabase.from('profiles').upsert(profiles.map(toProfileRow), { onConflict: 'id' })
-  logSupabaseError('upsertProfiles', error)
-}
-
-export async function deleteProfileById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('profiles').delete().eq('id', id)
-  logSupabaseError('deleteProfileById', error)
-}
-
-export async function upsertYouthAthletes(youth: YouthAthlete[]) {
-  if (!isSupabaseConfigured || youth.length === 0) return
-  const { error } = await supabase.from('youth_athletes').upsert(youth.map(toYouthRow), { onConflict: 'id' })
-  logSupabaseError('upsertYouthAthletes', error)
-}
-
-export async function deleteYouthById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('youth_athletes').delete().eq('id', id)
-  logSupabaseError('deleteYouthById', error)
-}
-
-export async function upsertRaces(races: Race[]) {
-  if (!isSupabaseConfigured || races.length === 0) return
-  const { error } = await supabase.from('races').upsert(races.map(toRaceRow), { onConflict: 'id' })
-  logSupabaseError('upsertRaces', error)
-}
-
-export async function deleteRaceById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('races').delete().eq('id', id)
-  logSupabaseError('deleteRaceById', error)
-}
-
-export async function upsertRegistrations(regs: RaceRegistration[]) {
-  if (!isSupabaseConfigured || regs.length === 0) return
-  const { error } = await supabase.from('race_registrations').upsert(regs.map(toRegistrationRow), { onConflict: 'id' })
-  logSupabaseError('upsertRegistrations', error)
-}
-
-export async function deleteRegistrationById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('race_registrations').delete().eq('id', id)
-  logSupabaseError('deleteRegistrationById', error)
-}
-
-export async function upsertEvents(events: TeamEvent[]) {
-  if (!isSupabaseConfigured || events.length === 0) return
-  const { error } = await supabase.from('team_events').upsert(events.map(toEventRow), { onConflict: 'id' })
-  logSupabaseError('upsertEvents', error)
-}
-
-export async function deleteEventById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('team_events').delete().eq('id', id)
-  logSupabaseError('deleteEventById', error)
-}
-
-export async function upsertNotifications(notifs: AppNotification[]) {
-  if (!isSupabaseConfigured || notifs.length === 0) return
-  const { error } = await supabase.from('notifications').upsert(notifs.map(toNotificationRow), { onConflict: 'id' })
-  logSupabaseError('upsertNotifications', error)
-}
-
-export async function deleteNotificationById(id: string) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('notifications').delete().eq('id', id)
-  logSupabaseError('deleteNotificationById', error)
-}
-
-export async function upsertTrofeuSeasons(seasons: TrofeuSeasonData[]) {
-  if (!isSupabaseConfigured || seasons.length === 0) return
-  const { error } = await supabase
-    .from('trofeu_seasons')
-    .upsert(seasons.map(toTrofeuSeasonRow), { onConflict: 'season' })
-  logSupabaseError('upsertTrofeuSeasons', error)
-}
-
-export async function insertTrofeuSyncLog(log: TrofeuSyncLog) {
-  if (!isSupabaseConfigured) return
-  const { error } = await supabase.from('trofeu_sync_logs').upsert(toSyncLogRow(log), { onConflict: 'id' })
-  logSupabaseError('insertTrofeuSyncLog', error)
-}
-
-export async function seedSupabaseDatabase(seed: Omit<HydratedSupabaseData, 'trofeuSyncLogs'>) {
-  if (!isSupabaseConfigured) return
-  await Promise.all([
-    upsertProfiles(seed.profiles),
-    upsertYouthAthletes(seed.youthAthletes),
-    upsertRaces(seed.races),
-    upsertEvents(seed.events),
-    upsertNotifications(seed.notifications),
-    upsertTrofeuSeasons(seed.trofeuSeasons),
-  ])
-  if (seed.registrations.length > 0) {
-    await upsertRegistrations(seed.registrations)
+  if (
+    status === 403 ||
+    code === '42501' ||
+    code === 'P0001' ||
+    /row-level security|permission denied|reservad|só o administrador|só podes/.test(msg)
+  ) {
+    return 'permission'
   }
+  if (status === 0 || /failed to fetch|networkerror|network request|load failed|fetch/.test(msg)) return 'network'
+  return 'other'
 }
 
-export async function resetAllSupabaseData(seed: Omit<HydratedSupabaseData, 'trofeuSyncLogs'>) {
-  if (!isSupabaseConfigured) return
-  await Promise.all([
-    supabase.from('race_registrations').delete().neq('id', ''),
-    supabase.from('notifications').delete().neq('id', ''),
-    supabase.from('team_events').delete().neq('id', ''),
-    supabase.from('trofeu_sync_logs').delete().neq('id', ''),
-    supabase.from('youth_athletes').delete().neq('id', ''),
-  ])
-  await supabase.from('races').delete().neq('id', '')
-  await supabase.from('profiles').delete().neq('id', '')
-  await supabase.from('trofeu_seasons').delete().neq('season', '')
-  await seedSupabaseDatabase(seed)
+/** Mensagem em português para mostrar ao utilizador. */
+export function describeFailure(res: { kind: DbFailureKind; message: string }): string {
+  if (res.kind === 'permission') {
+    // As guardas da base de dados já devolvem frases em português ("Só o administrador ...")
+    return /^(Só |Alteração |Dorsais |Este email)/.test(res.message) ? res.message : 'Sem permissão para esta ação.'
+  }
+  if (res.kind === 'network') return 'Sem ligação. Não foi possível guardar.'
+  if (res.kind === 'session') return 'A tua sessão expirou. Entra de novo.'
+  return 'Não foi possível guardar.'
 }
 
-export async function fetchAllFromSupabase(
-  seedFallback: Omit<HydratedSupabaseData, 'trofeuSyncLogs'>
-): Promise<HydratedSupabaseData | null> {
-  if (!isSupabaseConfigured) return null
+const fail = (kind: DbFailureKind, message: string): DbResult<never> => ({ ok: false, kind, message })
+
+type PgResponse = { data: unknown; error: RawError | null; status: number }
+type Row = Record<string, unknown>
+
+async function exec(op: PromiseLike<PgResponse>, opts?: { allowEmpty?: boolean }): Promise<DbResult<Row[]>> {
   try {
-    const [profilesRes, youthRes, racesRes, regsRes, eventsRes, notifsRes, seasonsRes, logsRes] = await Promise.all([
+    const { data, error, status } = await op
+    if (error) {
+      console.warn('[Supabase] Erro:', error.message)
+      return fail(classifyError(error, status), error.message ?? '')
+    }
+    const rows = Array.isArray(data) ? (data as Row[]) : []
+    // O RLS filtra em silêncio: um update/delete sem linhas afetadas é falta de permissão (ou linha inexistente)
+    if (rows.length === 0 && !opts?.allowEmpty) return fail('permission', 'Nenhuma linha afetada')
+    return { ok: true, data: rows }
+  } catch (err) {
+    console.warn('[Supabase] Falha de rede:', err)
+    return fail('network', err instanceof Error ? err.message : 'network')
+  }
+}
+
+const OK: DbResult<undefined> = { ok: true, data: undefined }
+const dropOk = <T,>(r: DbResult<T>): DbResult<undefined> => (r.ok ? OK : r)
+
+/** Executa passos em série e pára no primeiro que falhar. */
+export async function runSequence(steps: Array<() => Promise<DbResult<unknown>>>): Promise<DbResult<undefined>> {
+  for (const step of steps) {
+    const res = await step()
+    if (!res.ok) return res
+  }
+  return OK
+}
+
+const omit = (row: Row, keys: string[]): Row => {
+  const copy = { ...row }
+  for (const k of keys) delete copy[k]
+  return copy
+}
+
+// Campos que as guardas da base de dados só deixam o administrador alterar (ver 20261124_auth_rls.sql)
+const PROFILE_ADMIN_ONLY = ['id', 'role', 'login_authorized', 'login_email', 'email', 'auth_user_id', 'dorsal_trofeu', 'dorsais_trofeu']
+const YOUTH_ADMIN_ONLY = [
+  'id',
+  'auth_user_id',
+  'can_self_manage',
+  'login_email',
+  'associated_adult_ids',
+  'dorsal_trofeu',
+  'dorsais_trofeu',
+]
+const REG_ADMIN_ONLY = ['id', 'athlete_id', 'race_id', 'bib_number', 'bib_status', 'bib_pickup_by', 'result_time', 'trophy_points']
+
+/**
+ * `create` usa insert, senão update (nunca upsert: o INSERT de um upsert dispara as guardas de criação
+ * mesmo para linhas existentes). Um não-admin nunca envia campos reservados.
+ */
+function write(table: string, row: Row, create: boolean, adminOnly: string[], asAdmin: boolean) {
+  if (create) return exec(supabase.from(table).insert(row).select())
+  const patch = asAdmin ? omit(row, ['id']) : omit(row, adminOnly)
+  return exec(supabase.from(table).update(patch).eq('id', row.id as string).select())
+}
+
+// ---------------------------------------------------------------------------
+// Escritas (esperam pelo servidor; o chamador reverte o estado local se falharem)
+// ---------------------------------------------------------------------------
+export async function saveProfile(p: AthleteProfile, o: { create: boolean; asAdmin: boolean }) {
+  return dropOk(await write('profiles', toProfileRow(p), o.create, PROFILE_ADMIN_ONLY, o.asAdmin))
+}
+
+export async function saveYouth(y: YouthAthlete, o: { create: boolean; asAdmin: boolean }) {
+  return dropOk(await write('youth_athletes', toYouthRow(y), o.create, YOUTH_ADMIN_ONLY, o.asAdmin))
+}
+
+export async function saveRace(r: Race, o: { create: boolean }) {
+  return dropOk(await write('races', toRaceRow(r), o.create, [], true))
+}
+
+/** Devolve a linha tal como ficou no servidor (ex.: `van_requested_at` definido pelo servidor). */
+export async function saveRegistration(
+  r: RaceRegistration,
+  o: { create: boolean; asAdmin: boolean }
+): Promise<DbResult<RaceRegistration>> {
+  const res = await write('race_registrations', toRegistrationRow(r), o.create, REG_ADMIN_ONLY, o.asAdmin)
+  if (!res.ok) return res
+  return { ok: true, data: res.data[0] ? fromRegistrationRow(res.data[0]) : r }
+}
+
+/** Só administradores (as guardas deixam-nos alterar dorsais, estado, etc.). */
+export async function saveRegistrationsAdmin(regs: RaceRegistration[]) {
+  if (regs.length === 0) return OK
+  return dropOk(await exec(supabase.from('race_registrations').upsert(regs.map(toRegistrationRow), { onConflict: 'id' }).select()))
+}
+
+export async function saveEvent(e: TeamEvent, o: { create: boolean }) {
+  return dropOk(await write('team_events', toEventRow(e), o.create, [], true))
+}
+
+/**
+ * Presença num evento: lê as presenças atuais do servidor e altera só a linha de quem responde,
+ * para dois atletas a responder ao mesmo tempo não se apagarem um ao outro.
+ */
+export async function saveEventRsvp(
+  eventId: string,
+  entry: TeamEvent['attendees'][number]
+): Promise<DbResult<TeamEvent['attendees']>> {
+  const cur = await exec(supabase.from('team_events').select('attendees').eq('id', eventId))
+  if (!cur.ok) return cur
+  const current = Array.isArray(cur.data[0]?.attendees) ? (cur.data[0].attendees as TeamEvent['attendees']) : []
+  const attendees = [...current.filter((a) => a.athlete_id !== entry.athlete_id), entry]
+  const res = await exec(supabase.from('team_events').update({ attendees }).eq('id', eventId).select('id'))
+  return res.ok ? { ok: true, data: attendees } : res
+}
+
+export async function saveNotification(n: AppNotification, o: { create: boolean }) {
+  return dropOk(await write('notifications', toNotificationRow(n), o.create, [], true))
+}
+
+/** Marca como lido sem apagar leituras de outros (junta ao `read_by` atual do servidor). */
+export async function markNotificationsRead(ids: string[], readerId: string): Promise<DbResult<undefined>> {
+  if (ids.length === 0) return OK
+  const cur = await exec(supabase.from('notifications').select('id, read_by').in('id', ids), { allowEmpty: true })
+  if (!cur.ok) return cur
+  for (const row of cur.data) {
+    const readBy = Array.isArray(row.read_by) ? (row.read_by as string[]) : []
+    if (readBy.includes(readerId)) continue
+    const res = await exec(
+      supabase.from('notifications').update({ read_by: [...readBy, readerId] }).eq('id', row.id as string).select('id')
+    )
+    if (!res.ok) return res
+  }
+  return OK
+}
+
+const upsertMany = (table: string, rows: Row[], onConflict: string): Promise<DbResult<undefined>> =>
+  rows.length === 0 ? Promise.resolve(OK) : exec(supabase.from(table).upsert(rows, { onConflict }).select()).then(dropOk)
+
+/** Resultado de uma sincronização do Troféu (só administradores). */
+export async function saveTrofeuSync(data: {
+  races: Race[]
+  profiles: AthleteProfile[]
+  youthAthletes: YouthAthlete[]
+  seasons: TrofeuSeasonData[]
+  log: TrofeuSyncLog
+  notifications: AppNotification[]
+}): Promise<DbResult<undefined>> {
+  return runSequence([
+    () => upsertMany('races', data.races.map(toRaceRow), 'id'),
+    () => upsertMany('profiles', data.profiles.map(toProfileRow), 'id'),
+    () => upsertMany('youth_athletes', data.youthAthletes.map(toYouthRow), 'id'),
+    () => upsertMany('trofeu_seasons', data.seasons.map(toTrofeuSeasonRow), 'season'),
+    () => upsertMany('trofeu_sync_logs', [toSyncLogRow(data.log)], 'id'),
+    () => upsertMany('notifications', data.notifications.map(toNotificationRow), 'id'),
+  ])
+}
+
+export const saveTrofeuSeasons = (seasons: TrofeuSeasonData[]) =>
+  upsertMany('trofeu_seasons', seasons.map(toTrofeuSeasonRow), 'season')
+
+// ---------------------------------------------------------------------------
+// Remoções (só o admin, salvo provas sugeridas pelo próprio)
+// ---------------------------------------------------------------------------
+const del = (table: string, column: string, value: string, allowEmpty = false) =>
+  exec(supabase.from(table).delete().eq(column, value).select(column), { allowEmpty }).then(dropOk)
+
+export const deleteProfileById = (id: string) => del('profiles', 'id', id)
+export const deleteYouthById = (id: string) => del('youth_athletes', 'id', id)
+export const deleteRaceById = (id: string) => del('races', 'id', id)
+export const deleteRegistrationById = (id: string) => del('race_registrations', 'id', id)
+export const deleteEventById = (id: string) => del('team_events', 'id', id)
+export const deleteNotificationById = (id: string) => del('notifications', 'id', id)
+/** Apaga as inscrições de uma pessoa (adulta ou menor); zero linhas não é erro. */
+export const deleteRegistrationsOfAthlete = (id: string) => del('race_registrations', 'athlete_id', id, true)
+export const deleteRegistrationsOfDependent = (id: string) => del('race_registrations', 'dependent_id', id, true)
+
+// ---------------------------------------------------------------------------
+// Leitura
+// ---------------------------------------------------------------------------
+export type HydrateResult = { ok: true; data: HydratedSupabaseData } | { ok: false; kind: DbFailureKind }
+
+/** Carrega tudo o que o RLS deixa ver a este utilizador. Não escreve nada: o Supabase é a fonte de verdade. */
+export async function fetchAllFromSupabase(): Promise<HydrateResult> {
+  if (!isSupabaseConfigured) return { ok: false, kind: 'other' }
+  try {
+    const responses = await Promise.all([
       supabase.from('profiles').select('*').order('name', { ascending: true }),
       supabase.from('youth_athletes').select('*').order('name', { ascending: true }),
       supabase.from('races').select('*').order('date', { ascending: true }).order('start_time', { ascending: true }),
@@ -521,52 +625,42 @@ export async function fetchAllFromSupabase(
       supabase.from('notifications').select('*').order('created_at', { ascending: false }),
       supabase.from('trofeu_seasons').select('*').order('edition_number', { ascending: false }),
       supabase.from('trofeu_sync_logs').select('*').order('timestamp', { ascending: false }).limit(20),
+      supabase.from('team_directory').select('id, name, nickname, gender, escalao, kind').order('name', { ascending: true }),
     ])
+    const [profilesRes, youthRes, racesRes, regsRes, eventsRes, notifsRes, seasonsRes, logsRes, dirRes] = responses
 
-    const firstError =
-      profilesRes.error ||
-      youthRes.error ||
-      racesRes.error ||
-      regsRes.error ||
-      eventsRes.error ||
-      notifsRes.error ||
-      seasonsRes.error ||
-      logsRes.error
-
-    if (firstError) {
-      logSupabaseError('fetchAllFromSupabase', firstError)
-      return null
+    const failed = responses.find((r) => r.error)
+    if (failed?.error) {
+      console.warn('[Supabase] Erro ao carregar dados:', failed.error.message)
+      return { ok: false, kind: classifyError(failed.error, failed.status) }
     }
 
-    const profiles = (profilesRes.data ?? []).map((r) => fromProfileRow(r as Record<string, unknown>))
-    const youthAthletes = (youthRes.data ?? []).map((r) => fromYouthRow(r as Record<string, unknown>))
-    const races = (racesRes.data ?? []).map((r) => fromRaceRow(r as Record<string, unknown>))
-    const registrations = (regsRes.data ?? []).map((r) => fromRegistrationRow(r as Record<string, unknown>))
-    const events = (eventsRes.data ?? []).map((r) => fromEventRow(r as Record<string, unknown>))
-    const notifications = (notifsRes.data ?? []).map((r) => fromNotificationRow(r as Record<string, unknown>))
-    const trofeuSeasons = (seasonsRes.data ?? []).map((r) => fromTrofeuSeasonRow(r as Record<string, unknown>))
-    const trofeuSyncLogs = (logsRes.data ?? []).map((r) => fromSyncLogRow(r as Record<string, unknown>))
-
-    if (profiles.length === 0 && races.length === 0) {
-      await seedSupabaseDatabase(seedFallback)
-      return {
-        ...seedFallback,
-        trofeuSyncLogs: [],
-      }
-    }
-
+    const rows = (d: unknown) => (Array.isArray(d) ? (d as Row[]) : [])
     return {
-      profiles,
-      youthAthletes,
-      races,
-      registrations,
-      events,
-      notifications,
-      trofeuSeasons: trofeuSeasons.length > 0 ? trofeuSeasons : seedFallback.trofeuSeasons,
-      trofeuSyncLogs,
+      ok: true,
+      data: {
+        profiles: rows(profilesRes.data).map(fromProfileRow),
+        youthAthletes: rows(youthRes.data).map(fromYouthRow),
+        races: rows(racesRes.data).map(fromRaceRow),
+        registrations: rows(regsRes.data).map(fromRegistrationRow),
+        events: rows(eventsRes.data).map(fromEventRow),
+        notifications: rows(notifsRes.data).map(fromNotificationRow),
+        trofeuSeasons: rows(seasonsRes.data).map(fromTrofeuSeasonRow),
+        trofeuSyncLogs: rows(logsRes.data).map(fromSyncLogRow),
+        directory: rows(dirRes.data).map(
+          (r): DirectoryEntry => ({
+            id: String(r.id),
+            name: String(r.name ?? ''),
+            nickname: String(r.nickname ?? ''),
+            gender: r.gender === 'M' || r.gender === 'F' ? r.gender : undefined,
+            escalao: String(r.escalao ?? ''),
+            kind: r.kind === 'youth' ? 'youth' : 'adult',
+          })
+        ),
+      },
     }
   } catch (err) {
     console.warn('[Supabase] Falha ao carregar dados:', err)
-    return null
+    return { ok: false, kind: 'network' }
   }
 }

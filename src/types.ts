@@ -434,3 +434,13 @@ export const BIB_STATUS_LABELS: Record<BibStatus, { label: string; short: string
   at_club: { label: 'No clube', short: 'No clube' },
   delivered: { label: 'Entregue', short: 'Entregue' },
 }
+
+/** Linha da vista `team_directory`: só dados não sensíveis (nunca data de nascimento, NIF ou contactos). */
+export interface DirectoryEntry {
+  id: string
+  name: string
+  nickname: string
+  gender?: 'M' | 'F'
+  escalao: string
+  kind: 'adult' | 'youth'
+}
