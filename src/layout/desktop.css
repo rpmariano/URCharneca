@@ -28,7 +28,9 @@
     align-items: center;
     gap: 12px;
     padding: 0 8px 12px;
-    border-bottom: 1px solid var(--border-card);
+  }
+  .desk-brand img {
+    box-shadow: 0 0 0 2px var(--gold);
   }
   .desk-nav {
     display: flex;
@@ -56,13 +58,10 @@
     background: var(--surface-raised);
   }
   .desk-nav-link.is-active {
-    background: var(--tint-blue-bg);
-    color: var(--run-deep);
+    background: var(--tint-blue-bg-strong);
+    color: var(--tint-blue-fg);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--run);
-  }
-  [data-theme="dark"] .desk-nav-link.is-active {
-    color: var(--run);
+    box-shadow: inset 4px 0 0 var(--gold);
   }
   .desk-nav-link:focus-visible,
   .desk-sort:focus-visible,
