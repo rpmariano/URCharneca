@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Trophy,
   X,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
@@ -101,6 +102,8 @@ export const ExplorePage: React.FC = () => {
     notifications,
     profiles,
     youthAthletes,
+    trofeuSeasons,
+    pendingDorsalAthletesCount,
     currentUser,
     isAdminView,
     unreadNotificationsCount,
@@ -270,6 +273,45 @@ export const ExplorePage: React.FC = () => {
     return registrations.filter((r) => ids.has(r.race_id) && r.status === 'interested').length
   }, [isAdminView, races, registrations, today])
 
+  const openTrofeuSeason = useMemo(() => trofeuSeasons.find((s) => s.status === 'open') || trofeuSeasons[0], [trofeuSeasons])
+  const urcOpenStanding = useMemo(
+    () => openTrofeuSeason?.club_standings.find((c) => c.is_urc),
+    [openTrofeuSeason]
+  )
+  const urcPastStanding = useMemo(
+    () => trofeuSeasons.find((s) => s.season === '2025/2026')?.club_standings.find((c) => c.is_urc),
+    [trofeuSeasons]
+  )
+
+  const trofeuBanner = (
+    <button
+      type="button"
+      onClick={() => navigate('/trofeu')}
+      className="card w-full p-4 flex items-center gap-4 text-left pressable border-l-4 border-[var(--gold)]"
+    >
+      <span className="w-11 h-11 rounded-xl bg-[var(--tint-amber-bg)] text-[var(--gold-ink)] flex items-center justify-center shrink-0">
+        <Trophy className="w-5 h-5" aria-hidden="true" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="flex items-center gap-2 flex-wrap">
+          <span className="t-body t-strong text-[var(--text-1)]">Troféu de Cascais · 2026/2027</span>
+          <Tag tone="ok">Aberto</Tag>
+        </span>
+        <span className="block t-small text-[var(--text-3)] mt-0.5 truncate">
+          {urcOpenStanding
+            ? `U.R. Charneca em ${urcOpenStanding.pos}º (${urcOpenStanding.total} pts) · Histórico 2025/26: ${urcPastStanding?.pos || 4}º`
+            : 'Classificações oficiais, regulamento, croquis e dorsais'}
+        </span>
+        {isAdminView && pendingDorsalAthletesCount > 0 && (
+          <span className="block t-small text-[var(--tint-amber-fg)] t-strong mt-0.5">
+            {pendingDorsalAthletesCount} atletas aguardam nº de dorsal
+          </span>
+        )}
+      </span>
+      <ChevronRight className="w-5 h-5 text-[var(--text-2)] shrink-0" aria-hidden="true" />
+    </button>
+  )
+
   const listTitle = selectedDay
     ? formatLongDate(selectedDay)
     : query.trim()
@@ -406,6 +448,8 @@ export const ExplorePage: React.FC = () => {
               </button>
             )}
 
+            {trofeuBanner}
+
             {/* Comunicados */}
             <section className="space-y-4">
               <SectionTitle
@@ -539,6 +583,8 @@ export const ExplorePage: React.FC = () => {
                 </Button>
               )}
             </div>
+
+            {category === 'trofeu_cascais' && trofeuBanner}
 
             {list.length === 0 ? (
               <EmptyState

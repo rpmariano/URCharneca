@@ -22,6 +22,7 @@ export type BibStatus = 'pending' | 'at_club' | 'delivered'
 export interface YouthAthlete {
   id: string
   name: string
+  gender?: 'M' | 'F'
   birth_date: string
   escalao: string
   nif: string
@@ -29,6 +30,34 @@ export interface YouthAthlete {
   shirt_size?: string
   emergency_notes?: string
   medical_notes?: string
+  /** ID de dorsal oficial da época atual (2026/2027) do Troféu de Cascais (muda todos os anos e só conta para o Troféu) */
+  dorsal_trofeu?: string
+  /**
+   * Mapa de dorsais oficiais do Troféu de Cascais por época (ex: { '2026/2027': '1129', '2025/2026': '966' }).
+   * Todos os anos o dorsal é diferente e este dorsal só conta para provas do Troféu de Cascais.
+   */
+  dorsais_trofeu?: Record<string, string>
+  /** Perfil criado automaticamente pela sincronização com o site do Troféu */
+  created_from_trofeu?: boolean
+  /** Alerta ativo para o administrador validar e atribuir dorsal */
+  needs_admin_review?: boolean
+  /** Épocas do Troféu em que o atleta tem participação registada */
+  trofeu_seasons?: string[]
+  /**
+   * Opção gerida pelo Administrador:
+   * - `true`: o menor pode fazer login autónomo e gerir a sua própria conta.
+   * - `false` / `undefined`: o menor é gerido por no máximo 2 adultos responsáveis (`associated_adult_ids`).
+   */
+  can_self_manage?: boolean
+  email?: string
+  phone?: string
+  /** ID do utilizador no Supabase Auth após o 1.º login */
+  auth_user_id?: string
+  /** Email escolhido pelo atleta autorizado no 1.º login (Google ou outro email) */
+  login_email?: string
+  login_provider?: 'google' | 'email'
+  login_activated_at?: string
+  login_password_hash?: string
   /** IDs dos perfis de adultos responsáveis (máximo 2 adultos!) */
   associated_adult_ids: string[]
 }
@@ -43,6 +72,15 @@ export interface AthleteProfile {
   email: string
   phone: string
   role: UserRole
+  /** Autorização expressa pelo Admin na ficha do atleta para poder fazer login na app */
+  login_authorized?: boolean
+  auth_user_id?: string
+  login_email?: string
+  login_provider?: 'google' | 'email'
+  login_activated_at?: string
+  login_password_hash?: string
+  /** Verdadeiro quando a sessão ativa corresponde a um menor com login autónomo autorizado pelo admin */
+  is_minor_account?: boolean
   gender?: 'M' | 'F'
   birth_date: string
   escalao: string
@@ -50,6 +88,19 @@ export interface AthleteProfile {
   cc_number: string
   club_member_number?: string
   federation_number?: string
+  /** ID de dorsal oficial da época atual (2026/2027) do Troféu de Cascais (muda todos os anos e só conta para o Troféu) */
+  dorsal_trofeu?: string
+  /**
+   * Mapa de dorsais oficiais do Troféu de Cascais por época (ex: { '2026/2027': '1129', '2025/2026': '966' }).
+   * Todos os anos o dorsal é diferente e este dorsal só conta para provas do Troféu de Cascais.
+   */
+  dorsais_trofeu?: Record<string, string>
+  /** Perfil criado automaticamente pela sincronização com o site do Troféu */
+  created_from_trofeu?: boolean
+  /** Alerta ativo para o administrador validar e atribuir dorsal */
+  needs_admin_review?: boolean
+  /** Épocas do Troféu em que o atleta tem participação registada */
+  trofeu_seasons?: string[]
   // Contactos
   address?: string
   city?: string
@@ -69,6 +120,35 @@ export interface AthleteProfile {
   dependents: YouthAthlete[]
 }
 
+export type RaceDocumentType =
+  | 'regulamento_geral'
+  | 'regulamento_prova'
+  | 'croqui'
+  | 'classificacao'
+  | 'inscritos'
+  | 'comunicado'
+
+export interface RaceDocument {
+  id: string
+  title: string
+  type: RaceDocumentType
+  url: string
+  detected_at: string
+  is_new?: boolean
+}
+
+export interface RaceVehicle {
+  id: string
+  /** Nome ou identificação do veículo (ex: "Carrinha URC 1", "Carrinha 2") */
+  name: string
+  /** Lotação de lugares disponíveis para inscrição de atletas neste veículo */
+  seats: number
+  /** ID do perfil do atleta condutor (se selecionado da lista da equipa) */
+  driver_athlete_id?: string
+  /** Nome do condutor atribuído a este veículo */
+  driver_name?: string
+}
+
 export interface Race {
   id: string
   title: string
@@ -86,11 +166,21 @@ export interface Race {
   description?: string
   van_available: boolean
   van_capacity: number
+  /** Lista de veículos (carrinhas / viaturas) disponibilizados pelo clube para esta prova */
+  vehicles?: RaceVehicle[]
   van_departure_time?: string
   van_departure_location?: string
   bib_pickup_info?: string
   counts_for_trophy?: boolean
   trophy_stage_number?: number
+  /** ID oficial da competição no site do Troféu de Cascais */
+  trofeu_competition_id?: number
+  /** Entidade organizadora da etapa */
+  organizer?: string
+  /** Documentos oficiais sincronizados do site (croqui, regulamento, classificação...) */
+  documents?: RaceDocument[]
+  last_doc_check_at?: string
+  next_doc_check_at?: string
   /** Prova com escalões/distâncias para crianças (permite inscrever perfis infantis) */
   open_to_children?: boolean
   /** Distâncias/escalões jovens disponíveis (se vazio usa `distances`) */
@@ -111,6 +201,8 @@ export interface RaceRegistration {
   distance: string
   status: RegistrationStatus
   transport_mode: TransportMode
+  /** ID do veículo escolhido pelo atleta (quando aplicável) */
+  vehicle_id?: string
   carpool_seats?: number
   bib_number?: string
   bib_status: BibStatus
@@ -179,6 +271,77 @@ export type NotificationType =
   | 'transport'
   | 'general'
   | 'individual_share'
+  | 'trofeu_sync'
+  | 'athlete_detected'
+  | 'new_document'
+
+export type TrofeuSeasonStatus = 'open' | 'completed'
+
+export interface TrofeuSeasonStage {
+  code: string // 'P1' .. 'P13'
+  stage_number: number
+  race_id?: string
+  title: string
+  date: string
+  location: string
+  organizer: string
+  completed: boolean
+}
+
+export interface TrofeuClubStanding {
+  season: string
+  pos: number
+  team: string
+  points_per_stage: Record<string, number>
+  total: number
+  is_urc: boolean
+  prize_amount_eur?: number
+}
+
+export interface TrofeuAthleteStanding {
+  id: string
+  season: string
+  season_status: TrofeuSeasonStatus
+  escalao: string
+  gender: 'M' | 'F'
+  pos: number
+  name: string
+  birth_year: number
+  team: string
+  dorsal?: string
+  points_per_stage: Record<string, number>
+  total: number
+  stages_participated: number
+  total_season_stages: number
+  eligible_for_prize: boolean
+  is_urc: boolean
+  matched_profile_id?: string
+  is_youth?: boolean
+}
+
+export interface TrofeuSeasonData {
+  season: string
+  edition_number: number
+  status: TrofeuSeasonStatus
+  regulation_url: string
+  awarded_individual_pdf?: string
+  awarded_collective_pdf?: string
+  stages: TrofeuSeasonStage[]
+  club_standings: TrofeuClubStanding[]
+  athlete_standings: TrofeuAthleteStanding[]
+  last_synced_at: string
+}
+
+export interface TrofeuSyncLog {
+  id: string
+  timestamp: string
+  trigger: 'auto_biweekly' | 'manual_admin' | 'startup'
+  races_created: number
+  races_updated: number
+  new_documents_found: number
+  new_athletes_created: number
+  summary: string
+}
 
 export interface AppNotification {
   id: string

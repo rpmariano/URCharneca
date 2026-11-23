@@ -4,12 +4,14 @@ import { CircleAlert, CircleCheck, Info } from 'lucide-react'
 import { AppProvider, useApp } from './context/AppContext'
 import { BottomNav } from './components/BottomNav'
 import { ExplorePage } from './pages/ExplorePage'
+import { LoginPage } from './pages/LoginPage'
 import { OPEN_EDITOR_EVENT, type EditorRequest } from './utils/appEvents'
 
 const RegistrationsPage = lazy(() => import('./pages/RegistrationsPage').then((m) => ({ default: m.RegistrationsPage })))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const TrofeuPage = lazy(() => import('./pages/TrofeuPage').then((m) => ({ default: m.TrofeuPage })))
 const RaceDetailPage = lazy(() => import('./pages/DetailPages').then((m) => ({ default: m.RaceDetailPage })))
 const EventDetailPage = lazy(() => import('./pages/DetailPages').then((m) => ({ default: m.EventDetailPage })))
 const CreateRaceModal = lazy(() => import('./components/CreateRaceModal').then((m) => ({ default: m.CreateRaceModal })))
@@ -68,38 +70,55 @@ import { Intro } from './components/Intro'
 const TOAST_ICON = { success: CircleCheck, info: Info, warning: CircleAlert }
 
 const AppShell: React.FC = () => {
-  const { toasts } = useApp()
+  const { toasts, isAuthenticated, authLoading } = useApp()
   const { pathname } = useLocation()
   // As páginas de detalhe têm a sua própria barra de ação fixa em vez da navegação
   const isDetail = pathname.startsWith('/prova/') || pathname.startsWith('/evento/')
 
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-[var(--bg-app)]">
+        <PageFallback />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-dvh flex flex-col relative text-[var(--text-1)]">
-      <ScrollToTop />
-      {/* Sem z-index de propósito: os modais usam <Sheet> (portal para document.body) */}
-      <main className="flex-1 w-full relative">
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route path="/" element={<ExplorePage />} />
-            <Route path="/inscricoes" element={<RegistrationsPage />} />
-            <Route path="/comunicados" element={<NotificationsPage />} />
-            <Route path="/perfil" element={<ProfilePage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/prova/:id" element={<RaceDetailPage />} />
-            <Route path="/evento/:id" element={<EventDetailPage />} />
-            {/* Rotas antigas */}
-            <Route path="/atividades" element={<LegacyActivities />} />
-            <Route path="/corridas" element={<Navigate to="/?tipo=provas" replace />} />
-            <Route path="/treinos" element={<Navigate to="/?tipo=training" replace />} />
-            <Route path="/avisos" element={<Navigate to="/comunicados" replace />} />
-            <Route path="/equipa" element={<Navigate to="/admin" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </main>
-      {!isDetail && <BottomNav />}
-      <EditorHost />
-      <Intro />
+      {!isAuthenticated ? (
+        <main className="flex-1 w-full relative">
+          <LoginPage />
+        </main>
+      ) : (
+        <>
+          <ScrollToTop />
+          {/* Sem z-index de propósito: os modais usam <Sheet> (portal para document.body) */}
+          <main className="flex-1 w-full relative">
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<ExplorePage />} />
+                <Route path="/inscricoes" element={<RegistrationsPage />} />
+                <Route path="/comunicados" element={<NotificationsPage />} />
+                <Route path="/perfil" element={<ProfilePage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/trofeu" element={<TrofeuPage />} />
+                <Route path="/prova/:id" element={<RaceDetailPage />} />
+                <Route path="/evento/:id" element={<EventDetailPage />} />
+                {/* Rotas antigas */}
+                <Route path="/atividades" element={<LegacyActivities />} />
+                <Route path="/corridas" element={<Navigate to="/?tipo=provas" replace />} />
+                <Route path="/treinos" element={<Navigate to="/?tipo=training" replace />} />
+                <Route path="/avisos" element={<Navigate to="/comunicados" replace />} />
+                <Route path="/equipa" element={<Navigate to="/admin" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </main>
+          {!isDetail && <BottomNav />}
+          <EditorHost />
+          <Intro />
+        </>
+      )}
 
       <div
         className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"

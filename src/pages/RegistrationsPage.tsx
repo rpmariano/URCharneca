@@ -36,7 +36,10 @@ export const RegistrationsPage: React.FC = () => {
     const out: Entry[] = []
     for (const r of registrations) {
       if (r.status === 'cancelled') continue
-      const mine = (!r.is_dependent && r.athlete_id === currentUser.id) || (r.is_dependent && childIds.has(r.dependent_id || ''))
+      const mine =
+        (!r.is_dependent && r.athlete_id === currentUser.id) ||
+        (r.is_dependent &&
+          (childIds.has(r.dependent_id || '') || (Boolean(currentUser.is_minor_account) && r.dependent_id === currentUser.id)))
       if (!mine) continue
       const race = races.find((x) => x.id === r.race_id)
       if (!race) continue

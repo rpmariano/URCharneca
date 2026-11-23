@@ -21,6 +21,44 @@ const EscalaoSelect: React.FC<{ value: string; onChange: (v: string) => void; yo
   )
 }
 
+/** Campo partilhado para o dorsal da época 2026/2027 (exclusivo Troféu de Cascais) + histórico em leitura. */
+const TrofeuDorsalField: React.FC<{
+  dorsal?: string
+  dorsais?: Record<string, string>
+  placeholder?: string
+  onChange: (dorsal: string | undefined, nextMap: Record<string, string> | undefined) => void
+}> = ({ dorsal, dorsais, placeholder = 'Ex: 1129', onChange }) => {
+  const current = dorsais?.['2026/2027'] ?? dorsal ?? ''
+  const history = Object.entries(dorsais || {})
+    .filter(([s]) => s !== '2026/2027')
+    .sort((a, b) => b[0].localeCompare(a[0]))
+
+  return (
+    <Field
+      label="Dorsal Troféu de Cascais (Época 2026/2027)"
+      hint="Exclusivo para o Troféu de Cascais. Muda todos os anos."
+    >
+      <input
+        className={inputClass}
+        value={current}
+        placeholder={placeholder}
+        onChange={(e) => {
+          const val = e.target.value.trim()
+          const nextMap = { ...(dorsais || {}) }
+          if (val) nextMap['2026/2027'] = val
+          else delete nextMap['2026/2027']
+          onChange(val || undefined, Object.keys(nextMap).length > 0 ? nextMap : undefined)
+        }}
+      />
+      {history.length > 0 && (
+        <div className="t-small text-[var(--text-3)] mt-1">
+          Épocas anteriores: {history.map(([s, num]) => `${s}: #${num}`).join(' · ')}
+        </div>
+      )}
+    </Field>
+  )
+}
+
 export type AthleteFormValue = Omit<AthleteProfile, 'id' | 'dependents'>
 
 export const emptyAthlete = (): AthleteFormValue => ({
@@ -36,6 +74,7 @@ export const emptyAthlete = (): AthleteFormValue => ({
   cc_number: '',
   shirt_size: 'M',
   has_official_kit: false,
+  login_authorized: false,
 })
 
 /** Ficha de atleta adulto (dados pessoais, escalão automático, contacto de emergência). */
@@ -47,15 +86,29 @@ export const AthleteForm: React.FC<{
   onCancel?: () => void
 }> = ({ initial, allowRole, submitLabel, onSubmit, onCancel }) => {
   const [v, setV] = useState<AthleteFormValue>(initial)
+  const [formErr, setFormErr] = useState('')
   const set = <K extends keyof AthleteFormValue>(k: K, val: AthleteFormValue[K]) => setV((p) => ({ ...p, [k]: val }))
+  const emailRequired = Boolean(v.login_authorized || v.role === 'admin')
 
   return (
     <form
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault()
+        setFormErr('')
         if (!v.name.trim()) return
-        onSubmit({ ...v, name: v.name.trim(), nickname: v.nickname.trim() || v.name.trim().split(' ')[0] })
+        const cleanEmail = v.email.trim().toLowerCase()
+        if (emailRequired && (!cleanEmail || !cleanEmail.includes('@'))) {
+          setFormErr('Para autorizar o login, o atleta tem de ter um email válido associado.')
+          return
+        }
+        onSubmit({
+          ...v,
+          name: v.name.trim(),
+          nickname: v.nickname.trim() || v.name.trim().split(' ')[0],
+          email: cleanEmail,
+          login_email: cleanEmail || v.login_email,
+        })
       }}
     >
       <Field label="Nome completo *">
@@ -93,8 +146,14 @@ export const AthleteForm: React.FC<{
         <Field label="Telemóvel">
           <input type="tel" className={inputClass} value={v.phone} onChange={(e) => set('phone', e.target.value)} />
         </Field>
-        <Field label="Email">
-          <input type="email" className={inputClass} value={v.email} onChange={(e) => set('email', e.target.value)} />
+        <Field label={emailRequired ? 'Email associado *' : 'Email'}>
+          <input
+            type="email"
+            required={emailRequired}
+            className={inputClass}
+            value={v.email}
+            onChange={(e) => set('email', e.target.value)}
+          />
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -117,6 +176,19 @@ export const AthleteForm: React.FC<{
           <input className={inputClass} value={v.federation_number || ''} onChange={(e) => set('federation_number', e.target.value || undefined)} />
         </Field>
       </div>
+      <TrofeuDorsalField
+        dorsal={v.dorsal_trofeu}
+        dorsais={v.dorsais_trofeu}
+        placeholder="Ex: 1129"
+        onChange={(dorsal, nextMap) =>
+          setV((p) => ({
+            ...p,
+            dorsal_trofeu: dorsal,
+            dorsais_trofeu: nextMap,
+            needs_admin_review: dorsal ? false : p.needs_admin_review,
+          }))
+        }
+      />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Contacto de emergência">
           <input className={inputClass} value={v.emergency_name || ''} onChange={(e) => set('emergency_name', e.target.value || undefined)} />
@@ -129,17 +201,47 @@ export const AthleteForm: React.FC<{
         <textarea rows={2} className={inputClass} value={v.medical_notes || ''} onChange={(e) => set('medical_notes', e.target.value || undefined)} />
       </Field>
       {allowRole && (
-        <Field label="Perfil de acesso">
-          <Segmented<UserRole>
-            value={v.role}
-            onChange={(r) => set('role', r)}
-            options={[
-              { value: 'athlete', label: 'Atleta' },
-              { value: 'admin', label: 'Administrador' },
-            ]}
-          />
-        </Field>
+        <>
+          <Field label="Perfil de acesso">
+            <Segmented<UserRole>
+              value={v.role}
+              onChange={(r) =>
+                setV((p) => ({
+                  ...p,
+                  role: r,
+                  login_authorized: r === 'admin' ? true : p.login_authorized,
+                }))
+              }
+              options={[
+                { value: 'athlete', label: 'Atleta' },
+                { value: 'admin', label: 'Administrador' },
+              ]}
+            />
+          </Field>
+          <Field
+            label="Autorização de login na aplicação (Admin)"
+            hint={
+              v.role === 'admin'
+                ? 'Administradores têm login autorizado automaticamente e precisam de email associado.'
+                : 'O atleta só consegue fazer login com o email associado na ficha quando autorizado aqui.'
+            }
+          >
+            <Segmented<'blocked' | 'authorized'>
+              value={v.login_authorized || v.role === 'admin' ? 'authorized' : 'blocked'}
+              onChange={(mode) => {
+                if (v.role === 'admin') return
+                setFormErr('')
+                set('login_authorized', mode === 'authorized')
+              }}
+              options={[
+                { value: 'blocked', label: 'Login bloqueado' },
+                { value: 'authorized', label: 'Login autorizado' },
+              ]}
+            />
+          </Field>
+        </>
       )}
+      {formErr && <p className="t-small text-[var(--danger)]">{formErr}</p>}
       <div className="flex gap-2 pt-1">
         <Button type="submit" className="flex-1">
           {submitLabel}
@@ -162,24 +264,38 @@ export const emptyChild = (): ChildFormValue => ({
   escalao: estimateEscalao('2016-01-01'),
   nif: '',
   shirt_size: '8-10 anos',
+  can_self_manage: false,
 })
 
-/** Ficha de perfil infantil (nome, nascimento, escalão jovem, NIF, t-shirt). */
+/** Ficha de perfil infantil / menor (nome, nascimento, escalão jovem, NIF, dorsal, modo de gestão). */
 export const ChildForm: React.FC<{
   initial: ChildFormValue
+  allowSelfManageControl?: boolean
   submitLabel: string
   onSubmit: (v: ChildFormValue) => void
   onCancel?: () => void
-}> = ({ initial, submitLabel, onSubmit, onCancel }) => {
+}> = ({ initial, allowSelfManageControl, submitLabel, onSubmit, onCancel }) => {
   const [v, setV] = useState<ChildFormValue>(initial)
+  const [formErr, setFormErr] = useState('')
   const set = <K extends keyof ChildFormValue>(k: K, val: ChildFormValue[K]) => setV((p) => ({ ...p, [k]: val }))
   return (
     <form
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault()
+        setFormErr('')
         if (!v.name.trim()) return
-        onSubmit({ ...v, name: v.name.trim() })
+        const cleanEmail = (v.email || '').trim().toLowerCase()
+        if (v.can_self_manage && (!cleanEmail || !cleanEmail.includes('@'))) {
+          setFormErr('Para ativar o Login próprio do menor, associa um email válido na ficha.')
+          return
+        }
+        onSubmit({
+          ...v,
+          name: v.name.trim(),
+          email: cleanEmail || undefined,
+          login_email: cleanEmail || v.login_email,
+        })
       }}
     >
       <Field label="Nome completo *">
@@ -214,9 +330,55 @@ export const ChildForm: React.FC<{
           ))}
         </select>
       </Field>
+      <TrofeuDorsalField
+        dorsal={v.dorsal_trofeu}
+        dorsais={v.dorsais_trofeu}
+        placeholder="Ex: 1125"
+        onChange={(dorsal, nextMap) =>
+          setV((p) => ({
+            ...p,
+            dorsal_trofeu: dorsal,
+            dorsais_trofeu: nextMap,
+            needs_admin_review: dorsal ? false : p.needs_admin_review,
+          }))
+        }
+      />
       <Field label="Notas médicas / alergias">
         <textarea rows={2} className={inputClass} value={v.medical_notes || ''} onChange={(e) => set('medical_notes', e.target.value || undefined)} />
       </Field>
+      {allowSelfManageControl && (
+        <Field
+          label="Modo de acesso (gerido pelo Admin)"
+          hint="Com Login próprio, o menor entra exclusivamente pelo email associado abaixo."
+        >
+          <Segmented<'adults' | 'self'>
+            value={v.can_self_manage ? 'self' : 'adults'}
+            onChange={(mode) => {
+              setFormErr('')
+              set('can_self_manage', mode === 'self')
+            }}
+            options={[
+              { value: 'adults', label: 'Gerido por adultos (máx. 2)' },
+              { value: 'self', label: 'Login próprio' },
+            ]}
+          />
+        </Field>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Telemóvel (opcional)">
+          <input type="tel" className={inputClass} value={v.phone || ''} onChange={(e) => set('phone', e.target.value || undefined)} />
+        </Field>
+        <Field label={v.can_self_manage ? 'Email associado *' : 'Email (opcional)'}>
+          <input
+            type="email"
+            required={Boolean(v.can_self_manage)}
+            className={inputClass}
+            value={v.email || ''}
+            onChange={(e) => set('email', e.target.value || undefined)}
+          />
+        </Field>
+      </div>
+      {formErr && <p className="t-small text-[var(--danger)]">{formErr}</p>}
       <div className="flex gap-2 pt-1">
         <Button type="submit" className="flex-1">
           {submitLabel}

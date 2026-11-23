@@ -1,4 +1,4 @@
-import type { AthleteProfile, Race, RaceRegistration } from '../types'
+import type { AthleteProfile, Race, RaceRegistration, RaceVehicle } from '../types'
 import { TRANSPORT_LABELS } from '../types'
 import { todayISO } from './dates'
 
@@ -64,13 +64,38 @@ export function getDaysFromReference(dateStr: string, refDate = todayISO()): num
   return Math.round((t1 - t2) / (1000 * 60 * 60 * 24))
 }
 
+export interface VehicleAllocation {
+  vehicle: RaceVehicle
+  passengers: RaceRegistration[]
+  occupiedSeats: number
+  availableSeats: number
+}
+
 export interface VanAllocationResult {
   capacity: number
   confirmedPassengers: RaceRegistration[]
   waitlistPassengers: RaceRegistration[]
   availableSeats: number
+  vehicles: VehicleAllocation[]
   carpoolOffers: RaceRegistration[]
   carpoolNeeds: RaceRegistration[]
+}
+
+/** Devolve a lista normalizada de veículos configurados para a prova (vazio se não existir carrinha). */
+export function getRaceVehicles(race: Race): RaceVehicle[] {
+  if (!race.van_available) return []
+  if (race.vehicles && race.vehicles.length > 0) {
+    return race.vehicles.map((v, idx) => ({
+      ...v,
+      id: v.id || `veh-${idx + 1}`,
+      name: v.name.trim() || `Veículo ${idx + 1}`,
+      seats: Math.max(0, Number(v.seats) || 0),
+    }))
+  }
+  if (race.van_capacity > 0) {
+    return [{ id: 'veh-1', name: 'Carrinha do Clube', seats: race.van_capacity }]
+  }
+  return []
 }
 
 export function computeVanAllocation(
@@ -82,9 +107,46 @@ export function computeVanAllocation(
     .filter((r) => TRANSPORT_LABELS[r.transport_mode]?.usesVanSeat)
     .sort((a, b) => (a.van_requested_at || a.created_at).localeCompare(b.van_requested_at || b.created_at))
 
-  const capacity = race.van_available ? race.van_capacity || 9 : 0
-  const confirmedPassengers = vanRequesters.slice(0, capacity)
-  const waitlistPassengers = vanRequesters.slice(capacity)
+  const configuredVehicles = getRaceVehicles(race)
+  const buckets = new Map<string, RaceRegistration[]>()
+  for (const v of configuredVehicles) {
+    buckets.set(v.id, [])
+  }
+
+  const placedIds = new Set<string>()
+  // 1ª passagem: colocar primeiro quem escolheu explicitamente um veículo que ainda tem vaga
+  for (const reg of vanRequesters) {
+    if (!reg.vehicle_id) continue
+    const vehicle = configuredVehicles.find((v) => v.id === reg.vehicle_id)
+    const bucket = vehicle ? buckets.get(vehicle.id) : undefined
+    if (vehicle && bucket && bucket.length < vehicle.seats) {
+      bucket.push(reg)
+      placedIds.add(reg.id)
+    }
+  }
+
+  // 2ª passagem: distribuir restantes pedidos por ordem de chegada pelos lugares vagos
+  const waitlistPassengers: RaceRegistration[] = []
+  for (const reg of vanRequesters) {
+    if (placedIds.has(reg.id)) continue
+    const openVehicle = configuredVehicles.find((v) => (buckets.get(v.id)?.length || 0) < v.seats)
+    if (openVehicle) {
+      buckets.get(openVehicle.id)!.push(reg)
+      placedIds.add(reg.id)
+    } else {
+      waitlistPassengers.push(reg)
+    }
+  }
+
+  const vehicles: VehicleAllocation[] = configuredVehicles.map((vehicle) => {
+    const passengers = buckets.get(vehicle.id) || []
+    const occupiedSeats = passengers.length
+    const availableSeats = Math.max(0, vehicle.seats - occupiedSeats)
+    return { vehicle, passengers, occupiedSeats, availableSeats }
+  })
+
+  const capacity = vehicles.reduce((acc, v) => acc + v.vehicle.seats, 0)
+  const confirmedPassengers = vanRequesters.filter((r) => placedIds.has(r.id))
   const availableSeats = Math.max(0, capacity - confirmedPassengers.length)
 
   const carpoolOffers = activeRegs.filter((r) => r.transport_mode === 'carpool_offer')
@@ -95,6 +157,7 @@ export function computeVanAllocation(
     confirmedPassengers,
     waitlistPassengers,
     availableSeats,
+    vehicles,
     carpoolOffers,
     carpoolNeeds,
   }
@@ -128,11 +191,15 @@ export function generateWhatsAppSummary(race: Race, regs: RaceRegistration[]): s
   if (race.van_available) {
     const van = computeVanAllocation(race, active)
     lines.push(
-      `🚐 *Carrinha da Charneca (${van.confirmedPassengers.length}/${van.capacity} lugares — Saída ${race.van_departure_time || 'a definir'}):*`
+      `🚐 *Transporte do Clube (${van.confirmedPassengers.length}/${van.capacity} lugares · ${van.availableSeats} vagos — Saída ${race.van_departure_time || 'a definir'}):*`
     )
-    for (const p of van.confirmedPassengers) {
-      const modeTag = p.transport_mode === 'van_return_only' ? ' (Só regresso)' : ''
-      lines.push(`  ✓ ${p.athlete_name}${modeTag}`)
+    for (const v of van.vehicles) {
+      const driverPart = v.vehicle.driver_name ? ` · Condutor: ${v.vehicle.driver_name}` : ''
+      lines.push(`*${v.vehicle.name}* (${v.occupiedSeats}/${v.vehicle.seats} lugares · ${v.availableSeats} vagos${driverPart})`)
+      for (const p of v.passengers) {
+        const modeTag = p.transport_mode === 'van_return_only' ? ' (Só regresso)' : ''
+        lines.push(`  ✓ ${p.athlete_name}${modeTag}`)
+      }
     }
     if (van.waitlistPassengers.length > 0) {
       lines.push(`⏳ *Lista de Espera Carrinha:* ${van.waitlistPassengers.map((w) => w.athlete_name).join(', ')}`)

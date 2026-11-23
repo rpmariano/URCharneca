@@ -2,9 +2,10 @@ import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { Sheet } from './Sheet'
 import { Button, Field, SheetHeader, Toggle, inputClass, Segmented } from './ui'
-import type { Race, RaceCategory } from '../types'
+import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
+import type { Race, RaceCategory, RaceVehicle } from '../types'
 import { CATEGORIA_LABELS } from '../types'
-import { addDaysISO } from '../utils/formatters'
+import { addDaysISO, getRaceVehicles } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 
 interface Props {
@@ -21,7 +22,7 @@ const splitList = (v: string) =>
 
 /** Formulário (bottom-sheet) para criar/editar uma prova; atletas só sugerem provas. Requer AppProvider. */
 export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
-  const { isAdminView, currentUser, createRace, updateRace, registerForRace } = useApp()
+  const { isAdminView, currentUser, profiles, createRace, updateRace, registerForRace } = useApp()
   const editing = Boolean(race)
 
   const [category, setCategory] = useState<RaceCategory>(race?.category || (isAdminView ? 'equipa' : 'individual'))
@@ -36,8 +37,8 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
   const [description, setDescription] = useState(race?.description || '')
   const [meetingPoint, setMeetingPoint] = useState(race?.meeting_point || '')
   const [meetingTime, setMeetingTime] = useState(race?.meeting_time || '')
-  const [vanAvailable, setVanAvailable] = useState(race ? race.van_available : category !== 'individual')
-  const [vanCapacity, setVanCapacity] = useState(race?.van_capacity || 9)
+  const [vanAvailable, setVanAvailable] = useState(race ? race.van_available : false)
+  const [vehicles, setVehicles] = useState<RaceVehicle[]>(() => (race ? getRaceVehicles(race) : []))
   const [vanDeparture, setVanDeparture] = useState(race?.van_departure_time || '07:30')
   const [vanLocation, setVanLocation] = useState(race?.van_departure_location || 'Sociedade U.R. Charneca')
   const [openToChildren, setOpenToChildren] = useState(race?.open_to_children || false)
@@ -52,6 +53,11 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
     e.preventDefault()
     if (!title.trim() || !location.trim()) return
     const distList = splitList(distances)
+    const cleanedVehicles =
+      showVan && vanAvailable
+        ? normalizeRaceVehiclesInput(vehicles.length > 0 ? vehicles : [createEmptyVehicle(0)])
+        : []
+    const totalSeats = cleanedVehicles.reduce((sum, v) => sum + v.seats, 0)
     const payload = {
       title: title.trim(),
       category,
@@ -65,10 +71,11 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
       description: description.trim() || undefined,
       meeting_point: meetingPoint.trim() || undefined,
       meeting_time: meetingTime || undefined,
-      van_available: showVan && vanAvailable,
-      van_capacity: showVan && vanAvailable ? Math.max(1, vanCapacity) : 0,
-      van_departure_time: showVan && vanAvailable ? vanDeparture : undefined,
-      van_departure_location: showVan && vanAvailable ? vanLocation.trim() : undefined,
+      van_available: cleanedVehicles.length > 0,
+      van_capacity: totalSeats,
+      vehicles: cleanedVehicles,
+      van_departure_time: cleanedVehicles.length > 0 ? vanDeparture : undefined,
+      van_departure_location: cleanedVehicles.length > 0 ? vanLocation.trim() : undefined,
       bib_pickup_info: bibInfo.trim() || undefined,
       counts_for_trophy: category === 'trofeu_cascais',
       trophy_stage_number: category === 'trofeu_cascais' && stage ? Number(stage) : undefined,
@@ -111,7 +118,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
               value={category}
               onChange={(c) => {
                 setCategory(c)
-                setVanAvailable(c !== 'individual')
+                if (c === 'individual') setVanAvailable(false)
               }}
               options={[
                 { value: 'trofeu_cascais', label: 'Troféu' },
@@ -196,29 +203,17 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
         </div>
 
         {showVan && (
-          <div className="rounded-2xl border border-[var(--border-card)] p-3.5 space-y-3">
-            <Toggle checked={vanAvailable} onChange={setVanAvailable} label="Carrinha do clube" hint="Os atletas podem reservar lugar." />
-            {vanAvailable && (
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="Lugares">
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    className={inputClass}
-                    value={vanCapacity}
-                    onChange={(e) => setVanCapacity(Number(e.target.value))}
-                  />
-                </Field>
-                <Field label="Saída">
-                  <input type="time" className={inputClass} value={vanDeparture} onChange={(e) => setVanDeparture(e.target.value)} />
-                </Field>
-                <Field label="De">
-                  <input className={inputClass} value={vanLocation} onChange={(e) => setVanLocation(e.target.value)} />
-                </Field>
-              </div>
-            )}
-          </div>
+          <RaceVehiclesEditor
+            vanAvailable={vanAvailable}
+            onVanAvailableChange={setVanAvailable}
+            departureTime={vanDeparture}
+            onDepartureTimeChange={setVanDeparture}
+            departureLocation={vanLocation}
+            onDepartureLocationChange={setVanLocation}
+            vehicles={vehicles}
+            onVehiclesChange={setVehicles}
+            profiles={profiles}
+          />
         )}
 
         {isAdminView && category !== 'individual' && (

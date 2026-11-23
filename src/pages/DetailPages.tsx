@@ -34,10 +34,15 @@ const NotFound: React.FC<{ what: string }> = ({ what }) => {
 /** Página de detalhe de uma prova (`/prova/:id`). */
 export const RaceDetailPage: React.FC = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { races } = useApp()
   const goBack = useGoBack()
   const race = races.find((r) => r.id === id)
-  return race ? <RaceDetail key={race.id} race={race} onBack={goBack} /> : <NotFound what="Prova" />
+  return race ? (
+    <RaceDetail key={race.id} race={race} onBack={goBack} onOpenTrofeu={() => navigate('/trofeu')} />
+  ) : (
+    <NotFound what="Prova" />
+  )
 }
 
 /** Página de detalhe de um treino ou evento (`/evento/:id`). */
