@@ -2,11 +2,14 @@ import React, { useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { AlertTriangle, Check, ClipboardCheck, Download, LogIn, Pencil, Plus, RefreshCw, Search, ShieldCheck, Ticket, Trophy, UserPlus, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
-import type { AthleteProfile, TransportMode } from '../types'
-import { EVENT_TYPE_LABELS } from '../types'
+import type { AthleteProfile, RaceRegistration, TransportMode, YouthAthlete } from '../types'
+import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, TRANSPORT_LABELS } from '../types'
+import type { RegistrationBulkAction } from '../context/AppContext'
 import { calculateAge, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
+import { DataTable, type Column } from '../layout/DataTable'
+import { useDesktopAdmin } from '../layout/useDesktopAdmin'
 import { ActivityCover } from '../components/ActivityCover'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { AthleteForm, ChildForm, emptyAthlete, emptyChild } from '../components/PeopleForms'
@@ -28,7 +31,7 @@ import {
   kindOfEvent,
 } from '../components/ui'
 
-type Tab = 'panel' | 'athletes' | 'children' | 'agenda'
+type Tab = 'panel' | 'athletes' | 'children' | 'regs' | 'agenda'
 
 function formatTrofeuDorsalTag(person: { dorsal_trofeu?: string; dorsais_trofeu?: Record<string, string> }) {
   const cur = person.dorsais_trofeu?.['2026/2027'] || person.dorsal_trofeu
@@ -52,10 +55,11 @@ export const AdminPage: React.FC = () => {
   const { isAdminView } = useApp()
   const [tab, setTab] = useState<Tab>('panel')
   const [createOpen, setCreateOpen] = useState(false)
+  const desktop = useDesktopAdmin()
   if (!isAdminView) return <Navigate to="/" replace />
 
   return (
-    <div className="px-5 pb-28 space-y-5">
+    <div className={desktop ? 'px-2 pt-6 pb-12 space-y-5' : 'px-5 pb-28 space-y-5'}>
       <PageHeader
         title="Gerir a equipa"
         action={
@@ -64,6 +68,7 @@ export const AdminPage: React.FC = () => {
           </Button>
         }
       />
+      <div className={desktop ? 'max-w-[640px]' : undefined}>
       <Segmented<Tab>
         value={tab}
         onChange={setTab}
@@ -71,12 +76,15 @@ export const AdminPage: React.FC = () => {
           { value: 'panel', label: 'Painel' },
           { value: 'athletes', label: 'Atletas' },
           { value: 'children', label: 'Crianças' },
+          ...(desktop ? [{ value: 'regs' as Tab, label: 'Inscrições e dorsais' }] : []),
           { value: 'agenda', label: 'Agenda' },
         ]}
       />
+      </div>
       {tab === 'panel' && <PanelTab onTab={setTab} />}
       {tab === 'athletes' && <AthletesTab />}
       {tab === 'children' && <ChildrenTab />}
+      {tab === 'regs' && desktop && <RegistrationsTable />}
       {tab === 'agenda' && <AgendaTab />}
       {createOpen && <CreateMenuSheet onClose={() => setCreateOpen(false)} />}
     </div>
@@ -297,13 +305,59 @@ const AthletesTab: React.FC = () => {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [profiles, q])
   const editing = editId ? profiles.find((p) => p.id === editId) || null : null
+  const desktop = useDesktopAdmin()
+  const [access, setAccess] = useState<'all' | 'login' | 'authorized' | 'blocked' | 'admin' | 'nodorsal'>('all')
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const tableRows = useMemo(
+    () =>
+      list.filter((p) => {
+        if (access === 'login') return Boolean(p.login_email)
+        if (access === 'authorized') return !p.login_email && Boolean(p.login_authorized || p.role === 'admin')
+        if (access === 'blocked') return !p.login_email && !p.login_authorized && p.role !== 'admin'
+        if (access === 'admin') return p.role === 'admin'
+        if (access === 'nodorsal') return !formatTrofeuDorsalTag(p)
+        return true
+      }),
+    [list, access]
+  )
+  const openAthlete = openId ? profiles.find((p) => p.id === openId) || null : null
+  const kidCount = (p: AthleteProfile) => youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id)).length
+  const athleteColumns: Column<AthleteProfile>[] = [
+    { id: 'name', header: 'Nome', sortValue: (p) => p.name, render: (p) => p.name },
+    { id: 'escalao', header: 'Escalão', sortValue: (p) => p.escalao, render: (p) => p.escalao },
+    { id: 'age', header: 'Idade', sortValue: (p) => calculateAge(p.birth_date), render: (p) => <span className="t-num">{calculateAge(p.birth_date)}</span> },
+    {
+      id: 'dorsal',
+      header: 'Dorsal Troféu',
+      sortValue: (p) => formatTrofeuDorsalTag(p)?.label ?? '',
+      render: (p) => {
+        const t = formatTrofeuDorsalTag(p)
+        return t ? (
+          <Tag tone={t.current ? 'info' : 'neutral'}>{t.label}</Tag>
+        ) : p.needs_admin_review ? (
+          <Tag tone="warn">Sem dorsal</Tag>
+        ) : (
+          <span className="text-[var(--text-3)]">—</span>
+        )
+      },
+    },
+    {
+      id: 'access',
+      header: 'Acesso',
+      sortValue: (p) => (p.login_email ? '1' : p.login_authorized || p.role === 'admin' ? '2' : '3'),
+      render: (p) =>
+        p.login_email ? <Tag tone="ok">Login ativo</Tag> : p.login_authorized || p.role === 'admin' ? <Tag tone="info">Autorizado</Tag> : <Tag>Sem login</Tag>,
+    },
+    { id: 'role', header: 'Perfil', sortValue: (p) => p.role, render: (p) => (p.role === 'admin' ? <Tag tone="warn">Admin</Tag> : 'Atleta') },
+    { id: 'kids', header: 'Crianças', sortValue: kidCount, render: (p) => <span className="t-num">{kidCount(p)}</span> },
+  ]
 
-  const exportCSV = () => {
+  const exportCSV = (only?: Set<string>) => {
     const header = ['Tipo', 'Nome', 'Escalão', 'Nascimento', 'NIF', 'CC', 'Telefone', 'Email', 'T-shirt', 'Responsáveis']
     const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
     const rows = [
-      ...profiles.map((p) => ['Adulto', p.name, p.escalao, p.birth_date, p.nif, p.cc_number, p.phone, p.email, p.shirt_size, '']),
-      ...youthAthletes.map((c) => [
+      ...profiles.filter((p) => !only || only.has(p.id)).map((p) => ['Adulto', p.name, p.escalao, p.birth_date, p.nif, p.cc_number, p.phone, p.email, p.shirt_size, '']),
+      ...youthAthletes.filter(() => !only).map((c) => [
         'Criança',
         c.name,
         c.escalao,
@@ -326,71 +380,7 @@ const AthletesTab: React.FC = () => {
     showToast('Lista exportada.')
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-          <input
-            type="search"
-            className={`${inputClass} pl-11`}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Nome, escalão ou NIF"
-            aria-label="Pesquisar atletas"
-          />
-        </div>
-        <IconButton label="Exportar lista em CSV" onClick={exportCSV} className="!w-12 !h-12">
-          <Download className="w-5 h-5" aria-hidden="true" />
-        </IconButton>
-      </div>
-
-      <Button block onClick={() => setCreating(true)}>
-        <UserPlus className="w-4 h-4" aria-hidden="true" /> Novo atleta
-      </Button>
-
-      <SectionTitle title="Atletas" count={list.length} />
-      {list.length === 0 && <p className="t-body text-[var(--text-3)]">Nenhum atleta corresponde à pesquisa.</p>}
-      <div className="divide-soft">
-        {list.map((p) => {
-          const kids = youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id))
-          const open = openId === p.id
-          const dorsalTag = formatTrofeuDorsalTag(p)
-          const dorsalsSummary = formatTrofeuDorsalsSummary(p.dorsais_trofeu)
-          return (
-            <div key={p.id} className="py-1">
-              <button
-                type="button"
-                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
-                onClick={() => setOpenId(open ? null : p.id)}
-                aria-expanded={open}
-              >
-                <Avatar name={p.name} />
-                <span className="min-w-0 flex-1">
-                  <span className="block t-body text-[var(--text-1)] truncate">{p.name}</span>
-                  <span className="block t-small text-[var(--text-3)] truncate">
-                    {p.escalao}
-                    {kids.length > 0 && ` · ${kids.length} ${kids.length === 1 ? 'criança' : 'crianças'}`}
-                    {p.trofeu_seasons && p.trofeu_seasons.length > 0 && ` · Troféu: ${p.trofeu_seasons.join(', ')}`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  {dorsalTag ? (
-                    <Tag tone={dorsalTag.current ? 'info' : 'neutral'}>{dorsalTag.label}</Tag>
-                  ) : p.needs_admin_review ? (
-                    <Tag tone="warn">Sem dorsal</Tag>
-                  ) : null}
-                  {p.login_email ? (
-                    <Tag tone="ok">Login ativo</Tag>
-                  ) : p.login_authorized || p.role === 'admin' ? (
-                    <Tag tone="info">Autorizado</Tag>
-                  ) : (
-                    <Tag tone="neutral">Sem login</Tag>
-                  )}
-                  {p.role === 'admin' && <Tag tone="warn">Admin</Tag>}
-                </span>
-              </button>
-              {open && (
+  const athleteDetail = (p: AthleteProfile, kids: YouthAthlete[], dorsalsSummary: string | null) => (
                 <div className="pb-4 pt-1 space-y-4">
                   <div className="t-small text-[var(--text-2)] space-y-0.5">
                     <div>
@@ -499,11 +489,147 @@ const AthletesTab: React.FC = () => {
                     )}
                   </div>
                 </div>
-              )}
+  )
+
+  return (
+    <div className="space-y-4">
+      {desktop && (
+        <>
+          <div className="desk-toolbar">
+            <div className="relative w-[320px] max-w-full">
+              <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <input
+                type="search"
+                data-search
+                className="desk-field desk-field-icon w-full"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Pesquisar nome, escalão, NIF  ( / )"
+                aria-label="Pesquisar atletas"
+              />
+            </div>
+            <select className="desk-field" aria-label="Filtrar por acesso" value={access} onChange={(e) => setAccess(e.target.value as typeof access)}>
+              <option value="all">Todos os acessos</option>
+              <option value="login">Login ativo</option>
+              <option value="authorized">Autorizado</option>
+              <option value="blocked">Sem login</option>
+              <option value="admin">Administradores</option>
+              <option value="nodorsal">Sem dorsal Troféu</option>
+            </select>
+            <span className="t-small text-[var(--text-3)] t-num" role="status">
+              {tableRows.length} de {profiles.length}
+            </span>
+            <div className="flex-1" />
+            <Button size="sm" variant="secondary" onClick={() => exportCSV(picked.size ? picked : undefined)}>
+              <Download className="w-4 h-4" aria-hidden="true" /> {picked.size ? `Exportar ${picked.size} selecionados` : 'Exportar CSV'}
+            </Button>
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <UserPlus className="w-4 h-4" aria-hidden="true" /> Novo atleta
+            </Button>
+          </div>
+          <DataTable
+            rows={tableRows}
+            columns={athleteColumns}
+            rowKey={(p) => p.id}
+            rowLabel={(p) => p.name}
+            caption="Atletas da equipa"
+            selectable
+            selected={picked}
+            onSelectedChange={setPicked}
+            onRowOpen={(p) => setOpenId(p.id)}
+            initialSort={{ id: 'name', dir: 'asc' }}
+            empty="Nenhum atleta corresponde à pesquisa ou ao filtro."
+          />
+          {openAthlete && (
+            <Sheet
+              onClose={() => setOpenId(null)}
+              variant="center"
+              ariaLabel={`Ficha de ${openAthlete.name}`}
+              panelClassName="!max-w-[560px] flex flex-col overflow-hidden"
+            >
+              <SheetHeader title={openAthlete.name} subtitle={openAthlete.escalao} onClose={() => setOpenId(null)} />
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {athleteDetail(
+                  openAthlete,
+                  youthAthletes.filter((c) => c.associated_adult_ids.includes(openAthlete.id)),
+                  formatTrofeuDorsalsSummary(openAthlete.dorsais_trofeu)
+                )}
+              </div>
+            </Sheet>
+          )}
+        </>
+      )}
+      {!desktop && (
+      <>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <input
+            type="search"
+            className={`${inputClass} pl-11`}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Nome, escalão ou NIF"
+            aria-label="Pesquisar atletas"
+          />
+        </div>
+        <IconButton label="Exportar lista em CSV" onClick={() => exportCSV()} className="!w-12 !h-12">
+          <Download className="w-5 h-5" aria-hidden="true" />
+        </IconButton>
+      </div>
+
+      <Button block onClick={() => setCreating(true)}>
+        <UserPlus className="w-4 h-4" aria-hidden="true" /> Novo atleta
+      </Button>
+
+      <SectionTitle title="Atletas" count={list.length} />
+      {list.length === 0 && <p className="t-body text-[var(--text-3)]">Nenhum atleta corresponde à pesquisa.</p>}
+      <div className="divide-soft">
+        {list.map((p) => {
+          const kids = youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id))
+          const open = openId === p.id
+          const dorsalTag = formatTrofeuDorsalTag(p)
+          const dorsalsSummary = formatTrofeuDorsalsSummary(p.dorsais_trofeu)
+          return (
+            <div key={p.id} className="py-1">
+              <button
+                type="button"
+                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
+                onClick={() => setOpenId(open ? null : p.id)}
+                aria-expanded={open}
+              >
+                <Avatar name={p.name} />
+                <span className="min-w-0 flex-1">
+                  <span className="block t-body text-[var(--text-1)] truncate">{p.name}</span>
+                  <span className="block t-small text-[var(--text-3)] truncate">
+                    {p.escalao}
+                    {kids.length > 0 && ` · ${kids.length} ${kids.length === 1 ? 'criança' : 'crianças'}`}
+                    {p.trofeu_seasons && p.trofeu_seasons.length > 0 && ` · Troféu: ${p.trofeu_seasons.join(', ')}`}
+                  </span>
+                </span>
+                <span className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                  {dorsalTag ? (
+                    <Tag tone={dorsalTag.current ? 'info' : 'neutral'}>{dorsalTag.label}</Tag>
+                  ) : p.needs_admin_review ? (
+                    <Tag tone="warn">Sem dorsal</Tag>
+                  ) : null}
+                  {p.login_email ? (
+                    <Tag tone="ok">Login ativo</Tag>
+                  ) : p.login_authorized || p.role === 'admin' ? (
+                    <Tag tone="info">Autorizado</Tag>
+                  ) : (
+                    <Tag tone="neutral">Sem login</Tag>
+                  )}
+                  {p.role === 'admin' && <Tag tone="warn">Admin</Tag>}
+                </span>
+              </button>
+              {open && athleteDetail(p, kids, dorsalsSummary)}
             </div>
           )
         })}
       </div>
+      </>
+      )}
 
       {creating && (
         <Sheet onClose={() => setCreating(false)} ariaLabel="Novo atleta">
@@ -614,53 +740,61 @@ const ChildrenTab: React.FC = () => {
   const [draftEmails, setDraftEmails] = useState<Record<string, string>>({})
   const adults = [...profiles].sort((a, b) => a.name.localeCompare(b.name))
   const editing = editId ? youthAthletes.find((c) => c.id === editId) || null : null
+  const desktop = useDesktopAdmin()
+  const [q, setQ] = useState('')
+  const [mode, setMode] = useState<'all' | 'noguardian' | 'self' | 'nodorsal'>('all')
+  const guardiansOf = (c: YouthAthlete) => c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    return youthAthletes.filter((c) => {
+      if (s && !c.name.toLowerCase().includes(s) && !c.escalao.toLowerCase().includes(s) && !guardiansOf(c).some((g) => g.name.toLowerCase().includes(s))) return false
+      if (mode === 'noguardian') return !c.can_self_manage && c.associated_adult_ids.length === 0
+      if (mode === 'self') return Boolean(c.can_self_manage)
+      if (mode === 'nodorsal') return !formatTrofeuDorsalTag(c)
+      return true
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youthAthletes, profiles, q, mode])
+  const openChild = openId ? youthAthletes.find((c) => c.id === openId) || null : null
+  const childColumns: Column<YouthAthlete>[] = [
+    { id: 'name', header: 'Nome', sortValue: (c) => c.name, render: (c) => c.name },
+    { id: 'escalao', header: 'Escalão', sortValue: (c) => c.escalao, render: (c) => c.escalao },
+    { id: 'age', header: 'Idade', sortValue: (c) => calculateAge(c.birth_date), render: (c) => <span className="t-num">{calculateAge(c.birth_date)}</span> },
+    {
+      id: 'dorsal',
+      header: 'Dorsal Troféu',
+      sortValue: (c) => formatTrofeuDorsalTag(c)?.label ?? '',
+      render: (c) => {
+        const t = formatTrofeuDorsalTag(c)
+        return t ? (
+          <Tag tone={t.current ? 'info' : 'neutral'}>{t.label}</Tag>
+        ) : c.needs_admin_review ? (
+          <Tag tone="warn">Sem dorsal</Tag>
+        ) : (
+          <span className="text-[var(--text-3)]">—</span>
+        )
+      },
+    },
+    {
+      id: 'guardians',
+      header: 'Responsáveis',
+      sortValue: (c) => guardiansOf(c).map((g) => g.name).join(', '),
+      render: (c) => {
+        const g = guardiansOf(c)
+        return g.length > 0 ? g.map((x) => x.name).join(' · ') : <span className="text-[var(--text-3)]">—</span>
+      },
+    },
+    {
+      id: 'mgmt',
+      header: 'Gestão',
+      sortValue: (c) => (c.can_self_manage ? '1' : guardiansOf(c).length > 0 ? '2' : '3'),
+      render: (c) =>
+        c.can_self_manage ? <Tag tone="ok">Login próprio</Tag> : guardiansOf(c).length > 0 ? <Tag tone="info">{guardiansOf(c).length}/2 adultos</Tag> : <Tag tone="danger">Sem responsável</Tag>,
+    },
+  ]
 
-  return (
-    <div className="space-y-4">
-      <Button block onClick={() => setCreating(true)}>
-        <Plus className="w-4 h-4" aria-hidden="true" /> Novo menor
-      </Button>
 
-      <SectionTitle title="Menores / Jovens" count={youthAthletes.length} />
-      {youthAthletes.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda não há perfis de menores.</p>}
-      <div className="divide-soft">
-        {youthAthletes.map((c) => {
-          const guardians = c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
-          const open = openId === c.id
-          const dorsalTag = formatTrofeuDorsalTag(c)
-          const dorsalsSummary = formatTrofeuDorsalsSummary(c.dorsais_trofeu)
-          return (
-            <div key={c.id} className="py-1">
-              <button
-                type="button"
-                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
-                onClick={() => setOpenId(open ? null : c.id)}
-                aria-expanded={open}
-              >
-                <Avatar name={c.name} child />
-                <span className="min-w-0 flex-1">
-                  <span className="block t-body text-[var(--text-1)] truncate">{c.name}</span>
-                  <span className="block t-small text-[var(--text-3)] truncate">
-                    {c.escalao} · {calculateAge(c.birth_date)} anos
-                    {c.trofeu_seasons && c.trofeu_seasons.length > 0 && ` · Troféu: ${c.trofeu_seasons.join(', ')}`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  {dorsalTag ? (
-                    <Tag tone={dorsalTag.current ? 'info' : 'neutral'}>{dorsalTag.label}</Tag>
-                  ) : c.needs_admin_review ? (
-                    <Tag tone="warn">Sem dorsal</Tag>
-                  ) : null}
-                  {c.can_self_manage ? (
-                    <Tag tone="ok">Login próprio</Tag>
-                  ) : guardians.length > 0 ? (
-                    <Tag tone="info">{guardians.length}/2 adultos</Tag>
-                  ) : (
-                    <Tag tone="danger">Sem responsável</Tag>
-                  )}
-                </span>
-              </button>
-              {open && (
+  const childDetail = (c: YouthAthlete, guardians: AthleteProfile[], dorsalsSummary: string | null) => (
                 <div className="pb-4 pt-1 space-y-3">
                   {dorsalsSummary && (
                     <div className="t-small text-[var(--text-2)]">
@@ -778,11 +912,116 @@ const ChildrenTab: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-              )}
+  )
+
+  return (
+    <div className="space-y-4">
+      {desktop && (
+        <>
+          <div className="desk-toolbar">
+            <div className="relative w-[320px] max-w-full">
+              <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+              <input
+                type="search"
+                data-search
+                className="desk-field desk-field-icon w-full"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Pesquisar nome, escalão, responsável  ( / )"
+                aria-label="Pesquisar crianças"
+              />
+            </div>
+            <select className="desk-field" aria-label="Filtrar crianças" value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
+              <option value="all">Todas</option>
+              <option value="noguardian">Sem responsável</option>
+              <option value="self">Login próprio</option>
+              <option value="nodorsal">Sem dorsal Troféu</option>
+            </select>
+            <span className="t-small text-[var(--text-3)] t-num" role="status">
+              {rows.length} de {youthAthletes.length}
+            </span>
+            <div className="flex-1" />
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <Plus className="w-4 h-4" aria-hidden="true" /> Novo menor
+            </Button>
+          </div>
+          <DataTable
+            rows={rows}
+            columns={childColumns}
+            rowKey={(c) => c.id}
+            rowLabel={(c) => c.name}
+            caption="Menores e jovens da equipa"
+            onRowOpen={(c) => setOpenId(c.id)}
+            initialSort={{ id: 'name', dir: 'asc' }}
+            empty={youthAthletes.length === 0 ? 'Ainda não há perfis de menores.' : 'Nenhuma criança corresponde à pesquisa ou ao filtro.'}
+          />
+          {openChild && (
+            <Sheet
+              onClose={() => setOpenId(null)}
+              variant="center"
+              ariaLabel={`Ficha de ${openChild.name}`}
+              panelClassName="!max-w-[560px] flex flex-col overflow-hidden"
+            >
+              <SheetHeader title={openChild.name} subtitle={openChild.escalao} onClose={() => setOpenId(null)} />
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {childDetail(openChild, guardiansOf(openChild), formatTrofeuDorsalsSummary(openChild.dorsais_trofeu))}
+              </div>
+            </Sheet>
+          )}
+        </>
+      )}
+      {!desktop && (
+      <>
+      <Button block onClick={() => setCreating(true)}>
+        <Plus className="w-4 h-4" aria-hidden="true" /> Novo menor
+      </Button>
+
+      <SectionTitle title="Menores / Jovens" count={youthAthletes.length} />
+      {youthAthletes.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda não há perfis de menores.</p>}
+      <div className="divide-soft">
+        {youthAthletes.map((c) => {
+          const guardians = c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
+          const open = openId === c.id
+          const dorsalTag = formatTrofeuDorsalTag(c)
+          const dorsalsSummary = formatTrofeuDorsalsSummary(c.dorsais_trofeu)
+          return (
+            <div key={c.id} className="py-1">
+              <button
+                type="button"
+                className="w-full min-h-14 flex items-center gap-4 text-left cursor-pointer"
+                onClick={() => setOpenId(open ? null : c.id)}
+                aria-expanded={open}
+              >
+                <Avatar name={c.name} child />
+                <span className="min-w-0 flex-1">
+                  <span className="block t-body text-[var(--text-1)] truncate">{c.name}</span>
+                  <span className="block t-small text-[var(--text-3)] truncate">
+                    {c.escalao} · {calculateAge(c.birth_date)} anos
+                    {c.trofeu_seasons && c.trofeu_seasons.length > 0 && ` · Troféu: ${c.trofeu_seasons.join(', ')}`}
+                  </span>
+                </span>
+                <span className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                  {dorsalTag ? (
+                    <Tag tone={dorsalTag.current ? 'info' : 'neutral'}>{dorsalTag.label}</Tag>
+                  ) : c.needs_admin_review ? (
+                    <Tag tone="warn">Sem dorsal</Tag>
+                  ) : null}
+                  {c.can_self_manage ? (
+                    <Tag tone="ok">Login próprio</Tag>
+                  ) : guardians.length > 0 ? (
+                    <Tag tone="info">{guardians.length}/2 adultos</Tag>
+                  ) : (
+                    <Tag tone="danger">Sem responsável</Tag>
+                  )}
+                </span>
+              </button>
+              {open && childDetail(c, guardians, dorsalsSummary)}
             </div>
           )
         })}
       </div>
+      </>
+      )}
 
       {creating && (
         <Sheet onClose={() => setCreating(false)} ariaLabel="Novo perfil de menor">
@@ -833,6 +1072,193 @@ const ChildrenTab: React.FC = () => {
           </div>
         </Sheet>
       )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+/** Inscrições e dorsais em tabela (só desktop): filtros, seleção múltipla e ações em bloco por prova. */
+const STATUS_LABEL: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
+  interested: { label: 'Aguarda o clube', tone: 'warn' },
+  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
+  self_enrolled: { label: 'Vai', tone: 'info' },
+  cancelled: { label: 'Cancelado', tone: 'neutral' },
+}
+
+const RegistrationsTable: React.FC = () => {
+  const { races, registrations, applyToRegistrations } = useApp()
+  const navigate = useNavigate()
+  const today = todayISO()
+  const [q, setQ] = useState('')
+  const [raceId, setRaceId] = useState('')
+  const [status, setStatus] = useState<'all' | 'pending' | 'bib_pending' | 'bib_at_club' | 'bib_delivered'>('all')
+  const [past, setPast] = useState(false)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+
+  const raceById = useMemo(() => new Map(races.map((r) => [r.id, r])), [races])
+  const raceOptions = useMemo(
+    () => races.filter((r) => (past ? r.date < today : r.date >= today) && r.category !== 'individual').sort((a, b) => a.date.localeCompare(b.date)),
+    [races, past, today]
+  )
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    return registrations.filter((r) => {
+      const race = raceById.get(r.race_id)
+      if (!race || race.category === 'individual' || r.status === 'cancelled') return false
+      if ((race.date < today) !== past) return false
+      if (raceId && r.race_id !== raceId) return false
+      if (s && !r.athlete_name.toLowerCase().includes(s) && !race.title.toLowerCase().includes(s) && !(r.bib_number || '').toLowerCase().includes(s)) return false
+      if (status === 'pending') return r.status === 'interested'
+      if (status === 'bib_pending') return r.bib_status === 'pending'
+      if (status === 'bib_at_club') return r.bib_status === 'at_club'
+      if (status === 'bib_delivered') return r.bib_status === 'delivered'
+      return true
+    })
+  }, [registrations, raceById, q, raceId, status, past, today])
+
+  const columns: Column<RaceRegistration>[] = [
+    {
+      id: 'athlete',
+      header: 'Atleta',
+      sortValue: (r) => r.athlete_name,
+      render: (r) => (
+        <>
+          {r.athlete_name}
+          {r.is_dependent && <span className="t-small text-[var(--text-3)] font-normal"> · criança</span>}
+        </>
+      ),
+    },
+    {
+      id: 'race',
+      header: 'Prova',
+      sortValue: (r) => raceById.get(r.race_id)?.title ?? '',
+      className: 'desk-wrap',
+      render: (r) => {
+        const race = raceById.get(r.race_id)
+        return race ? (
+          <a
+            href={`${import.meta.env.BASE_URL}prova/${race.id}`}
+            className="text-[var(--text-1)] underline underline-offset-2"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate(`/prova/${race.id}`)
+            }}
+          >
+            {race.title}
+          </a>
+        ) : (
+          '—'
+        )
+      },
+    },
+    { id: 'date', header: 'Data', sortValue: (r) => raceById.get(r.race_id)?.date ?? '', render: (r) => formatShortDate(raceById.get(r.race_id)?.date ?? '') },
+    { id: 'distance', header: 'Distância', sortValue: (r) => r.distance, render: (r) => r.distance },
+    { id: 'status', header: 'Estado', sortValue: (r) => STATUS_LABEL[r.status].label, render: (r) => <Tag tone={STATUS_LABEL[r.status].tone}>{STATUS_LABEL[r.status].label}</Tag> },
+    {
+      id: 'bib',
+      header: 'Dorsal',
+      sortValue: (r) => r.bib_status,
+      render: (r) => (
+        <span className="inline-flex items-center gap-2">
+          <Tag tone={r.bib_status === 'delivered' ? 'ok' : r.bib_status === 'at_club' ? 'info' : 'warn'}>{BIB_STATUS_LABELS[r.bib_status].short}</Tag>
+          {r.bib_number && <span className="t-num">#{r.bib_number}</span>}
+        </span>
+      ),
+    },
+    { id: 'transport', header: 'Transporte', sortValue: (r) => TRANSPORT_LABELS[r.transport_mode].short, render: (r) => TRANSPORT_LABELS[r.transport_mode].short },
+  ]
+
+  // As ações do contexto são por prova: agrupar a seleção.
+  const run = (action: RegistrationBulkAction) => {
+    const byRace = new Map<string, string[]>()
+    for (const r of registrations) {
+      if (!picked.has(r.id)) continue
+      byRace.set(r.race_id, [...(byRace.get(r.race_id) ?? []), r.id])
+    }
+    byRace.forEach((ids, rid) => applyToRegistrations(rid, ids, action))
+    setPicked(new Set())
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="desk-toolbar">
+        <div className="relative w-[280px] max-w-full">
+          <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+          <input
+            type="search"
+            data-search
+            className="desk-field desk-field-icon w-full"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Atleta, prova ou dorsal  ( / )"
+            aria-label="Pesquisar inscrições"
+          />
+        </div>
+        <select className="desk-field max-w-[260px]" aria-label="Filtrar por prova" value={raceId} onChange={(e) => setRaceId(e.target.value)}>
+          <option value="">Todas as provas</option>
+          {raceOptions.map((r) => (
+            <option key={r.id} value={r.id}>
+              {formatShortDate(r.date)} — {r.title}
+            </option>
+          ))}
+        </select>
+        <select className="desk-field" aria-label="Filtrar por estado" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+          <option value="all">Todos os estados</option>
+          <option value="pending">Por confirmar</option>
+          <option value="bib_pending">Dorsal por levantar</option>
+          <option value="bib_at_club">Dorsal no clube</option>
+          <option value="bib_delivered">Dorsal entregue</option>
+        </select>
+        <label className="inline-flex items-center gap-2 t-small text-[var(--text-1)] min-h-8 cursor-pointer">
+          <input
+            type="checkbox"
+            className="desk-check"
+            checked={past}
+            onChange={(e) => {
+              setPast(e.target.checked)
+              setRaceId('')
+              setPicked(new Set())
+            }}
+          />
+          Provas passadas
+        </label>
+        <span className="t-small text-[var(--text-3)] t-num" role="status">
+          {rows.length} {rows.length === 1 ? 'inscrição' : 'inscrições'}
+        </span>
+      </div>
+
+      {picked.size > 0 && (
+        <div className="desk-bulkbar" role="region" aria-label="Ações sobre a seleção">
+          <span className="t-small t-strong t-num">{picked.size} selecionadas</span>
+          <Button size="sm" onClick={() => run('confirm')}>
+            Confirmar
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => run('bib_at_club')}>
+            Dorsal no clube
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => run('bib_delivered')}>
+            Dorsal entregue
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setPicked(new Set())}>
+            Limpar seleção
+          </Button>
+        </div>
+      )}
+
+      <DataTable
+        rows={rows}
+        columns={columns}
+        rowKey={(r) => r.id}
+        rowLabel={(r) => `${r.athlete_name} em ${raceById.get(r.race_id)?.title ?? 'prova'}`}
+        caption={past ? 'Inscrições em provas passadas' : 'Inscrições e dorsais das próximas provas'}
+        selectable
+        selected={picked}
+        onSelectedChange={setPicked}
+        initialSort={{ id: 'date', dir: 'asc' }}
+        empty={
+          <EmptyState icon={ClipboardCheck} title="Sem inscrições" text="Não há inscrições que correspondam aos filtros." />
+        }
+      />
     </div>
   )
 }

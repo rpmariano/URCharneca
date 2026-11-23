@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { CircleAlert, CircleCheck, Info } from 'lucide-react'
 import { AppProvider, useApp } from './context/AppContext'
 import { BottomNav } from './components/BottomNav'
+import { Sidebar } from './layout/Sidebar'
+import { ShortcutsHelp, useShortcuts } from './layout/shortcuts'
+import { useDesktopAdmin, useDesktopAdminClass } from './layout/useDesktopAdmin'
 import { ExplorePage } from './pages/ExplorePage'
 import { LoginPage } from './pages/LoginPage'
 import { OPEN_EDITOR_EVENT, type EditorRequest } from './utils/appEvents'
@@ -74,6 +77,10 @@ const AppShell: React.FC = () => {
   const { pathname } = useLocation()
   // As páginas de detalhe têm a sua própria barra de ação fixa em vez da navegação
   const isDetail = pathname.startsWith('/prova/') || pathname.startsWith('/evento/')
+  // Shell desktop: só para administradores em ecrãs >= 1024 px
+  const desktop = useDesktopAdmin()
+  useDesktopAdminClass(desktop)
+  const { helpOpen, setHelpOpen } = useShortcuts(desktop)
 
   if (authLoading) {
     return (
@@ -93,7 +100,9 @@ const AppShell: React.FC = () => {
         <>
           <ScrollToTop />
           {/* Sem z-index de propósito: os modais usam <Sheet> (portal para document.body) */}
-          <main className="flex-1 w-full relative">
+          {desktop && <Sidebar onHelp={() => setHelpOpen(true)} />}
+          <main id="conteudo" className={`flex-1 w-full relative${desktop ? ' desk-main' : ''}`}>
+            <div className={desktop && !isDetail ? 'desk-content' : undefined}>
             <Suspense fallback={<PageFallback />}>
               <Routes>
                 <Route path="/" element={<ExplorePage />} />
@@ -113,8 +122,10 @@ const AppShell: React.FC = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
+            </div>
           </main>
-          {!isDetail && <BottomNav />}
+          {!isDetail && !desktop && <BottomNav />}
+          {desktop && helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
           <EditorHost />
           <Intro />
         </>
