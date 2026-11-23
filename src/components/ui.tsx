@@ -4,7 +4,25 @@
  * Estilo "explorar": um só tipo de letra, cantos arredondados, muito espaço em branco.
  */
 import React from 'react'
-import { CalendarHeart, ChevronRight, Dumbbell, Lightbulb, Search, Shield, Sparkles, Trophy, X } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarHeart,
+  CalendarSearch,
+  ChevronRight,
+  CircleHelp,
+  Dumbbell,
+  History,
+  Lightbulb,
+  Megaphone,
+  RotateCcw,
+  Search,
+  Shield,
+  Sparkles,
+  Trophy,
+  Users,
+  UsersRound,
+  X,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { formatDayMonth } from '../utils/formatters'
@@ -33,7 +51,67 @@ export const KIND_ICON: Record<ActivityKind, LucideIcon> = {
   event: CalendarHeart,
 }
 
-export const kindOfRace = (r: Race): ActivityKind => r.category
+/**
+ * Tons das cores do emblema para ícones, etiquetas e destaques (nunca para estados).
+ * Cada tom usa as variáveis `--tint-<tom>-*` de index.css; o texto `fg` tem >= 4.5:1 sobre `bg`.
+ */
+export type BrandTone = 'blue' | 'yellow' | 'red' | 'green' | 'brown'
+
+export const toneVars = (t: BrandTone) => ({
+  bg: `var(--tint-${t}-bg)`,
+  bgStrong: `var(--tint-${t}-bg-strong)`,
+  border: `var(--tint-${t}-border)`,
+  fg: `var(--tint-${t}-fg)`,
+})
+
+export const KIND_TONE: Record<ActivityKind, BrandTone> = {
+  trofeu_cascais: 'yellow',
+  equipa: 'blue',
+  individual: 'green',
+  training: 'red',
+  event: 'brown',
+}
+
+/** Tom por ícone: os ícones das categorias herdam a cor da categoria; alguns ícones comuns têm cor própria. */
+const ICON_TONE = new Map<LucideIcon, BrandTone>([
+  [Trophy, 'yellow'],
+  [Shield, 'blue'],
+  [Lightbulb, 'green'],
+  [Dumbbell, 'red'],
+  [CalendarHeart, 'brown'],
+  [Sparkles, 'yellow'],
+  [BookOpen, 'green'],
+  [CircleHelp, 'yellow'],
+  [Users, 'green'],
+  [UsersRound, 'green'],
+  [RotateCcw, 'brown'],
+  [History, 'brown'],
+  [CalendarSearch, 'red'],
+  [Megaphone, 'yellow'],
+])
+export const toneForIcon = (icon?: LucideIcon, fallback: BrandTone = 'blue'): BrandTone =>
+  (icon && ICON_TONE.get(icon)) || fallback
+
+/** Ícone dentro de um quadrado arredondado tintado com uma cor do emblema. */
+export const IconTile: React.FC<{ icon: LucideIcon; tone?: BrandTone; size?: number; round?: boolean }> = ({
+  icon: Icon,
+  tone,
+  size = 40,
+  round,
+}) => {
+  const v = toneVars(tone ?? toneForIcon(Icon))
+  return (
+    <span
+      className={`${round ? 'rounded-full' : 'rounded-xl'} flex items-center justify-center shrink-0`}
+      style={{ width: size, height: size, background: v.bg, color: v.fg, boxShadow: `inset 0 0 0 1px ${v.border}` }}
+      aria-hidden="true"
+    >
+      <Icon style={{ width: size * 0.5, height: size * 0.5 }} strokeWidth={1.9} />
+    </span>
+  )
+}
+
+export const kindOfRace =(r: Race): ActivityKind => r.category
 export const kindOfEvent = (e: TeamEvent): ActivityKind => (e.type === 'training' ? 'training' : 'event')
 
 /**
@@ -77,15 +155,18 @@ export const SectionTitle: React.FC<{
   onAction?: () => void
 }> = ({ title, count, action, onAction }) => (
   <div className="flex items-center justify-between gap-3">
-    <h2 className="t-heading text-[var(--text-1)]">
-      {title}
-      {count !== undefined && <span className="ml-1.5 font-normal text-[var(--text-3)]">{count}</span>}
+    <h2 className="t-heading text-[var(--text-1)] flex items-center gap-2.5 min-w-0">
+      <span className="w-1 h-[1.1em] rounded-full bg-[var(--gold)] shrink-0" aria-hidden="true" />
+      <span className="min-w-0">
+        {title}
+        {count !== undefined && <span className="ml-1.5 font-normal text-[var(--text-3)]">{count}</span>}
+      </span>
     </h2>
     {action && onAction && (
       <button
         type="button"
         onClick={onAction}
-        className="t-small t-strong text-[var(--text-1)] underline underline-offset-2 cursor-pointer min-h-11 -my-2 pl-3 inline-flex items-center gap-0.5 shrink-0"
+        className="t-small t-strong text-[var(--tint-blue-fg)] underline underline-offset-2 cursor-pointer min-h-11 -my-2 pl-3 inline-flex items-center gap-0.5 shrink-0"
       >
         {action} <ChevronRight className="w-4 h-4" aria-hidden="true" />
       </button>
@@ -104,22 +185,31 @@ export const Card: React.FC<
   />
 )
 
-/** Número com etiqueta (painel de gestão). */
-export const StatTile: React.FC<{ value: number | string; label: string; highlight?: boolean; onClick?: () => void }> = ({
-  value,
-  label,
-  highlight,
-  onClick,
-}) => {
+/** Número com etiqueta (painel de gestão). `tone` escolhe a cor do emblema do número e da faixa (azul por omissão). */
+export const StatTile: React.FC<{
+  value: number | string
+  label: string
+  highlight?: boolean
+  onClick?: () => void
+  tone?: BrandTone
+  icon?: LucideIcon
+}> = ({ value, label, highlight, onClick, tone, icon }) => {
   const on = highlight ?? (typeof value === 'number' ? value > 0 : true)
+  const v = toneVars(tone ?? toneForIcon(icon))
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className="card p-4 text-left min-h-11 pressable disabled:cursor-default disabled:active:transform-none disabled:active:opacity-100"
+      className="card relative overflow-hidden p-4 text-left min-h-11 pressable disabled:cursor-default disabled:active:transform-none disabled:active:opacity-100"
     >
-      <div className={`t-title t-num ${on ? 'text-[var(--text-1)]' : 'text-[var(--text-3)]'}`}>{value}</div>
+      <span className="absolute inset-x-0 top-0 h-1" style={{ background: v.border }} aria-hidden="true" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="t-title t-num" style={{ color: on ? v.fg : 'var(--text-3)' }}>
+          {value}
+        </div>
+        {icon && <IconTile icon={icon} tone={tone} size={32} />}
+      </div>
       <div className="t-small text-[var(--text-3)] mt-0.5">{label}</div>
     </button>
   )
@@ -134,9 +224,7 @@ export const EmptyState: React.FC<{ title?: string; text: string; action?: strin
   icon: Icon = Sparkles,
 }) => (
   <div className="py-10 px-4 text-center flex flex-col items-center gap-3">
-    <span className="w-12 h-12 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-[var(--text-2)]">
-      <Icon className="w-5 h-5" aria-hidden="true" />
-    </span>
+    <IconTile icon={Icon} size={56} round />
     {title && <h3 className="t-heading text-[var(--text-1)]">{title}</h3>}
     <p className="t-body text-[var(--text-3)] max-w-[30ch]">{text}</p>
     {action && onAction && (
@@ -158,7 +246,7 @@ export const Button: React.FC<
   const sizes = size === 'sm' ? 't-small px-4 min-h-11' : 't-body px-6 min-h-12'
   const variants: Record<ButtonVariant, string> = {
     primary: 'bg-[var(--run)] text-[var(--on-accent)]',
-    secondary: 'bg-[var(--surface-card)] text-[var(--text-1)] border border-[var(--text-1)]',
+    secondary: 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] border border-[var(--tint-blue-border)] hover:bg-[var(--tint-blue-bg-strong)]',
     ghost: 'text-[var(--text-1)] underline underline-offset-2 hover:bg-[var(--surface-raised)]',
     danger: 'bg-[var(--surface-card)] text-[var(--tint-rose-fg)] border border-[var(--tint-rose-border)]',
   }
@@ -199,7 +287,7 @@ export const Chip: React.FC<{
     aria-pressed={active}
     className={`shrink-0 inline-flex items-center gap-2 px-4 min-h-11 rounded-full border t-small whitespace-nowrap pressable ${
       active
-        ? 'bg-[var(--surface-raised)] text-[var(--text-1)] border-[var(--text-1)] t-strong shadow-[inset_0_0_0_1px_var(--text-1)]'
+        ? 'bg-[var(--tint-blue-bg-strong)] text-[var(--tint-blue-fg)] border-[var(--run)] t-strong shadow-[inset_0_0_0_1px_var(--run)]'
         : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
     }`}
   >
@@ -211,33 +299,49 @@ export const Chip: React.FC<{
 /** Etiqueta do tipo de atividade com ícone: Troféu de Cascais, Prova do clube, Sugerida, Treino ou Evento. `solid` é a versão branca para usar sobre capas. */
 export const KindBadge: React.FC<{ kind: ActivityKind; label?: string; solid?: boolean }> = ({ kind, label, solid }) => {
   const Icon = KIND_ICON[kind]
+  const v = toneVars(KIND_TONE[kind])
   return (
     <span
-      className={`inline-flex items-center gap-1.5 t-small t-strong px-2.5 py-1 rounded-full ${
-        solid ? 'bg-[var(--surface-card)] shadow-[var(--shadow-card)]' : 'bg-[var(--surface-raised)]'
+      className={`inline-flex items-center gap-1.5 t-small t-strong py-1 rounded-full ${
+        solid ? 'pl-1 pr-2.5 bg-[var(--surface-card)] shadow-[var(--shadow-card)]' : 'px-2.5'
       }`}
-      style={{ color: KIND_COLOR[kind] }}
+      style={{ color: solid ? KIND_COLOR[kind] : v.fg, background: solid ? undefined : v.bg, boxShadow: solid ? undefined : `inset 0 0 0 1px ${v.border}` }}
     >
-      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      {solid ? (
+        <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: v.bgStrong, color: v.fg }} aria-hidden="true">
+          <Icon className="w-3 h-3" />
+        </span>
+      ) : (
+        <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      )}
       {label || KIND_SINGULAR[kind]}
     </span>
   )
 }
 
-/** Etiqueta pequena de estado (neutral, ok, warn, danger, info). */
-export const Tag: React.FC<{ tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'info'; children: React.ReactNode }> = ({
-  tone = 'neutral',
-  children,
-}) => {
-  const tones = {
+type TagTone = 'neutral' | 'ok' | 'warn' | 'danger' | 'info' | BrandTone
+
+/**
+ * Etiqueta pequena. Estados: neutral, ok, warn, danger, info.
+ * Os tons da marca (blue, yellow, red, green, brown) servem para categorias e destaques, nunca para estados.
+ */
+export const Tag: React.FC<{ tone?: TagTone; children: React.ReactNode }> = ({ tone = 'neutral', children }) => {
+  const states: Partial<Record<TagTone, string>> = {
     neutral: 'bg-[var(--surface-raised)] text-[var(--text-2)]',
     ok: 'bg-[var(--tint-emerald-bg)] text-[var(--tint-emerald-fg)]',
     warn: 'bg-[var(--tint-amber-bg)] text-[var(--tint-amber-fg)]',
     danger: 'bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)]',
     info: 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)]',
   }
+  const cls = states[tone]
+  const v = cls ? undefined : toneVars(tone as BrandTone)
   return (
-    <span className={`inline-flex items-center gap-1 t-small t-strong px-2 py-0.5 rounded-md ${tones[tone]}`}>{children}</span>
+    <span
+      className={`inline-flex items-center gap-1 t-small t-strong px-2 py-0.5 rounded-md ${cls ?? ''}`}
+      style={v ? { background: v.bg, color: v.fg } : undefined}
+    >
+      {children}
+    </span>
   )
 }
 
@@ -262,8 +366,9 @@ export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> 
       width: size,
       height: size,
       fontSize: Math.max(12, size * 0.36),
-      background: child ? 'var(--tint-amber-bg-strong)' : 'var(--text-1)',
-      color: child ? 'var(--tint-amber-fg)' : 'var(--bg-app)',
+      background: child ? 'var(--tint-yellow-bg-strong)' : 'var(--brand-blue)',
+      color: child ? 'var(--tint-yellow-fg)' : '#ffffff',
+      boxShadow: child ? undefined : 'inset 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent)',
     }}
     aria-hidden="true"
   >
@@ -327,6 +432,7 @@ export const CategoryTabs = <T extends string>({
   <div className="scroll-row gap-1 px-3" role="tablist" aria-label={label}>
     {options.map((o) => {
       const active = value === o.value
+      const v = toneVars(toneForIcon(o.icon))
       return (
         <button
           key={o.value}
@@ -334,11 +440,18 @@ export const CategoryTabs = <T extends string>({
           role="tab"
           aria-selected={active}
           onClick={() => onChange(o.value)}
-          className={`shrink-0 min-w-[64px] min-h-[60px] px-2 pt-2 pb-2.5 flex flex-col items-center gap-1.5 cursor-pointer border-b-2 transition-colors ${
-            active ? 'border-[var(--text-1)] text-[var(--text-1)]' : 'border-transparent text-[var(--text-3)]'
+          className={`shrink-0 min-w-[64px] min-h-[60px] px-2 pt-2 pb-2.5 flex flex-col items-center gap-1.5 cursor-pointer border-b-[3px] transition-colors ${
+            active ? 'text-[var(--text-1)]' : 'border-transparent text-[var(--text-3)]'
           }`}
+          style={active ? { borderColor: v.fg } : undefined}
         >
-          <o.icon className="w-6 h-6" strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
+          <span
+            className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+            style={{ color: v.fg, background: active ? v.bgStrong : 'transparent' }}
+            aria-hidden="true"
+          >
+            <o.icon className="w-6 h-6" strokeWidth={active ? 2.2 : 1.8} />
+          </span>
           <span className={`text-xs whitespace-nowrap ${active ? 't-strong' : ''}`}>{o.label}</span>
         </button>
       )
@@ -354,10 +467,21 @@ export const ListRow: React.FC<{
   trailing?: React.ReactNode
   onClick?: () => void
   danger?: boolean
-}> = ({ icon: Icon, title, description, trailing, onClick, danger }) => {
+  tone?: BrandTone
+}> = ({ icon: Icon, title, description, trailing, onClick, danger, tone }) => {
   const body = (
     <>
-      {Icon && <Icon className={`w-6 h-6 shrink-0 ${danger ? 'text-[var(--tint-rose-fg)]' : 'text-[var(--text-1)]'}`} strokeWidth={1.8} aria-hidden="true" />}
+      {Icon &&
+        (danger ? (
+          <span
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)] shadow-[inset_0_0_0_1px_var(--tint-rose-border)]"
+            aria-hidden="true"
+          >
+            <Icon className="w-5 h-5" strokeWidth={1.9} />
+          </span>
+        ) : (
+          <IconTile icon={Icon} tone={tone} />
+        ))}
       <span className="flex-1 min-w-0 text-left">
         <span className={`block t-body ${danger ? 'text-[var(--tint-rose-fg)]' : 'text-[var(--text-1)]'}`}>{title}</span>
         {description && <span className="block t-small text-[var(--text-3)]">{description}</span>}
@@ -427,7 +551,7 @@ export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void
         className="peer absolute inset-x-0 -inset-y-1.5 w-full h-11 opacity-0 cursor-pointer"
       />
       <span
-        className="absolute inset-0 rounded-full transition-colors bg-[var(--border-card-strong)] peer-checked:bg-[var(--text-1)] peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--run)] peer-focus-visible:outline-offset-2"
+        className="absolute inset-0 rounded-full transition-colors bg-[var(--border-card-strong)] peer-checked:bg-[var(--run)] peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--run)] peer-focus-visible:outline-offset-2"
         aria-hidden="true"
       />
       <span
@@ -479,7 +603,7 @@ export const Segmented = <T extends string>({
   onChange: (v: T) => void
 }) => (
   <div
-    className="grid gap-1 p-1 rounded-xl bg-[var(--surface-raised)]"
+    className="grid gap-1 p-1 rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)]"
     style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
   >
     {options.map((o) => (
@@ -489,7 +613,7 @@ export const Segmented = <T extends string>({
         onClick={() => onChange(o.value)}
         aria-pressed={value === o.value}
         className={`px-2 min-h-11 rounded-lg t-small transition-colors cursor-pointer ${
-          value === o.value ? 'bg-[var(--surface-card)] text-[var(--text-1)] t-strong shadow-[var(--shadow-card)]' : 'text-[var(--text-2)]'
+          value === o.value ? 'bg-[var(--surface-card)] text-[var(--tint-blue-fg)] t-strong shadow-[var(--shadow-card),inset_0_-2px_0_var(--gold)]' : 'text-[var(--text-2)]'
         }`}
       >
         {o.label}
