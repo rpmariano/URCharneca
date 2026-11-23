@@ -8,6 +8,7 @@ import { CalendarHeart, ChevronRight, Dumbbell, Lightbulb, Search, Shield, Spark
 import type { LucideIcon } from 'lucide-react'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { formatDayMonth } from '../utils/formatters'
+import { AppHeader } from './AppHeader'
 
 export const KIND_SINGULAR: Record<ActivityKind, string> = {
   trofeu_cascais: 'Troféu de Cascais',
@@ -54,19 +55,18 @@ export const Screen: React.FC<{ children?: React.ReactNode; padded?: boolean; cl
   </div>
 )
 
-/** Topo de página: título grande em minúsculas, subtítulo opcional e ação à direita. */
-export const PageHeader: React.FC<{ title: string; subtitle?: string; action?: React.ReactNode }> = ({
+/** Topo de página: barra fixa azul (AppHeader) com o título; o subtítulo, se existir, fica por baixo como texto normal.
+ *  Pensado para um contentor com `px-5`: a barra sangra para as margens (`-mx-5`). */
+export const PageHeader: React.FC<{ title: string; subtitle?: string; action?: React.ReactNode; bleed?: string }> = ({
   subtitle,
   title,
   action,
+  bleed = '-mx-5',
 }) => (
-  <div className="flex items-start justify-between gap-3 pt-6 pb-2">
-    <div className="min-w-0">
-      <h1 className="t-title text-[var(--text-1)]">{title}</h1>
-      {subtitle && <p className="t-body text-[var(--text-3)] mt-1">{subtitle}</p>}
-    </div>
-    {action}
-  </div>
+  <>
+    <AppHeader title={title} action={action} className={bleed} />
+    {subtitle && <p className="t-body text-[var(--text-3)]">{subtitle}</p>}
+  </>
 )
 
 /** Título de secção com contador opcional e ligação ("Ver tudo") à direita. */

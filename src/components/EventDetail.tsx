@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, CalendarDays, ClipboardList, MapPin, Pencil, Share, Shirt, Trash2 } from 'lucide-react'
+import { CalendarDays, ClipboardList, MapPin, Pencil, Shirt, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { TeamEvent } from '../types'
 import { EVENT_TYPE_LABELS } from '../types'
@@ -7,9 +7,10 @@ import { formatLongDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { openCreateEvent } from '../utils/appEvents'
 import { ActivityCover } from './ActivityCover'
+import { DetailBar } from './AppHeader'
 import { RsvpButtons, countdownLabel } from './ActivityItems'
 import { FactRow, shareLink } from './RaceDetail'
-import { Avatar, Button, IconButton, KindBadge, SectionTitle, Tag, kindOfEvent } from './ui'
+import { Avatar, Button, KindBadge, SectionTitle, Tag, kindOfEvent } from './ui'
 
 /**
  * Detalhe de um treino/evento/reunião em página inteira: capa, data, local, plano de treino,
@@ -25,16 +26,8 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
 
   return (
     <div className="pb-28 w-full max-w-[480px] mx-auto">
-      <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="w-full aspect-[4/3]">
-        <div className="absolute top-3 inset-x-4 flex items-center justify-between">
-          <IconButton label="Voltar" floating onClick={onBack}>
-            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Partilhar" floating onClick={() => shareLink(event.title, `evento/${event.id}`, showToast)}>
-            <Share className="w-5 h-5" aria-hidden="true" />
-          </IconButton>
-        </div>
-      </ActivityCover>
+      <DetailBar title={event.title} onBack={onBack} onShare={() => shareLink(event.title, `evento/${event.id}`, showToast)} />
+      <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="w-full aspect-[4/3]" />
 
       <div className="px-5 divide-soft">
         <header className="py-6 space-y-3">

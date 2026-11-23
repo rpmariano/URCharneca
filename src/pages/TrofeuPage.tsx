@@ -27,7 +27,8 @@ import {
 import { computeNextBiweeklyCheck } from '../services/trofeuSyncService'
 import { formatShortDate } from '../utils/formatters'
 import { seasonOf, todayISO } from '../utils/dates'
-import { Button, Chip, EmptyState, IconButton, PageHeader, SectionTitle, Segmented, Tag, inputClass } from '../components/ui'
+import { AppHeader, HeaderButton } from '../components/AppHeader'
+import { Button, Chip, EmptyState, SectionTitle, Segmented, Tag, inputClass } from '../components/ui'
 
 type TrofeuTab = 'clubes' | 'atletas' | 'provas' | 'regulamento'
 
@@ -104,28 +105,33 @@ export const TrofeuPage: React.FC = () => {
 
   return (
     <div className="px-5 pb-28 space-y-5">
-      <div className="flex items-center justify-between pt-4">
-        <IconButton label="Voltar" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-        </IconButton>
-        <div className="flex items-center gap-2">
-          <a
-            href={TROFEU_SITE_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 min-h-11 rounded-full border border-[var(--border-card)] bg-[var(--surface-card)] t-small t-strong text-[var(--text-1)]"
-          >
-            Site oficial <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-          </a>
-          {isAdminView && (
-            <IconButton label={isSyncingTrofeu ? 'A atualizar' : 'Atualizar dados do site'} disabled={isSyncingTrofeu} onClick={() => void syncTrofeuCascais('manual_admin')}>
-              <RefreshCw className={`w-5 h-5 ${isSyncingTrofeu ? 'animate-spin' : ''}`} aria-hidden="true" />
-            </IconButton>
-          )}
-        </div>
-      </div>
-
-      <PageHeader title="Troféu de Cascais" subtitle="Como está a U.R. Charneca nas provas do concelho." />
+      <AppHeader
+        className="-mx-5"
+        title="Troféu de Cascais"
+        leading={
+          <HeaderButton label="Voltar" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+          </HeaderButton>
+        }
+        action={
+          <>
+            <a
+              href={TROFEU_SITE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 min-h-11 rounded-full bg-[var(--surface-card)] t-small t-strong text-[var(--text-1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hdr-fg)]"
+            >
+              Site oficial <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+            </a>
+            {isAdminView && (
+              <HeaderButton label={isSyncingTrofeu ? 'A atualizar' : 'Atualizar dados do site'} disabled={isSyncingTrofeu} onClick={() => void syncTrofeuCascais('manual_admin')}>
+                <RefreshCw className={`w-5 h-5 ${isSyncingTrofeu ? 'animate-spin' : ''}`} aria-hidden="true" />
+              </HeaderButton>
+            )}
+          </>
+        }
+      />
+      <p className="t-body text-[var(--text-3)]">Como está a U.R. Charneca nas provas do concelho.</p>
 
       {/* Época */}
       <section className="space-y-2" aria-label="Época">

@@ -59,8 +59,9 @@ export const AdminPage: React.FC = () => {
   if (!isAdminView) return <Navigate to="/" replace />
 
   return (
-    <div className={desktop ? 'px-2 pt-6 pb-12 space-y-5' : 'px-5 pb-28 space-y-5'}>
+    <div className={desktop ? 'px-2 pt-0 pb-12 space-y-5' : 'px-5 pb-28 space-y-5'}>
       <PageHeader
+        bleed={desktop ? '-mx-2' : undefined}
         title="Gerir a equipa"
         action={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
