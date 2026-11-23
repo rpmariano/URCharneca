@@ -28,12 +28,21 @@ import { computeNextBiweeklyCheck } from '../services/trofeuSyncService'
 import { formatShortDate } from '../utils/formatters'
 import { seasonOf, todayISO } from '../utils/dates'
 import { AppHeader, HeaderButton } from '../components/AppHeader'
+import { isSupabaseConfigured } from '../lib/supabaseClient'
 import { Button, Chip, EmptyState, SectionTitle, Segmented, Tag, inputClass } from '../components/ui'
 
 type TrofeuTab = 'clubes' | 'atletas' | 'provas' | 'regulamento'
 
 /** Mínimo de provas para entrar nos prémios finais individuais: 70% das provas (Regulamento, ponto 5.3.1). */
 const minStagesForPrize = (total: number) => Math.ceil(total * 0.7)
+
+const stageNumber = (code: string) => Number(code.replace(/\D/g, '')) || 0
+
+const formatSyncedAt = (iso: string) => {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`
+}
 
 /**
  * Troféu de Atletismo de Cascais (/trofeu): onde está a U.R. Charneca na classificação, os atletas,
@@ -49,6 +58,8 @@ export const TrofeuPage: React.FC = () => {
     isSyncingTrofeu,
     pendingDorsalAthletesCount,
     syncTrofeuCascais,
+    syncTrofeuResults,
+    isSyncingTrofeuResults,
     checkRaceDocumentsNow,
   } = useApp()
 
@@ -275,6 +286,21 @@ export const TrofeuPage: React.FC = () => {
             </div>
           )}
 
+          {(() => {
+            const syncedAt = formatSyncedAt(activeSeason.results_synced_at || activeSeason.last_synced_at)
+            return (
+              <div className="space-y-2">
+                {syncedAt && <p className="t-small text-[var(--text-3)]">Dados oficiais atualizados em {syncedAt}</p>}
+                {isAdminView && isOpen && isSupabaseConfigured && (
+                  <Button size="sm" variant="secondary" disabled={isSyncingTrofeuResults} onClick={() => void syncTrofeuResults()} aria-busy={isSyncingTrofeuResults}>
+                    <RefreshCw className={`w-4 h-4 ${isSyncingTrofeuResults ? 'animate-spin' : ''}`} aria-hidden="true" />
+                    {isSyncingTrofeuResults ? 'A atualizar…' : 'Atualizar classificações'}
+                  </Button>
+                )}
+              </div>
+            )
+          })()}
+
           {standings.length === 0 ? (
             <EmptyState icon={Users} title="Sem atletas nesta época" text="Quando houver classificações da U.R. Charneca, aparecem aqui." />
           ) : (
@@ -302,6 +328,7 @@ export const TrofeuPage: React.FC = () => {
               )}
 
               <SectionTitle title="Atletas da U.R. Charneca" count={displayedAthletes.length} />
+              <p className="t-small text-[var(--text-3)]">Lugar acumulado no escalão; pontos por prova abaixo.</p>
 
               {displayedAthletes.length === 0 ? (
                 <EmptyState icon={Users} title="Nada encontrado" text="Experimenta outro escalão ou outra pesquisa." />
@@ -325,7 +352,8 @@ export const TrofeuPage: React.FC = () => {
                           <div className="min-w-0 flex-1">
                             <div className="t-body t-strong text-[var(--text-1)] truncate">{a.name}</div>
                             <div className="t-small text-[var(--text-3)]">
-                              {a.escalao} · {a.birth_year}
+                              {a.escalao}
+                              {a.birth_year > 0 ? ` · ${a.birth_year}` : ''}
                               {a.dorsal ? ` · dorsal ${a.dorsal}` : ' · sem dorsal'}
                             </div>
                           </div>
@@ -349,7 +377,29 @@ export const TrofeuPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {Object.keys(a.points_per_stage).length > 0 && (
+                        {a.stage_results && Object.keys(a.stage_results).length > 0 ? (
+                          <ul className="space-y-1" aria-label={`Resultados por prova de ${a.name}`}>
+                            {Object.entries(a.stage_results)
+                              .sort(([x], [y]) => stageNumber(x) - stageNumber(y))
+                              .map(([stage, r]) => (
+                                <li key={stage} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-raised)] t-small t-num text-[var(--text-2)]">
+                                  <strong className="text-[var(--text-1)]">{stage}</strong>
+                                  <span aria-hidden="true">·</span>
+                                  <span>{r.pos}.º no escalão</span>
+                                  <span aria-hidden="true">·</span>
+                                  <span>
+                                    <strong className="text-[var(--text-1)]">{r.points}</strong> pts
+                                  </span>
+                                  {r.time && (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span>{r.time}</span>
+                                    </>
+                                  )}
+                                </li>
+                              ))}
+                          </ul>
+                        ) : Object.keys(a.points_per_stage).length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {Object.entries(a.points_per_stage).map(([stage, pts]) => (
                               <span key={stage} className="px-2 py-0.5 rounded-md bg-[var(--surface-raised)] t-small t-num text-[var(--text-2)]">

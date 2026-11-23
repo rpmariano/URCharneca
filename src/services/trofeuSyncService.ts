@@ -13,6 +13,7 @@ import type {
   TrofeuSyncLog,
   YouthAthlete,
 } from '../types'
+import { supabase } from '../lib/supabaseClient'
 
 /** Normaliza nomes removendo acentos, espaços duplos e maiúsculas para cruzamento fiável */
 export function normalizeName(name: string): string {
@@ -426,4 +427,49 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
     log,
     liveReachable: probe.reachable,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Classificações oficiais (Edge Function `trofeu-sync`)
+// ---------------------------------------------------------------------------
+export interface TrofeuResultsResponse {
+  ok: boolean
+  season: string
+  stages: Array<{ stage: number; competition_id: number; date: string; urc_athletes: number }>
+  athletes_updated: number
+  unmatched: Array<{ dorsal: string; name: string }>
+  message?: string
+}
+
+export type TrofeuResultsOutcome =
+  | { kind: 'ok'; data: TrofeuResultsResponse }
+  | { kind: 'unavailable' }
+  | { kind: 'error'; message?: string }
+
+/** Só administradores chamam isto; a função lê o site oficial e atualiza `trofeu_seasons`. */
+export async function invokeTrofeuResultsSync(season: string): Promise<TrofeuResultsOutcome> {
+  try {
+    const { data, error } = await supabase.functions.invoke('trofeu-sync', { body: { season } })
+    if (error) {
+      const status = (error as { context?: { status?: number } }).context?.status
+      if (status === 404 || (error as { name?: string }).name === 'FunctionsFetchError') return { kind: 'unavailable' }
+      return { kind: 'error' }
+    }
+    const res = data as TrofeuResultsResponse | null
+    if (!res || typeof res !== 'object') return { kind: 'error' }
+    if (!res.ok) return { kind: 'error', message: res.message }
+    return { kind: 'ok', data: res }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+export const RESULTS_SYNC_INTERVAL_MS = 12 * 60 * 60 * 1000
+
+/** Há uma prova já realizada e passaram >= 12 h desde a última leitura das classificações. */
+export function isResultsSyncDue(season: TrofeuSeasonData | undefined, today: string, now = Date.now()): boolean {
+  if (!season || season.status !== 'open') return false
+  if (!season.stages.some((s) => s.date && s.date <= today)) return false
+  const last = Date.parse(season.results_synced_at || season.last_synced_at)
+  return !Number.isFinite(last) || now - last >= RESULTS_SYNC_INTERVAL_MS
 }

@@ -364,6 +364,7 @@ const fromTrofeuSeasonRow = (row: Record<string, unknown>): TrofeuSeasonData => 
     ? (row.athlete_standings as TrofeuSeasonData['athlete_standings'])
     : [],
   last_synced_at: String(row.last_synced_at ?? ''),
+  results_synced_at: row.results_synced_at ? String(row.results_synced_at) : undefined,
 })
 
 const toSyncLogRow = (l: TrofeuSyncLog) => ({
@@ -611,6 +612,18 @@ export const deleteRegistrationsOfDependent = (id: string) => del('race_registra
 // Leitura
 // ---------------------------------------------------------------------------
 export type HydrateResult = { ok: true; data: HydratedSupabaseData } | { ok: false; kind: DbFailureKind }
+
+/** Volta a ler só as épocas do Troféu (depois de a Edge Function atualizar as classificações). */
+export async function fetchTrofeuSeasons(): Promise<TrofeuSeasonData[] | null> {
+  if (!isSupabaseConfigured) return null
+  try {
+    const { data, error } = await supabase.from('trofeu_seasons').select('*').order('edition_number', { ascending: false })
+    if (error || !Array.isArray(data)) return null
+    return (data as Row[]).map(fromTrofeuSeasonRow)
+  } catch {
+    return null
+  }
+}
 
 /** Carrega tudo o que o RLS deixa ver a este utilizador. Não escreve nada: o Supabase é a fonte de verdade. */
 export async function fetchAllFromSupabase(): Promise<HydrateResult> {

@@ -24,7 +24,7 @@ import {
 } from '../data/seedData'
 import { INITIAL_TROFEU_SEASONS } from '../data/trofeuData'
 import { TROFEU_HISTORY_RACES } from '../data/trofeuHistory'
-import { computeNextBiweeklyCheck, isBiweeklyCheckDue, runTrofeuSync } from '../services/trofeuSyncService'
+import { computeNextBiweeklyCheck, invokeTrofeuResultsSync, isBiweeklyCheckDue, isResultsSyncDue, runTrofeuSync } from '../services/trofeuSyncService'
 import {
   deleteEventById,
   deleteNotificationById,
@@ -37,6 +37,7 @@ import {
   classifyError,
   describeFailure,
   fetchAllFromSupabase,
+  fetchTrofeuSeasons,
   markNotificationsRead,
   runSequence,
   saveEvent,
@@ -198,6 +199,8 @@ interface AppContextValue {
   isSyncingTrofeu: boolean
   pendingDorsalAthletesCount: number
   syncTrofeuCascais: (trigger?: TrofeuSyncLog['trigger']) => Promise<TrofeuSyncLog>
+  syncTrofeuResults: (auto?: boolean) => Promise<void>
+  isSyncingTrofeuResults: boolean
   assignTrofeuDorsal: (personId: string, isYouth: boolean, dorsal: string, season?: string) => void
   checkRaceDocumentsNow: (raceId: string) => Promise<void>
   resetDemoData: () => void
@@ -369,9 +372,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     configured ? cache.trofeuSyncLogs ?? [] : loadFromStorage(STORAGE_KEYS.TROFEU_SYNC_LOGS, [])
   )
   const [isSyncingTrofeu, setIsSyncingTrofeu] = useState(false)
+  const [isSyncingTrofeuResults, setIsSyncingTrofeuResults] = useState(false)
+  const resultsSyncingRef = useRef(false)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [hydrated, setHydrated] = useState(false)
   const autoSyncedRef = useRef(false)
+  const syncTrofeuResultsRef = useRef<(auto?: boolean) => Promise<void>>(async () => {})
   const supabaseHydratedRef = useRef(false)
   const authenticatedIdRef = useRef<string | null>(null)
   const sessionEndingRef = useRef(false)
@@ -1754,6 +1760,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  /** Lê as classificações oficiais (Edge Function) e volta a carregar as épocas. Só admin e só com Supabase. */
+  const syncTrofeuResults = async (auto = false): Promise<void> => {
+    if (!isSupabaseConfigured || (!auto && !isAdminView) || resultsSyncingRef.current) return
+    resultsSyncingRef.current = true
+    setIsSyncingTrofeuResults(true)
+    try {
+      const season = (trofeuSeasons.find((s) => s.status === 'open') ?? trofeuSeasons[0])?.season ?? '2026/2027'
+      const outcome = await invokeTrofeuResultsSync(season)
+      if (outcome.kind === 'ok') {
+        const fresh = await fetchTrofeuSeasons()
+        if (fresh && fresh.length > 0) setTrofeuSeasons(fresh)
+        const n = outcome.data.athletes_updated
+        const extra = outcome.data.unmatched.length > 0 ? ` (${outcome.data.unmatched.length} sem ficha)` : ''
+        showToast(`Classificações atualizadas: ${n} ${n === 1 ? 'atleta' : 'atletas'}${extra}`)
+      } else if (outcome.kind === 'unavailable') {
+        if (!auto) showToast('A atualização automática ainda não está disponível.', 'info')
+      } else if (!auto) {
+        showToast(outcome.message || 'Não foi possível atualizar as classificações. Tenta mais tarde.', 'warning')
+      }
+    } finally {
+      resultsSyncingRef.current = false
+      setIsSyncingTrofeuResults(false)
+    }
+  }
+
+  syncTrofeuResultsRef.current = syncTrofeuResults
+
   // Ligação de recuperação de palavra-passe (email) e fim de sessão noutro separador
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -1797,11 +1830,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAuthLoading(false)
       }
 
+      // Decide antes da sincronização de documentos, que renova last_synced_at
+      let resultsDue = false
+      if (isSupabaseConfigured && isAdminUser) {
+        const seasonsNow = await fetchTrofeuSeasons()
+        const open = seasonsNow?.find((x) => x.status === 'open')
+        resultsDue = isResultsSyncDue(open, todayISO())
+      }
+
       const trofeuRacesCount = currentRaces.filter((r) => r.category === 'trofeu_cascais').length
       const lastSync = currentLogs[0]?.timestamp
       if (isAdminUser && (trofeuRacesCount < 13 || isBiweeklyCheckDue(lastSync))) {
         await syncTrofeuCascais(trofeuRacesCount < 13 ? 'startup' : 'auto_biweekly')
       }
+      // Sem bloquear a interface: uma única tentativa por arranque
+      if (resultsDue) void syncTrofeuResultsRef.current(true)
     }
 
     void bootstrap()
@@ -1979,6 +2022,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSyncingTrofeu,
         pendingDorsalAthletesCount,
         syncTrofeuCascais,
+        syncTrofeuResults,
+        isSyncingTrofeuResults,
         assignTrofeuDorsal,
         checkRaceDocumentsNow,
         resetDemoData,
