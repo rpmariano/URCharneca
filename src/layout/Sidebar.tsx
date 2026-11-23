@@ -24,6 +24,7 @@ export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
           <div className="t-small text-[var(--text-3)]">Gestão da equipa</div>
         </div>
       </div>
+      <div className="brand-stripe mx-2 -mt-2" aria-hidden="true" />
       <nav aria-label="Navegação principal" className="desk-nav">
         {SIDEBAR_ITEMS.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `desk-nav-link${isActive ? ' is-active' : ''}`}>

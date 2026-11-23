@@ -3,15 +3,16 @@ import type { ActivityKind } from '../types'
 import { KIND_ICON } from './ui'
 
 /**
- * Paleta das capas geradas, nas cores do clube (azul do equipamento, azul-marinho e dourado do emblema).
+ * Paleta das capas geradas, nas cores do emblema: azul do escudo com dourado (Troféu), azul (Clube),
+ * verde do mar e da serra (Comunidade), vermelho da lira (Treino) e castanho da bola com o amarelo do sol (Evento).
  * São cores fixas (não mudam com o tema) porque funcionam como uma "fotografia".
  */
 const PALETTE: Record<ActivityKind, { from: string; to: string; line: string; icon: string }> = {
-  trofeu_cascais: { from: '#0b2350', to: '#0a5fc0', line: '#d0a838', icon: '#e8c866' },
-  equipa: { from: '#0a5fc0', to: '#3d8fe6', line: '#ffffff', icon: '#ffffff' },
-  individual: { from: '#1b2f6b', to: '#5b6fe0', line: '#c9d2ff', icon: '#ffffff' },
-  training: { from: '#0a4d6e', to: '#1aa3c4', line: '#bfeef7', icon: '#ffffff' },
-  event: { from: '#b98a1c', to: '#e3c05a', line: '#0b2350', icon: '#0b2350' },
+  trofeu_cascais: { from: '#00285a', to: '#004c94', line: '#e0b94a', icon: '#f2d94e' },
+  equipa: { from: '#003a75', to: '#2b7bd0', line: '#ffffff', icon: '#ffffff' },
+  individual: { from: '#0f4a2c', to: '#2e8b57', line: '#d7f0c8', icon: '#ffffff' },
+  training: { from: '#7a160d', to: '#d0402c', line: '#ffd7cf', icon: '#ffffff' },
+  event: { from: '#4a321f', to: '#8a5f22', line: '#f2d94e', icon: '#f2d94e' },
 }
 
 /** Número estável a partir de um texto, para variar o padrão de cada capa de forma determinística. */

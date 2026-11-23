@@ -234,7 +234,7 @@ export const ACTIVITY_KIND_LABELS: Record<ActivityKind, string> = {
   training: 'Treinos',
   trofeu_cascais: 'Troféu de Cascais',
   equipa: 'Provas do Clube',
-  individual: 'Sugeridas por Atletas',
+  individual: 'Provas da Comunidade',
   event: 'Eventos',
 }
 
@@ -390,9 +390,9 @@ export const CATEGORIA_LABELS: Record<RaceCategory, { label: string; badge: stri
     desc: 'Prova promovida pelo clube: a administração inscreve os atletas interessados, levanta os dorsais e organiza a carrinha.',
   },
   individual: {
-    label: 'Sugerida por Atleta',
-    badge: 'Sugerida',
-    desc: 'Prova sugerida por um atleta. Cada um faz a sua inscrição e marca aqui presença para irmos juntos.',
+    label: 'Prova da Comunidade',
+    badge: 'Comunidade',
+    desc: 'Prova proposta por um atleta da comunidade. Cada um faz a sua inscrição e marca aqui presença para irmos juntos.',
   },
 }
 

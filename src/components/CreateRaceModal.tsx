@@ -123,7 +123,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
               options={[
                 { value: 'trofeu_cascais', label: 'Troféu' },
                 { value: 'equipa', label: 'Clube' },
-                { value: 'individual', label: 'Sugerida' },
+                { value: 'individual', label: 'Comunidade' },
               ]}
             />
             <span className="block text-xs text-[var(--text-3)] mt-1.5">{CATEGORIA_LABELS[category].desc}</span>

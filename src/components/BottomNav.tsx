@@ -34,20 +34,27 @@ export const BottomNav: React.FC = () => {
           to={item.to}
           end={item.end}
           className={({ isActive }) =>
-            `min-h-16 pt-2 pb-1.5 flex flex-col items-center justify-center gap-1 text-xs transition-colors ${
-              isActive ? 'text-[var(--run)] t-strong' : 'text-[var(--text-3)]'
+            `relative min-h-16 pt-2 pb-1.5 flex flex-col items-center justify-center gap-1 text-xs transition-colors ${
+              isActive ? 'text-[var(--tint-blue-fg)] t-strong' : 'text-[var(--text-3)]'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <span className="relative">
+              {isActive && (
+                <span aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-b-full bg-[var(--gold)]" />
+              )}
+              <span
+                className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-colors ${
+                  isActive ? 'bg-[var(--tint-blue-bg-strong)]' : ''
+                }`}
+              >
                 <item.icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden="true" />
                 {Boolean(item.badge) && (
                   <>
                     <span
                       aria-hidden="true"
-                      className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#b91c1c] text-white text-xs t-strong leading-none flex items-center justify-center"
+                      className="absolute -top-1 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#b91c1c] text-white text-xs t-strong leading-none flex items-center justify-center"
                     >
                       {item.badge}
                     </span>

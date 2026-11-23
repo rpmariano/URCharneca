@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
 import {
-  ArrowLeft,
   Baby,
   Bus,
   CalendarDays,
@@ -15,7 +14,6 @@ import {
   Pencil,
   RefreshCw,
   Route,
-  Share,
   Ticket,
   Trash2,
   Trophy,
@@ -38,12 +36,13 @@ import type { VehicleAllocation } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { ActivityCover } from './ActivityCover'
+import { DetailBar } from './AppHeader'
 import { countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
 import { Sheet } from './Sheet'
 import { ContextualHint } from './OnboardingCards'
 import { useDesktopAdmin } from '../layout/useDesktopAdmin'
-import { Avatar, Button, Chip, Field, IconButton, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
+import { Avatar, Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
 const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
   interested: { label: 'Aguarda o clube', tone: 'warn' },
@@ -263,24 +262,21 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const canRegisterSomeone = registrationOpen || myRegs.length > 0
   const ctaLabel = myRegs.length > 0 ? (registrationOpen ? 'Gerir inscrição' : 'Ver inscrição') : isIndividual ? 'Vou participar' : 'Inscrever'
 
+  const shareRace = () => shareLink(race.title, `prova/${race.id}`, showToast)
+  const bar = <DetailBar title={race.title} onBack={onBack} onShare={shareRace} overlay={!desktop} />
+
   return (
+    <>
+    {desktop && bar}
     <div className={desktop ? 'desk-detail' : 'pb-28 w-full max-w-[480px] mx-auto'}>
+      {!desktop && bar}
       <ActivityCover
         kind={race.category}
         seed={race.id}
         imageUrl={race.image_url}
         alt=""
         className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'w-full aspect-[4/3]'}
-      >
-        <div className="absolute top-3 inset-x-4 flex items-center justify-between">
-          <IconButton label="Voltar" floating onClick={onBack}>
-            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-          </IconButton>
-          <IconButton label="Partilhar" floating onClick={() => shareLink(race.title, `prova/${race.id}`, showToast)}>
-            <Share className="w-5 h-5" aria-hidden="true" />
-          </IconButton>
-        </div>
-      </ActivityCover>
+      />
 
       <div className={desktop ? 'desk-detail-grid' : 'px-5'}>
        <div className={`desk-detail-col divide-soft${desktop ? ' pt-2' : ''}`}>
@@ -309,11 +305,13 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           {race.meeting_point && (
             <FactRow icon={Clock} title={`Encontro${race.meeting_time ? ` às ${race.meeting_time}` : ''}`} detail={race.meeting_point} />
           )}
-          <FactRow
-            icon={Route}
-            title={race.distances.join(' · ')}
-            detail={race.open_to_children && race.children_distances?.length ? `Crianças: ${race.children_distances.join(' · ')}` : undefined}
-          />
+          {race.distances.length > 0 && (
+            <FactRow
+              icon={Route}
+              title={race.distances.join(' · ')}
+              detail={race.open_to_children && race.children_distances?.length ? `Crianças: ${race.children_distances.join(' · ')}` : undefined}
+            />
+          )}
           {race.registration_deadline && (
             <FactRow
               icon={Hourglass}
@@ -329,7 +327,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           <h2 className="t-heading text-[var(--text-1)]">Sobre a prova</h2>
           {race.description && <p className="t-body text-[var(--text-2)] whitespace-pre-line">{race.description}</p>}
           <p className="t-small text-[var(--text-3)]">{CATEGORIA_LABELS[race.category].desc}</p>
-          {isIndividual && <p className="t-small text-[var(--text-3)]">Sugerida por {race.created_by_name}</p>}
+          {isIndividual && <p className="t-small text-[var(--text-3)]">Proposta por {race.created_by_name}</p>}
           {race.external_url && (
             <a
               href={race.external_url}
@@ -794,6 +792,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         </Sheet>
       )}
     </div>
+    </>
   )
 }
 

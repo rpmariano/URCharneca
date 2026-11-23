@@ -24,7 +24,7 @@
 :root, [data-theme="balanced"], [data-theme="light"] {
   color-scheme: light;
 
-  --bg-app: #ffffff;
+  --bg-app: #f6f8fc; /* branco ligeiramente tintado de azul: os cartões brancos destacam-se */
   --bg-body-desktop: #eef1f5;
   --bg-header: rgba(255, 255, 255, 0.96);
   --bg-nav: rgba(255, 255, 255, 0.98);
@@ -50,11 +50,21 @@
   --gold-ink: #7a5806; /* dourado legível como texto sobre branco */
   --on-gold: #101c36;
 
+  /* Cores do emblema: azul, dourado, vermelho (lira), verde (mar e serra), amarelo (sol), castanho (bola) */
+  --brand-blue: #004c94;
+  --brand-red: #c8281a;
+  --brand-green: #2e8b57;
+  --brand-yellow: #f2d94e;
+  --brand-brown: #5e422c;
+  --hdr-bg: #004c94; /* barra fixa do topo de cada ecrã */
+  --hdr-fg: #ffffff;
+  --hdr-ring: #d0a838;
+
   --cat-trofeu: #7a5806;
   --cat-clube: #0a5fc0;
-  --cat-sugerida: #4338ca;
-  --cat-treino: #0e7490;
-  --cat-evento: #9d174d;
+  --cat-sugerida: #1d7a46;
+  --cat-treino: #b3261e;
+  --cat-evento: #7a4b25;
   --ok: #047857;
   --warn: #b45309;
   --danger: #c81e1e;
@@ -82,6 +92,28 @@
   --tint-rose-bg-strong: #fad6d6;
   --tint-rose-border: #f3b4b4;
   --tint-rose-fg: #9b1c1c;
+
+  /* Tintas das cores do emblema: categorias, ícones, capas e destaques (NUNCA estados).
+     Cada -fg tem >= 4.5:1 sobre o seu -bg, -bg-strong, branco e --bg-app. */
+  --tint-red-bg: #fcecea;
+  --tint-red-bg-strong: #f8d9d4;
+  --tint-red-border: #efb4ab;
+  --tint-red-fg: #9a2114;
+
+  --tint-green-bg: #e8f4ec;
+  --tint-green-bg-strong: #d0e9d9;
+  --tint-green-border: #a6d3b6;
+  --tint-green-fg: #1a6a3f;
+
+  --tint-yellow-bg: #fdf6d6;
+  --tint-yellow-bg-strong: #f9eaa6;
+  --tint-yellow-border: #e6cc62;
+  --tint-yellow-fg: #6b4e02;
+
+  --tint-brown-bg: #f5eee7;
+  --tint-brown-bg-strong: #eadccd;
+  --tint-brown-border: #d4bea7;
+  --tint-brown-fg: #5e422c;
 }
 
 /* =========================================================================
@@ -115,11 +147,20 @@
   --gold-ink: #ecd07a;
   --on-gold: #0a1730;
 
+  --brand-blue: #0b3a73;
+  --brand-red: #ef6b5f;
+  --brand-green: #4cc380;
+  --brand-yellow: #f5e57a;
+  --brand-brown: #c9a07a;
+  --hdr-bg: #0b3a73;
+  --hdr-fg: #ffffff;
+  --hdr-ring: #e0b94a;
+
   --cat-trofeu: #ecd07a;
   --cat-clube: #7cb2ff;
-  --cat-sugerida: #b4bcff;
-  --cat-treino: #6fd8ea;
-  --cat-evento: #f9a8d4;
+  --cat-sugerida: #6fdc9c;
+  --cat-treino: #ff9a90;
+  --cat-evento: #e0b48c;
   --ok: #34d399;
   --warn: #fbbf24;
   --danger: #f87171;
@@ -147,6 +188,26 @@
   --tint-rose-bg-strong: rgba(248, 113, 113, 0.22);
   --tint-rose-border: rgba(248, 113, 113, 0.38);
   --tint-rose-fg: #fecaca;
+
+  --tint-red-bg: rgba(239, 107, 95, 0.16);
+  --tint-red-bg-strong: rgba(239, 107, 95, 0.26);
+  --tint-red-border: rgba(239, 107, 95, 0.42);
+  --tint-red-fg: #ffc9c2;
+
+  --tint-green-bg: rgba(76, 195, 128, 0.16);
+  --tint-green-bg-strong: rgba(76, 195, 128, 0.26);
+  --tint-green-border: rgba(76, 195, 128, 0.4);
+  --tint-green-fg: #b6eccb;
+
+  --tint-yellow-bg: rgba(245, 229, 122, 0.14);
+  --tint-yellow-bg-strong: rgba(245, 229, 122, 0.24);
+  --tint-yellow-border: rgba(245, 229, 122, 0.4);
+  --tint-yellow-fg: #f7e9a6;
+
+  --tint-brown-bg: rgba(201, 160, 122, 0.18);
+  --tint-brown-bg-strong: rgba(201, 160, 122, 0.28);
+  --tint-brown-border: rgba(201, 160, 122, 0.44);
+  --tint-brown-fg: #ecd5bd;
 }
 
 /* =========================================================================
@@ -229,6 +290,19 @@ p {
   border: 1px solid var(--border-card);
   border-radius: 20px;
   box-shadow: var(--shadow-card);
+}
+/* Faixa decorativa com as cores do emblema (azul, dourado, vermelho, verde, castanho) */
+.brand-stripe {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--run) 0 30%,
+    var(--gold) 30% 52%,
+    var(--brand-red) 52% 70%,
+    var(--brand-green) 70% 88%,
+    var(--brand-brown) 88% 100%
+  );
 }
 .pressable {
   cursor: pointer;
