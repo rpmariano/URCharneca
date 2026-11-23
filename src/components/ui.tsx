@@ -360,8 +360,8 @@ export const DateBlock: React.FC<{ date: string; color?: string }> = ({ date, co
 }
 
 /**
- * Avatar circular. Com `photo` mostra a foto; com `gender` a figura por defeito (azul M / cor-de-rosa F,
- * adulto ou criança); só sem foto e sem género cai para as iniciais (`child` usa o tom dourado).
+ * Avatar circular. Com `photo` mostra a foto; sem foto a figura por defeito (azul M / cor-de-rosa F, adulto ou
+ * criança; sem género, figura neutra).
  * Decorativo: o nome fica sempre no texto ao lado (alt vazio / aria-hidden).
  */
 export const Avatar: React.FC<{
@@ -370,7 +370,7 @@ export const Avatar: React.FC<{
   size?: number
   photo?: string
   gender?: 'M' | 'F'
-}> = ({ name, child, size = 40, photo, gender }) => {
+}> = ({ child, size = 40, photo, gender }) => {
   if (photo) {
     return (
       <img
@@ -384,28 +384,7 @@ export const Avatar: React.FC<{
       />
     )
   }
-  if (gender) return <DefaultAvatar kind={avatarKind(gender, child)} size={size} />
-  return (
-    <div
-      className="rounded-full flex items-center justify-center t-strong shrink-0"
-      style={{
-        width: size,
-        height: size,
-        fontSize: Math.max(12, size * 0.36),
-        background: child ? 'var(--tint-yellow-bg-strong)' : 'var(--brand-blue)',
-        color: child ? 'var(--tint-yellow-fg)' : '#ffffff',
-        boxShadow: child ? undefined : 'inset 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent)',
-      }}
-      aria-hidden="true"
-    >
-      {name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((n) => n[0]?.toUpperCase())
-        .join('')}
-    </div>
-  )
+  return <DefaultAvatar kind={avatarKind(gender, child)} size={size} />
 }
 
 // ---------------------------------------------------------------------------
