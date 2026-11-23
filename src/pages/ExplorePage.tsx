@@ -101,6 +101,7 @@ export const ExplorePage: React.FC = () => {
     registrations,
     notifications,
     profiles,
+    canViewTeamPersonalData,
     youthAthletes,
     trofeuSeasons,
     pendingDorsalAthletesCount,
@@ -254,9 +255,12 @@ export const ExplorePage: React.FC = () => {
     [notifications, currentUser.id]
   )
 
+  // Atletas (com a base de dados ligada) não recebem datas de nascimento de terceiros: esconde-se
   const birthdays = useMemo(
     () =>
-      getUpcomingBirthdays(
+      !canViewTeamPersonalData
+        ? []
+        : getUpcomingBirthdays(
         [
           ...profiles.map((p) => ({ id: p.id, name: p.name, birth_date: p.birth_date, isChild: false })),
           ...youthAthletes.map((c) => ({ id: c.id, name: c.name, birth_date: c.birth_date, isChild: true })),
@@ -264,7 +268,7 @@ export const ExplorePage: React.FC = () => {
         5,
         today
       ),
-    [profiles, youthAthletes, today]
+    [canViewTeamPersonalData, profiles, youthAthletes, today]
   )
 
   const adminPending = useMemo(() => {
