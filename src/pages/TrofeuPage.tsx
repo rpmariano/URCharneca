@@ -71,6 +71,11 @@ export const TrofeuPage: React.FC = () => {
   const [searchQ, setSearchQ] = useState('')
 
   const today = todayISO()
+  // Só épocas em que a U.R. Charneca teve atletas (ou a época em curso)
+  const visibleSeasons = useMemo(
+    () => trofeuSeasons.filter((s) => s.status === 'open' || s.athlete_standings.length > 0),
+    [trofeuSeasons]
+  )
   const activeSeason = useMemo(
     () => trofeuSeasons.find((s) => s.season === selectedSeasonId) || trofeuSeasons[0],
     [trofeuSeasons, selectedSeasonId]
@@ -149,7 +154,7 @@ export const TrofeuPage: React.FC = () => {
       {/* Época */}
       <section className="space-y-2" aria-label="Época">
         <div className="scroll-row gap-2">
-          {trofeuSeasons.map((s) => (
+          {visibleSeasons.map((s) => (
             <Chip
               key={s.season}
               active={s.season === activeSeason.season}
