@@ -395,7 +395,7 @@ export const ExplorePage: React.FC = () => {
                   onClick={() => setCategory(o.value)}
                   className={`shrink-0 min-h-11 px-4 rounded-full t-small t-strong inline-flex items-center border pressable ${
                     on
-                      ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent'
+                      ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent'
                       : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
                   }`}
                 >

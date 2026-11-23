@@ -141,9 +141,9 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-3 gap-2">
-        <StatTile value={profiles.length} label="Atletas" onClick={() => onTab('athletes')} />
-        <StatTile value={youthAthletes.length} label="Crianças" onClick={() => onTab('children')} />
-        <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" onClick={() => onTab('agenda')} />
+        <StatTile value={profiles.length} label="Atletas" tone="blue" onClick={() => onTab('athletes')} />
+        <StatTile value={youthAthletes.length} label="Crianças" tone="yellow" onClick={() => onTab('children')} />
+        <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" tone="green" onClick={() => onTab('agenda')} />
       </div>
 
       {/* Troféu de Cascais — Sincronização & Gestão de Dorsais */}
