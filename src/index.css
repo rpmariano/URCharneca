@@ -50,11 +50,21 @@
   --gold-ink: #7a5806; /* dourado legível como texto sobre branco */
   --on-gold: #101c36;
 
+  /* Cores do emblema: azul, dourado, vermelho (lira), verde (mar e serra), amarelo (sol), castanho (bola) */
+  --brand-blue: #004c94;
+  --brand-red: #c8281a;
+  --brand-green: #2e8b57;
+  --brand-yellow: #f2d94e;
+  --brand-brown: #5e422c;
+  --hdr-bg: #004c94; /* barra fixa do topo de cada ecrã */
+  --hdr-fg: #ffffff;
+  --hdr-ring: #d0a838;
+
   --cat-trofeu: #7a5806;
   --cat-clube: #0a5fc0;
-  --cat-sugerida: #4338ca;
-  --cat-treino: #0e7490;
-  --cat-evento: #9d174d;
+  --cat-sugerida: #1d7a46;
+  --cat-treino: #b3261e;
+  --cat-evento: #7a4b25;
   --ok: #047857;
   --warn: #b45309;
   --danger: #c81e1e;
@@ -115,11 +125,20 @@
   --gold-ink: #ecd07a;
   --on-gold: #0a1730;
 
+  --brand-blue: #0b3a73;
+  --brand-red: #ef6b5f;
+  --brand-green: #4cc380;
+  --brand-yellow: #f5e57a;
+  --brand-brown: #c9a07a;
+  --hdr-bg: #0b3a73;
+  --hdr-fg: #ffffff;
+  --hdr-ring: #e0b94a;
+
   --cat-trofeu: #ecd07a;
   --cat-clube: #7cb2ff;
-  --cat-sugerida: #b4bcff;
-  --cat-treino: #6fd8ea;
-  --cat-evento: #f9a8d4;
+  --cat-sugerida: #6fdc9c;
+  --cat-treino: #ff9a90;
+  --cat-evento: #e0b48c;
   --ok: #34d399;
   --warn: #fbbf24;
   --danger: #f87171;
