@@ -25,6 +25,8 @@ export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [show, setShow] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -39,8 +41,14 @@ export const LoginPage: React.FC = () => {
     }
   }
 
+  const needsConfirm = recoveryMode || mode === 'signup'
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (needsConfirm && password !== confirm) {
+      setMessage({ text: 'As palavras-passe não coincidem. Escreve-as outra vez.', ok: false })
+      return
+    }
     if (recoveryMode) return void run(() => updatePassword(password))
     if (mode === 'signin') return void run(() => loginWithEmail(email, password))
     if (mode === 'signup') return void run(() => signUpWithEmail(email, password))
@@ -107,7 +115,7 @@ export const LoginPage: React.FC = () => {
             {mode !== 'reset' && (
               <Field label="Palavra-passe" hint={mode === 'signin' && !recoveryMode ? undefined : 'Mínimo 8 carateres.'}>
                 <input
-                  type="password"
+                  type={show ? 'text' : 'password'}
                   required
                   minLength={mode === 'signin' && !recoveryMode ? 1 : 8}
                   autoComplete={mode === 'signin' && !recoveryMode ? 'current-password' : 'new-password'}
@@ -116,6 +124,32 @@ export const LoginPage: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </Field>
+            )}
+
+            {mode !== 'reset' && needsConfirm && (
+              <Field label="Confirmar palavra-passe">
+                <input
+                  type={show ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className={inputClass}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  aria-invalid={confirm.length > 0 && confirm !== password}
+                />
+                {confirm.length > 0 && confirm !== password && (
+                  <p className="t-small text-[var(--danger)] mt-1" role="status">
+                    As palavras-passe não coincidem.
+                  </p>
+                )}
+              </Field>
+            )}
+            {mode !== 'reset' && (
+              <label className="flex items-center gap-2 t-small text-[var(--text-2)] min-h-11 cursor-pointer">
+                <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="w-4 h-4 accent-[var(--run)]" />
+                Mostrar palavras-passe
+              </label>
             )}
 
             {message && (
@@ -139,17 +173,17 @@ export const LoginPage: React.FC = () => {
           {!recoveryMode && (
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
               {mode !== 'signin' && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setMode('signin')}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setMode('signin'); setConfirm(''); setMessage(null) }}>
                   Já tenho conta
                 </Button>
               )}
               {mode !== 'signup' && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setMode('signup')}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setMode('signup'); setConfirm(''); setMessage(null) }}>
                   Primeiro acesso
                 </Button>
               )}
               {mode !== 'reset' && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setMode('reset')}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setMode('reset'); setConfirm(''); setMessage(null) }}>
                   Esqueci a palavra-passe
                 </Button>
               )}
