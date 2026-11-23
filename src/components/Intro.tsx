@@ -13,7 +13,7 @@ import { Avatar, Button, KindBadge, Tag } from './ui'
  */
 export const Intro: React.FC = () => {
   const { isAdminView, currentUser, isAuthenticated } = useApp()
-  const { visible: unseen, dismiss } = useOnboardingItem('intro-v1')
+  const { visible: unseen, dismiss } = useOnboardingItem(`intro-v1:${currentUser.id}`)
   const visible = unseen && isAuthenticated
   const [index, setIndex] = useState(0)
   const track = useRef<HTMLDivElement>(null)
