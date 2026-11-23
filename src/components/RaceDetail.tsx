@@ -42,7 +42,8 @@ import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } fr
 import { Sheet } from './Sheet'
 import { ContextualHint } from './OnboardingCards'
 import { useDesktopAdmin } from '../layout/useDesktopAdmin'
-import { Avatar, Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
+import { PersonAvatar } from './PersonAvatar'
+import { Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
 const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
   interested: { label: 'Aguarda o clube', tone: 'warn' },
@@ -423,7 +424,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                   : undefined
                 return (
                   <div key={r.id} className="flex items-center gap-4">
-                    <Avatar name={r.athlete_name} child={r.is_dependent} />
+                    <PersonAvatar id={r.dependent_id || r.athlete_id} name={r.athlete_name} child={r.is_dependent} />
                     <div className="min-w-0 flex-1">
                       <div className="t-body text-[var(--text-1)] truncate">{r.athlete_name}</div>
                       <div className="t-small text-[var(--text-3)] truncate">
@@ -697,6 +698,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
               <RegistrationRow
                 race={race}
                 name={currentUser.name}
+                personId={currentUser.id}
                 child={Boolean(currentUser.is_minor_account)}
                 isSelf
                 trofeuDorsal={
@@ -738,6 +740,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                       key={child.id}
                       race={race}
                       name={child.name}
+                      personId={child.id}
                       child
                       trofeuDorsal={
                         race.category === 'trofeu_cascais'
@@ -823,6 +826,7 @@ const VehicleSelectField: React.FC<{
 const RegistrationRow: React.FC<{
   race: Race
   name: string
+  personId?: string
   child?: boolean
   isSelf?: boolean
   trofeuDorsal?: string
@@ -836,6 +840,7 @@ const RegistrationRow: React.FC<{
 }> = ({
   race,
   name,
+  personId,
   child,
   isSelf,
   trofeuDorsal,
@@ -863,7 +868,7 @@ const RegistrationRow: React.FC<{
   return (
     <div className="card p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <Avatar name={name} child={child} />
+        <PersonAvatar id={personId} name={name} child={child} />
         <div className="min-w-0 flex-1">
           <div className="t-body t-strong text-[var(--text-1)] truncate">{name}</div>
           <div className="t-small text-[var(--text-3)] truncate">
@@ -1006,7 +1011,7 @@ const RosterRow: React.FC<{
           aria-expanded={editable ? open : undefined}
           onClick={() => setOpen((v) => !v)}
         >
-          <Avatar name={reg.athlete_name} child={reg.is_dependent} />
+          <PersonAvatar id={reg.dependent_id || reg.athlete_id} name={reg.athlete_name} child={reg.is_dependent} />
           <div className="min-w-0 flex-1">
             <div className="t-body text-[var(--text-1)] truncate">{reg.athlete_name}</div>
             <div className="t-small text-[var(--text-3)] truncate">

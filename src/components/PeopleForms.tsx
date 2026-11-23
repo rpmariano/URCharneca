@@ -3,6 +3,7 @@ import type { AthleteProfile, UserRole, YouthAthlete } from '../types'
 import { ESCALOES_ATLETISMO } from '../types'
 import { estimateEscalao } from '../utils/formatters'
 import { Button, Field, Segmented, inputClass } from './ui'
+import { PhotoField } from './PhotoField'
 
 const SHIRTS: AthleteProfile['shirt_size'][] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const CHILD_SHIRTS = ['4-6 anos', '6-8 anos', '8-10 anos', '10-12 anos', '12-14 anos', 'XS', 'S']
@@ -111,6 +112,7 @@ export const AthleteForm: React.FC<{
         })
       }}
     >
+      <PhotoField name={v.name} value={v.photo_url} gender={v.gender} onChange={(x) => set('photo_url', x)} />
       <Field label="Nome completo *">
         <input className={inputClass} required value={v.name} onChange={(e) => set('name', e.target.value)} />
       </Field>
@@ -298,8 +300,19 @@ export const ChildForm: React.FC<{
         })
       }}
     >
+      <PhotoField name={v.name} value={v.photo_url} gender={v.gender} child onChange={(x) => set('photo_url', x)} />
       <Field label="Nome completo *">
         <input className={inputClass} required value={v.name} onChange={(e) => set('name', e.target.value)} />
+      </Field>
+      <Field label="Género" hint="Define a figura por defeito quando não há foto.">
+        <Segmented<'M' | 'F'>
+          value={(v.gender ?? '') as 'M' | 'F'}
+          onChange={(g) => set('gender', g)}
+          options={[
+            { value: 'M', label: 'Masculino' },
+            { value: 'F', label: 'Feminino' },
+          ]}
+        />
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Data de nascimento *">
