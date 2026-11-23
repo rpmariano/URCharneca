@@ -66,13 +66,6 @@ const RACE_SUBMENU: Array<{ value: Category; label: string; icon: typeof Sparkle
   { value: 'individual', label: 'Comunidade', icon: KIND_ICON.individual },
 ]
 
-/** Época de uma data: de agosto a julho (ex.: 2026-11-22 → 2026/2027) */
-const seasonOf = (date: string) => {
-  const y = Number(date.slice(0, 4))
-  const start = Number(date.slice(5, 7)) >= 8 ? y : y - 1
-  return `${start}/${start + 1}`
-}
-
 const RANGES: Array<{ value: DateRange; label: string; hint: string }> = [
   { value: 'upcoming', label: 'Próximas', hint: 'De hoje em diante' },
   { value: 'week', label: 'Próximos 7 dias', hint: 'Esta semana' },
@@ -133,13 +126,11 @@ export const ExplorePage: React.FC = () => {
     const p = new URLSearchParams(params)
     if (next === 'all') p.delete('tipo')
     else p.set('tipo', next)
-    if (next !== 'trofeu_cascais') setSeason(null)
     setParams(p, { replace: true })
     window.scrollTo({ top: 0 })
   }
 
   const [range, setRange] = useState<DateRange>('upcoming')
-  const [season, setSeason] = useState<string | null>(null)
   const [from, setFrom] = useState(today)
   const [to, setTo] = useState(addDaysISO(today, 30))
   const [query, setQuery] = useState('')
@@ -159,6 +150,7 @@ export const ExplorePage: React.FC = () => {
     const active = kindsOf(category)
     const items: Item[] = []
     for (const r of races) {
+      if (r.id.startsWith('trofeu-hist-')) continue // o histórico das épocas anteriores está em Troféu de Cascais
       if (active.includes(r.category) && match(r.title, r.location, ...r.distances)) {
         items.push({ kind: r.category, date: r.date, time: r.start_time, id: `r-${r.id}`, race: r })
       }
@@ -193,18 +185,10 @@ export const ExplorePage: React.FC = () => {
 
   const list = useMemo(() => {
     const [a, b] = rangeBounds(range)
-    if (season && !selectedDay) return typed.filter((i) => seasonOf(i.date) === season)
     const filtered = selectedDay ? typed.filter((i) => i.date === selectedDay) : typed.filter((i) => i.date >= a && i.date <= b)
     return range === 'past' && !selectedDay ? [...filtered].reverse() : filtered
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typed, selectedDay, range, from, to, today, season])
-
-  // Épocas do Troféu disponíveis (da mais recente à mais antiga)
-  const trofeuSeasonOptions = useMemo(() => {
-    const set = new Set<string>()
-    for (const r of races) if (r.category === 'trofeu_cascais') set.add(seasonOf(r.date))
-    return [...set].sort().reverse()
-  }, [races])
+  }, [typed, selectedDay, range, from, to, today])
 
   const grouped = useMemo(() => {
     const map = new Map<string, Item[]>()
@@ -617,7 +601,7 @@ export const ExplorePage: React.FC = () => {
                 <h2 className="t-heading text-[var(--text-1)] first-letter:uppercase">{listTitle}</h2>
                 <p className="t-small text-[var(--text-3)]">
                   {list.length} {list.length === 1 ? 'atividade' : 'atividades'}
-                  {!selectedDay && (season ? ` · época ${season}` : ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`)}
+                  {!selectedDay && ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`}
                 </p>
                 {!query.trim() && !selectedDay && CATEGORY_HELP[category] && (
                   <p className="t-small text-[var(--text-3)] mt-2 max-w-[44ch]">{CATEGORY_HELP[category]}</p>
@@ -631,32 +615,6 @@ export const ExplorePage: React.FC = () => {
             </div>
 
             {category === 'trofeu_cascais' && trofeuBanner}
-            {category === 'trofeu_cascais' && trofeuSeasonOptions.length > 0 && (
-              <div className="scroll-row gap-2 -mx-5 px-5" role="group" aria-label="Época do Troféu">
-                {[null, ...trofeuSeasonOptions].map((o) => {
-                  const on = season === o
-                  return (
-                    <button
-                      key={o ?? 'next'}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => {
-                        setSeason(o)
-                        setSelectedDay(null)
-                      }}
-                      className={`shrink-0 min-h-11 px-4 rounded-full t-small t-strong border pressable ${
-                        on
-                          ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent'
-                          : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
-                      }`}
-                    >
-                      {o ?? 'Próximas'}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
             {list.length === 0 ? (
               <EmptyState
                 icon={CalendarSearch}
