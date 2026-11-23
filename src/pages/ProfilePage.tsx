@@ -27,6 +27,7 @@ export const ProfilePage: React.FC = () => {
   const {
     currentUser,
     profiles,
+    personName,
     youthAthletes,
     trofeuSeasons,
     activeRole,
@@ -69,8 +70,8 @@ export const ProfilePage: React.FC = () => {
     if (!currentUser.is_minor_account) return []
     const me = youthAthletes.find((c) => c.id === currentUser.id)
     if (!me) return []
-    return me.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)?.name).filter((n): n is string => Boolean(n))
-  }, [currentUser, youthAthletes, profiles])
+    return me.associated_adult_ids.map((id) => personName(id)).filter((n): n is string => Boolean(n))
+  }, [currentUser, youthAthletes, personName])
 
   const linkable = youthAthletes.filter((c) => !c.associated_adult_ids.includes(currentUser.id) && c.associated_adult_ids.length < 2)
   const editing = editingChild ? myChildren.find((c) => c.id === editingChild) || null : null
@@ -208,7 +209,7 @@ export const ProfilePage: React.FC = () => {
               {myChildren.map((child) => {
                 const others = child.associated_adult_ids
                   .filter((id) => id !== currentUser.id)
-                  .map((id) => profiles.find((p) => p.id === id)?.name)
+                  .map((id) => personName(id))
                   .filter(Boolean)
                 return (
                   <div key={child.id} className="flex items-center gap-4 py-3">

@@ -403,7 +403,7 @@ interface RawError {
   details?: string
 }
 
-function classifyError(error: RawError | null, status?: number): DbFailureKind {
+export function classifyError(error: RawError | null, status?: number): DbFailureKind {
   const msg = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
   const code = error?.code ?? ''
   if (status === 401 || code === 'PGRST301' || code === 'PGRST303' || /jwt|not authenticated|invalid token/.test(msg)) {

@@ -12,6 +12,7 @@ import type {
   RegistrationStatus,
   TrofeuSeasonData,
   TrofeuSyncLog,
+  DirectoryEntry,
 } from '../types'
 import {
   INITIAL_PROFILES,
@@ -29,17 +30,26 @@ import {
   deleteProfileById,
   deleteRaceById,
   deleteRegistrationById,
+  deleteRegistrationsOfAthlete,
+  deleteRegistrationsOfDependent,
   deleteYouthById,
+  classifyError,
+  describeFailure,
   fetchAllFromSupabase,
-  insertTrofeuSyncLog,
-  resetAllSupabaseData,
-  upsertEvents,
-  upsertNotifications,
-  upsertProfiles,
-  upsertRaces,
-  upsertRegistrations,
-  upsertTrofeuSeasons,
-  upsertYouthAthletes,
+  markNotificationsRead,
+  runSequence,
+  saveEvent,
+  saveEventRsvp,
+  saveNotification,
+  saveProfile,
+  saveRace,
+  saveRegistration,
+  saveRegistrationsAdmin,
+  saveTrofeuSeasons,
+  saveTrofeuSync,
+  saveYouth,
+  type DbResult,
+  type HydratedSupabaseData,
 } from '../services/supabaseSyncService'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { TRANSPORT_LABELS } from '../types'
@@ -107,6 +117,15 @@ interface AppContextValue {
   events: TeamEvent[]
   notifications: AppNotification[]
   currentUser: AthleteProfile
+  /** Nomes de toda a equipa (vista `team_directory`); em demonstração, derivado das fichas locais */
+  teamDirectory: DirectoryEntry[]
+  /** Nome de qualquer pessoa da equipa (adulto ou menor), mesmo quando a ficha completa não é visível */
+  personName: (id: string) => string | undefined
+  /**
+   * Falso para atletas em modo configurado: só recebem a própria ficha e os menores a cargo, por isso
+   * datas de nascimento, NIF e afins de terceiros não existem (ex.: aniversários da equipa ficam escondidos).
+   */
+  canViewTeamPersonalData: boolean
   /** Sessão e Autenticação (estritamente pelo email associado na ficha e autorizado pelo admin) */
   isAuthenticated: boolean
   authLoading: boolean
@@ -189,6 +208,76 @@ export type RegistrationBulkAction = 'confirm' | 'bib_at_club' | 'bib_delivered'
 
 const AppContext = createContext<AppContextValue | undefined>(undefined)
 
+// ---------------------------------------------------------------------------
+// Modo configurado (Supabase): a base de dados é a fonte de verdade. O localStorage guarda só preferências
+// (tema, papel ativo, onboarding) e uma cache de arranque que é apagada ao terminar a sessão.
+// Modo demonstração (sem variáveis de ambiente): continua tudo em localStorage com os dados de exemplo.
+// ---------------------------------------------------------------------------
+const CACHE_KEY = 'urc_cache_v8'
+
+interface DataCache {
+  profiles: AthleteProfile[]
+  youthAthletes: YouthAthlete[]
+  races: Race[]
+  registrations: RaceRegistration[]
+  events: TeamEvent[]
+  notifications: AppNotification[]
+  trofeuSeasons: TrofeuSeasonData[]
+  trofeuSyncLogs: TrofeuSyncLog[]
+  directory: DirectoryEntry[]
+}
+
+const readDataCache = (): Partial<DataCache> => {
+  if (!isSupabaseConfigured) return {}
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    return raw ? (JSON.parse(raw) as Partial<DataCache>) : {}
+  } catch {
+    return {}
+  }
+}
+
+const clearDataCache = () => {
+  try {
+    localStorage.removeItem(CACHE_KEY)
+  } catch {
+    // ignorar
+  }
+}
+
+/** Ficha vazia usada enquanto não há sessão/dados, para a UI nunca receber `undefined`. */
+const GUEST_PROFILE: AthleteProfile = {
+  id: 'guest',
+  name: '',
+  nickname: '',
+  email: '',
+  phone: '',
+  role: 'athlete',
+  birth_date: '',
+  escalao: '',
+  nif: '',
+  cc_number: '',
+  shirt_size: 'M',
+  has_official_kit: true,
+  dependents: [],
+}
+
+/** Repõe um item (ou remove-o, se não existia antes) quando a gravação no servidor falhou. */
+function restoreItem<T extends { id: string }>(
+  set: React.Dispatch<React.SetStateAction<T[]>>,
+  id: string,
+  prev: T | undefined
+) {
+  set((list) => {
+    if (!prev) return list.filter((x) => x.id !== id)
+    return list.some((x) => x.id === id) ? list.map((x) => (x.id === id ? prev : x)) : [...list, prev]
+  })
+}
+
+function restoreItems<T extends { id: string }>(set: React.Dispatch<React.SetStateAction<T[]>>, prevs: T[]) {
+  for (const p of prevs) restoreItem(set, p.id, p)
+}
+
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
@@ -237,25 +326,34 @@ const sortByDate = <T extends { date: string }>(list: T[], timeKey: keyof T) =>
   [...list].sort((a, b) => `${a.date} ${String(a[timeKey] ?? '')}`.localeCompare(`${b.date} ${String(b[timeKey] ?? '')}`))
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const configured = isSupabaseConfigured
+  // Em modo configurado o estado inicial vem da cache de arranque (ou vazio); em demonstração, dos dados de exemplo
+  const [cache] = useState<Partial<DataCache>>(readDataCache)
   const [youthAthletes, setYouthAthletes] = useState<YouthAthlete[]>(() =>
-    loadFromStorage(STORAGE_KEYS.YOUTH_ATHLETES, INITIAL_YOUTH_ATHLETES)
+    configured ? cache.youthAthletes ?? [] : loadFromStorage(STORAGE_KEYS.YOUTH_ATHLETES, INITIAL_YOUTH_ATHLETES)
   )
   const [baseProfiles, setProfiles] = useState<AthleteProfile[]>(() =>
-    loadFromStorage(STORAGE_KEYS.PROFILES, INITIAL_PROFILES)
+    configured ? cache.profiles ?? [] : loadFromStorage(STORAGE_KEYS.PROFILES, INITIAL_PROFILES)
   )
-  const [races, setRaces] = useState<Race[]>(() => loadFromStorage(STORAGE_KEYS.RACES, INITIAL_RACES))
+  const [races, setRaces] = useState<Race[]>(() =>
+    configured ? cache.races ?? [] : loadFromStorage(STORAGE_KEYS.RACES, INITIAL_RACES)
+  )
   const [registrations, setRegistrations] = useState<RaceRegistration[]>(() =>
-    loadFromStorage(STORAGE_KEYS.REGISTRATIONS, INITIAL_REGISTRATIONS)
+    configured ? cache.registrations ?? [] : loadFromStorage(STORAGE_KEYS.REGISTRATIONS, INITIAL_REGISTRATIONS)
   )
-  const [events, setEvents] = useState<TeamEvent[]>(() => loadFromStorage(STORAGE_KEYS.EVENTS, INITIAL_EVENTS))
+  const [events, setEvents] = useState<TeamEvent[]>(() =>
+    configured ? cache.events ?? [] : loadFromStorage(STORAGE_KEYS.EVENTS, INITIAL_EVENTS)
+  )
   const [notifications, setNotifications] = useState<AppNotification[]>(() =>
-    loadFromStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS)
+    configured ? cache.notifications ?? [] : loadFromStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS)
   )
+  const [directory, setDirectory] = useState<DirectoryEntry[]>(() => cache.directory ?? [])
+  // A identidade vem da sessão do Supabase (nunca do localStorage) em modo configurado
   const [currentUserId, setCurrentUserId] = useState<string>(() =>
-    loadFromStorage(STORAGE_KEYS.CURRENT_USER_ID, 'ath-rui-mariano')
+    configured ? '' : loadFromStorage(STORAGE_KEYS.CURRENT_USER_ID, 'ath-rui-mariano')
   )
   const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(() =>
-    loadFromStorage<string | null>(STORAGE_KEYS.AUTHENTICATED_USER_ID, null)
+    configured ? null : loadFromStorage<string | null>(STORAGE_KEYS.AUTHENTICATED_USER_ID, null)
   )
   const [authLoading, setAuthLoading] = useState<boolean>(isSupabaseConfigured)
   const [recoveryMode, setRecoveryMode] = useState(false)
@@ -264,38 +362,105 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   )
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => (loadFromStorage<ThemeMode>(STORAGE_KEYS.THEME, 'balanced') === 'dark' ? 'dark' : 'balanced'))
   const [trofeuSeasons, setTrofeuSeasons] = useState<TrofeuSeasonData[]>(() =>
-    loadFromStorage(STORAGE_KEYS.TROFEU_SEASONS, INITIAL_TROFEU_SEASONS)
+    configured ? cache.trofeuSeasons ?? INITIAL_TROFEU_SEASONS : loadFromStorage(STORAGE_KEYS.TROFEU_SEASONS, INITIAL_TROFEU_SEASONS)
   )
   const [trofeuSyncLogs, setTrofeuSyncLogs] = useState<TrofeuSyncLog[]>(() =>
-    loadFromStorage(STORAGE_KEYS.TROFEU_SYNC_LOGS, [])
+    configured ? cache.trofeuSyncLogs ?? [] : loadFromStorage(STORAGE_KEYS.TROFEU_SYNC_LOGS, [])
   )
   const [isSyncingTrofeu, setIsSyncingTrofeu] = useState(false)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [hydrated, setHydrated] = useState(false)
   const autoSyncedRef = useRef(false)
   const supabaseHydratedRef = useRef(false)
+  const authenticatedIdRef = useRef<string | null>(null)
+  const sessionEndingRef = useRef(false)
+  // Fila de gravações: executam por ordem (ex.: criar a prova antes da inscrição que a referencia)
+  const writeQueueRef = useRef<Promise<unknown>>(Promise.resolve())
 
-  // Persistência local
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(baseProfiles)), [baseProfiles])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.YOUTH_ATHLETES, JSON.stringify(youthAthletes)), [youthAthletes])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.RACES, JSON.stringify(races)), [races])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations)), [registrations])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events)), [events])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications)), [notifications])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, JSON.stringify(currentUserId)), [currentUserId])
+  // Persistência local: em demonstração é a base de dados; em modo configurado só preferências + cache de arranque
   useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(baseProfiles))
+  }, [configured, baseProfiles])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.YOUTH_ATHLETES, JSON.stringify(youthAthletes))
+  }, [configured, youthAthletes])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.RACES, JSON.stringify(races))
+  }, [configured, races])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations))
+  }, [configured, registrations])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events))
+  }, [configured, events])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
+  }, [configured, notifications])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, JSON.stringify(currentUserId))
+  }, [configured, currentUserId])
+  useEffect(() => {
+    authenticatedIdRef.current = authenticatedUserId
+    if (configured) return
     if (authenticatedUserId) {
       localStorage.setItem(STORAGE_KEYS.AUTHENTICATED_USER_ID, JSON.stringify(authenticatedUserId))
     } else {
       localStorage.removeItem(STORAGE_KEYS.AUTHENTICATED_USER_ID)
     }
-  }, [authenticatedUserId])
+  }, [configured, authenticatedUserId])
   useEffect(() => localStorage.setItem(STORAGE_KEYS.ACTIVE_VIEW_ROLE, JSON.stringify(activeRole)), [activeRole])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.TROFEU_SEASONS, JSON.stringify(trofeuSeasons)), [trofeuSeasons])
-  useEffect(() => localStorage.setItem(STORAGE_KEYS.TROFEU_SYNC_LOGS, JSON.stringify(trofeuSyncLogs)), [trofeuSyncLogs])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.TROFEU_SEASONS, JSON.stringify(trofeuSeasons))
+  }, [configured, trofeuSeasons])
+  useEffect(() => {
+    if (configured) return
+    localStorage.setItem(STORAGE_KEYS.TROFEU_SYNC_LOGS, JSON.stringify(trofeuSyncLogs))
+  }, [configured, trofeuSyncLogs])
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(themeMode))
     document.documentElement.setAttribute('data-theme', themeMode)
   }, [themeMode])
+  // Cache de arranque: só depois de o servidor ter respondido e com sessão ativa
+  useEffect(() => {
+    if (!configured || !hydrated || !authenticatedUserId) return
+    const bundle: DataCache = {
+      profiles: baseProfiles,
+      youthAthletes,
+      races,
+      registrations,
+      events,
+      notifications,
+      trofeuSeasons,
+      trofeuSyncLogs,
+      directory,
+    }
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(bundle))
+    } catch {
+      // quota cheia: a cache é opcional
+    }
+  }, [
+    configured,
+    hydrated,
+    authenticatedUserId,
+    baseProfiles,
+    youthAthletes,
+    races,
+    registrations,
+    events,
+    notifications,
+    trofeuSeasons,
+    trofeuSyncLogs,
+    directory,
+  ])
 
   const profiles = useMemo(() => withDependents(baseProfiles, youthAthletes), [baseProfiles, youthAthletes])
 
@@ -323,17 +488,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (adult) return adult
     const minor = youthAthletes.find((y) => y.id === targetId && y.can_self_manage)
     if (minor) return youthToAthleteProfile(minor)
-    return profiles[0]
+    return profiles[0] ?? GUEST_PROFILE
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profiles, youthAthletes, currentUserId, authenticatedUserId])
 
   // Um atleta sem papel de admin nunca pode ver a vista de administração
   const isAdminView = activeRole === 'admin' && currentUser.role === 'admin'
 
+  const canViewTeamPersonalData = !configured || currentUser.role === 'admin'
+
+  const teamDirectory = useMemo<DirectoryEntry[]>(() => {
+    if (configured) return directory
+    return [
+      ...baseProfiles.map((p) => ({
+        id: p.id,
+        name: p.name,
+        nickname: p.nickname,
+        gender: p.gender,
+        escalao: p.escalao,
+        kind: 'adult' as const,
+      })),
+      ...youthAthletes.map((y) => ({
+        id: y.id,
+        name: y.name,
+        nickname: '',
+        gender: y.gender,
+        escalao: y.escalao,
+        kind: 'youth' as const,
+      })),
+    ]
+  }, [configured, directory, baseProfiles, youthAthletes])
+
+  const personName = (id: string): string | undefined =>
+    baseProfiles.find((p) => p.id === id)?.name ??
+    youthAthletes.find((y) => y.id === id)?.name ??
+    teamDirectory.find((d) => d.id === id)?.name
+
   const showToast = (text: string, type: 'success' | 'info' | 'warning' = 'success') => {
     const id = uid('toast')
     setToasts((prev) => [...prev, { id, text, type }])
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3600)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Gravação no servidor: em modo configurado o Supabase decide. O estado local é aplicado de imediato,
+  // mas se o servidor recusar (RLS, guarda, rede) é revertido e o utilizador é avisado.
+  // ---------------------------------------------------------------------------
+  /** Limpa dados pessoais e sessão local (nada do utilizador anterior fica no dispositivo). */
+  const clearSessionData = () => {
+    authenticatedIdRef.current = null
+    supabaseHydratedRef.current = false
+    setAuthenticatedUserId(null)
+    setCurrentUserId('')
+    setProfiles([])
+    setYouthAthletes([])
+    setRaces([])
+    setRegistrations([])
+    setEvents([])
+    setNotifications([])
+    setDirectory([])
+    setTrofeuSyncLogs([])
+    setHydrated(false)
+    clearDataCache()
+  }
+
+  /** JWT expirado ou sessão inválida: termina a sessão e volta ao login. */
+  const expireSession = () => {
+    if (sessionEndingRef.current) return
+    sessionEndingRef.current = true
+    clearSessionData()
+    void supabase.auth.signOut({ scope: 'local' }).finally(() => {
+      sessionEndingRef.current = false
+    })
+    showToast('A tua sessão expirou. Entra de novo.', 'warning')
+  }
+
+  const reportFailure = (res: { kind: 'session' | 'permission' | 'network' | 'other'; message: string }) => {
+    if (res.kind === 'session') expireSession()
+    else showToast(describeFailure(res), 'warning')
+  }
+
+  /**
+   * Grava no servidor (em série). Em demonstração não faz nada.
+   * `rollback` repõe o estado local se falhar; `onSaved` recebe a linha final devolvida pelo servidor.
+   */
+  const persist = <T,>(op: () => Promise<DbResult<T>>, rollback: () => void, onSaved?: (data: T) => void) => {
+    if (!configured) return
+    const run = writeQueueRef.current.then(op, op)
+    writeQueueRef.current = run.catch(() => undefined)
+    void run
+      .then((res) => {
+        if (res.ok) {
+          onSaved?.(res.data)
+          return
+        }
+        if (authenticatedIdRef.current) rollback()
+        reportFailure(res)
+      })
+      .catch(() => {
+        if (authenticatedIdRef.current) rollback()
+        showToast('Não foi possível guardar.', 'warning')
+      })
+  }
+
+  /** Como `persist`, mas só corre `then` (ex.: avisar a equipa) depois de o servidor aceitar a alteração. */
+  const persistThen = (op: () => Promise<DbResult<unknown>>, rollback: () => void, then: () => void) => {
+    if (!configured) {
+      then()
+      return
+    }
+    persist(op, rollback, then)
   }
 
   const requireAdmin = (action: string): boolean => {
@@ -345,6 +609,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setThemeMode = (mode: ThemeMode) => setThemeModeState(mode)
 
   const setCurrentUserById = (id: string) => {
+    if (configured) {
+      // A identidade é a da sessão do Supabase: cada pessoa entra com a sua conta
+      if (id !== currentUser.id) showToast('Cada pessoa entra com a sua própria conta.', 'info')
+      return
+    }
     const target = profiles.find((p) => p.id === id)
     if (target) {
       if (!target.login_authorized && target.role !== 'admin') {
@@ -419,7 +688,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dependents: [],
     }
     setProfiles((prev) => prev.map((p) => (p.id === athleteId ? updatedTarget : p)))
-    void upsertProfiles([updatedTarget])
+    persist(
+      () => saveProfile(updatedTarget, { create: false, asAdmin: true }),
+      () => restoreItem(setProfiles, athleteId, target)
+    )
     if (!authorized && authenticatedUserId === athleteId) {
       setAuthenticatedUserId(null)
     }
@@ -452,18 +724,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
   }
 
-  /** Procura os dados a que o utilizador tem acesso (as políticas RLS filtram por papel). */
-  const hydrateRemote = async () => {
-    const remote = await fetchAllFromSupabase({
-      profiles: [],
-      youthAthletes: [],
-      races: INITIAL_RACES,
-      registrations: INITIAL_REGISTRATIONS,
-      events: INITIAL_EVENTS,
-      notifications: INITIAL_NOTIFICATIONS,
-      trofeuSeasons: INITIAL_TROFEU_SEASONS,
-    })
-    if (!remote) return null
+  /** Aplica no estado os dados que o servidor devolveu (as políticas RLS já filtraram por papel). */
+  const applyRemote = (remote: HydratedSupabaseData) => {
     const cleanProfiles = remote.profiles.map((p) => ({ ...p, dependents: [] }))
     setYouthAthletes(remote.youthAthletes)
     setProfiles(cleanProfiles)
@@ -471,9 +733,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRegistrations(remote.registrations)
     setEvents(remote.events)
     setNotifications(remote.notifications)
-    setTrofeuSeasons(remote.trofeuSeasons)
+    setDirectory(remote.directory)
+    // Sem épocas na base de dados usam-se as de referência (dados públicos do Troféu), só em memória
+    setTrofeuSeasons(remote.trofeuSeasons.length > 0 ? remote.trofeuSeasons : INITIAL_TROFEU_SEASONS)
     setTrofeuSyncLogs(remote.trofeuSyncLogs)
     supabaseHydratedRef.current = true
+    setHydrated(true)
     return { ...remote, profiles: cleanProfiles }
   }
 
@@ -481,22 +746,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const establishSession = async (): Promise<ActionResult & { isAdmin?: boolean; races?: Race[]; logs?: TrofeuSyncLog[] }> => {
     const { data } = await supabase.auth.getSession()
     if (!data.session?.user) {
-      setAuthenticatedUserId(null)
+      clearSessionData()
       return { success: false, message: '' }
     }
     const { data: personId, error } = await supabase.rpc('claim_profile')
+    if (error) {
+      const kind = classifyError(error, (error as { status?: number }).status)
+      if (kind === 'session') {
+        await supabase.auth.signOut({ scope: 'local' })
+        clearSessionData()
+        return { success: false, message: 'A tua sessão expirou. Entra de novo.' }
+      }
+      if (kind === 'network') {
+        // Sem rede não se sabe se o email está autorizado: não termina a sessão
+        return { success: false, message: 'Sem ligação. Tenta novamente quando tiveres rede.' }
+      }
+    }
     if (error || !personId) {
       await supabase.auth.signOut()
-      setAuthenticatedUserId(null)
+      clearSessionData()
       return {
         success: false,
         message: 'Este email não está autorizado. Pede ao administrador para o associar e autorizar na tua ficha.',
       }
     }
-    const remote = await hydrateRemote()
-    const adult = remote?.profiles.find((x) => x.id === personId)
+    const res = await fetchAllFromSupabase()
+    let remote: ReturnType<typeof applyRemote> | null = null
+    if (res.ok) {
+      remote = applyRemote(res.data)
+    } else if (res.kind === 'session') {
+      await supabase.auth.signOut({ scope: 'local' })
+      clearSessionData()
+      return { success: false, message: 'A tua sessão expirou. Entra de novo.' }
+    } else {
+      showToast('Não foi possível carregar os dados mais recentes.', 'warning')
+    }
+    const adult = (remote?.profiles ?? baseProfiles).find((x) => x.id === personId)
+    sessionEndingRef.current = false
     setCurrentUserId(personId as string)
     setAuthenticatedUserId(personId as string)
+    authenticatedIdRef.current = personId as string
     setActiveRoleState(adult?.role === 'admin' ? 'admin' : 'athlete')
     return {
       success: true,
@@ -506,7 +795,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       logs: remote?.trofeuSyncLogs,
     }
   }
-
   const authErrorMessage = (message: string): string => {
     const m = message.toLowerCase()
     if (m.includes('invalid login')) return 'Email ou palavra-passe incorretos. Se é o teu primeiro acesso, cria a conta.'
@@ -575,9 +863,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const logout = async () => {
-    setAuthenticatedUserId(null)
     if (isSupabaseConfigured) {
+      sessionEndingRef.current = true
+      clearSessionData()
       await supabase.auth.signOut()
+      sessionEndingRef.current = false
+    } else {
+      setAuthenticatedUserId(null)
     }
     showToast('Sessão terminada.', 'info')
   }
@@ -604,8 +896,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString(),
       read_by: [currentUser.id],
     }
+    // Em modo configurado só um administrador publica comunicados (a base de dados recusa os restantes;
+    // avisos automáticos de atletas, como "cancelou a inscrição", precisam de uma função no servidor)
+    if (configured && currentUser.role !== 'admin') return notif
     setNotifications((prev) => [notif, ...prev])
-    void upsertNotifications([notif])
+    persist(
+      () => saveNotification(notif, { create: true }),
+      () => setNotifications((prev) => prev.filter((x) => x.id !== notif.id))
+    )
     return notif
   }
 
@@ -634,7 +932,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         needs_admin_review: updated.dorsal_trofeu ? false : minorOrig.needs_admin_review,
       }
       setYouthAthletes((prev) => prev.map((y) => (y.id === minorOrig.id ? updatedYouth : y)))
-      void upsertYouthAthletes([updatedYouth])
+      persist(
+        () => saveYouth(updatedYouth, { create: false, asAdmin: currentUser.role === 'admin' }),
+        () => restoreItem(setYouthAthletes, minorOrig.id, minorOrig)
+      )
       showToast(isSelf ? 'Perfil atualizado.' : `Ficha de ${updated.name} atualizada.`)
       return
     }
@@ -644,7 +945,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const safe = !isAdminView && original ? { ...updated, role: original.role } : updated
     const cleanProfile = { ...safe, dependents: [] }
     setProfiles((prev) => prev.map((p) => (p.id === safe.id ? cleanProfile : p)))
-    void upsertProfiles([cleanProfile])
+    persist(
+      () => saveProfile(cleanProfile, { create: false, asAdmin: currentUser.role === 'admin' }),
+      () => restoreItem(setProfiles, safe.id, original)
+    )
     showToast(isSelf ? 'Perfil atualizado.' : `Ficha de ${updated.name} atualizada.`)
   }
 
@@ -662,7 +966,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const updatedTarget = { ...target, role, dependents: [] }
     setProfiles((prev) => prev.map((p) => (p.id === athleteId ? { ...p, role } : p)))
-    void upsertProfiles([updatedTarget])
+    persist(
+      () => saveProfile(updatedTarget, { create: false, asAdmin: true }),
+      () => restoreItem(setProfiles, athleteId, target)
+    )
     showToast(
       role === 'admin'
         ? `${target.name} é agora Administrador da equipa.`
@@ -675,7 +982,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!requireAdmin('criar atletas')) return null
     const newProfile: AthleteProfile = { ...profile, id: uid('ath'), dependents: [] }
     setProfiles((prev) => [...prev, newProfile])
-    void upsertProfiles([newProfile])
+    persist(
+      () => saveProfile(newProfile, { create: true, asAdmin: true }),
+      () => setProfiles((prev) => prev.filter((x) => x.id !== newProfile.id))
+    )
     showToast(`${newProfile.name} adicionado(a) à equipa.`)
     return newProfile
   }
@@ -694,10 +1004,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setYouthAthletes((prev) =>
       prev.map((c) => ({ ...c, associated_adult_ids: c.associated_adult_ids.filter((a) => a !== id) }))
     )
+    const removedRegs = registrations.filter((r) => r.athlete_id === id)
+    const prevYouth = youthAthletes.filter((c) => c.associated_adult_ids.includes(id))
     setRegistrations((prev) => prev.filter((r) => r.athlete_id !== id))
-    void deleteProfileById(id)
-    if (affectedYouth.length > 0) void upsertYouthAthletes(affectedYouth)
-    registrations.filter((r) => r.athlete_id === id).forEach((r) => void deleteRegistrationById(r.id))
+    persist(
+      () =>
+        runSequence([
+          () => deleteRegistrationsOfAthlete(id),
+          ...affectedYouth.map((c) => () => saveYouth(c, { create: false, asAdmin: true })),
+          () => deleteProfileById(id),
+        ]),
+      () => {
+        if (p) restoreItem(setProfiles, id, p)
+        restoreItems(setYouthAthletes, prevYouth)
+        setRegistrations((prev) => [...prev, ...removedRegs.filter((r) => !prev.some((x) => x.id === r.id))])
+      }
+    )
     showToast(`${p?.name || 'Atleta'} removido(a) da equipa.`, 'info')
   }
 
@@ -712,7 +1034,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       associated_adult_ids: (adultIds ?? (currentUser.is_minor_account ? [] : [currentUser.id])).slice(0, 2),
     }
     setYouthAthletes((prev) => [...prev, newChild])
-    void upsertYouthAthletes([newChild])
+    persist(
+      () => saveYouth(newChild, { create: true, asAdmin: currentUser.role === 'admin' }),
+      () => setYouthAthletes((prev) => prev.filter((x) => x.id !== newChild.id))
+    )
     showToast(`Perfil de ${newChild.name} criado.`)
     return newChild
   }
@@ -733,7 +1058,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? updatedChild
       : { ...updatedChild, can_self_manage: original.can_self_manage }
     setYouthAthletes((prev) => prev.map((c) => (c.id === safeChild.id ? safeChild : c)))
-    void upsertYouthAthletes([safeChild])
+    persist(
+      () => saveYouth(safeChild, { create: false, asAdmin: currentUser.role === 'admin' }),
+      () => restoreItem(setYouthAthletes, safeChild.id, original)
+    )
     showToast(`Ficha de ${safeChild.name} atualizada.`)
   }
 
@@ -767,7 +1095,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setYouthAthletes((prev) =>
       prev.map((c) => (c.id === childId ? updatedChild : c))
     )
-    void upsertYouthAthletes([updatedChild])
+    persist(
+      () => saveYouth(updatedChild, { create: false, asAdmin: true }),
+      () => restoreItem(setYouthAthletes, childId, child)
+    )
     if (!canSelfManage && currentUserId === childId) {
       const admin = baseProfiles.find((p) => p.role === 'admin') || baseProfiles[0]
       setCurrentUserId(admin.id)
@@ -784,9 +1115,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const child = youthAthletes.find((c) => c.id === childId)
     if (!child || !canManageChild(child)) return
     setYouthAthletes((prev) => prev.filter((c) => c.id !== childId))
+    const removedRegs = registrations.filter((r) => r.dependent_id === childId)
     setRegistrations((prev) => prev.filter((r) => r.dependent_id !== childId))
-    void deleteYouthById(childId)
-    registrations.filter((r) => r.dependent_id === childId).forEach((r) => void deleteRegistrationById(r.id))
+    persist(
+      () => runSequence([() => deleteRegistrationsOfDependent(childId), () => deleteYouthById(childId)]),
+      () => {
+        restoreItem(setYouthAthletes, childId, child)
+        setRegistrations((prev) => [...prev, ...removedRegs.filter((r) => !prev.some((x) => x.id === r.id))])
+      }
+    )
     showToast(`Perfil de ${child.name} removido.`, 'info')
   }
 
@@ -805,7 +1142,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setYouthAthletes((prev) =>
       prev.map((c) => (c.id === childId ? updatedChild : c))
     )
-    void upsertYouthAthletes([updatedChild])
+    persist(
+      () => saveYouth(updatedChild, { create: false, asAdmin: currentUser.role === 'admin' }),
+      () => restoreItem(setYouthAthletes, childId, child)
+    )
     showToast(`${child.name} associada com sucesso.`)
     return { success: true, message: 'Criança associada.' }
   }
@@ -819,7 +1159,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         c.id === childId ? updatedChild : c
       )
     )
-    void upsertYouthAthletes([updatedChild])
+    persist(
+      () => saveYouth(updatedChild, { create: false, asAdmin: currentUser.role === 'admin' }),
+      () => restoreItem(setYouthAthletes, childId, child)
+    )
     showToast(`${child?.name || 'Criança'} desassociada.`, 'info')
   }
 
@@ -840,7 +1183,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_by_name: currentUser.name,
     }
     setRaces((prev) => sortByDate([...prev, newRace], 'start_time'))
-    void upsertRaces([newRace])
+    persist(
+      () => saveRace(newRace, { create: true }),
+      () => setRaces((prev) => prev.filter((x) => x.id !== newRace.id))
+    )
 
     const suggested = category === 'individual'
     pushNotification({
@@ -863,8 +1209,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast('Só o autor ou um admin pode editar esta prova.', 'warning')
       return
     }
+    const prevRace = races.find((r) => r.id === updated.id)
     setRaces((prev) => sortByDate(prev.map((r) => (r.id === updated.id ? updated : r)), 'start_time'))
-    void upsertRaces([updated])
+    persist(
+      () => saveRace(updated, { create: false }),
+      () => restoreItem(setRaces, updated.id, prevRace)
+    )
     showToast('Prova atualizada.')
   }
 
@@ -875,14 +1225,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast('Só o autor ou um admin pode remover esta prova.', 'warning')
       return
     }
-    const updatedNotifs = notifications
-      .filter((n) => n.related_race_id === raceId)
-      .map((n) => ({ ...n, related_race_id: undefined }))
+    const prevRegs = registrations.filter((reg) => reg.race_id === raceId)
+    const prevNotifs = notifications.filter((n) => n.related_race_id === raceId)
     setRaces((prev) => prev.filter((r) => r.id !== raceId))
     setRegistrations((prev) => prev.filter((reg) => reg.race_id !== raceId))
     setNotifications((prev) => prev.map((n) => (n.related_race_id === raceId ? { ...n, related_race_id: undefined } : n)))
-    void deleteRaceById(raceId)
-    if (updatedNotifs.length > 0) void upsertNotifications(updatedNotifs)
+    // Em modo configurado o servidor apaga as inscrições (cascade) e desliga os comunicados (set null)
+    persist(
+      () => deleteRaceById(raceId),
+      () => {
+        restoreItem(setRaces, raceId, race)
+        setRegistrations((prev) => [...prev, ...prevRegs.filter((r) => !prev.some((x) => x.id === r.id))])
+        restoreItems(setNotifications, prevNotifs)
+      }
+    )
     showToast('Prova removida.', 'info')
   }
 
@@ -944,8 +1300,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const personForBib = targetMinorId
       ? youthAthletes.find((y) => y.id === targetMinorId)
       : baseProfiles.find((p) => p.id === input.athlete_id)
+    // Em modo configurado os dorsais são geridos pelo administrador (a base de dados recusa-os a atletas)
+    const canSetBib = !configured || currentUser.role === 'admin'
     const trofeuDorsal =
-      race.category === 'trofeu_cascais'
+      canSetBib && race.category === 'trofeu_cascais'
         ? personForBib?.dorsais_trofeu?.['2026/2027'] || personForBib?.dorsal_trofeu
         : undefined
 
@@ -966,7 +1324,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: existing.status === 'cancelled' ? initialStatus : existing.status,
       }
       setRegistrations((prev) => prev.map((reg) => (reg.id === existing.id ? updatedReg : reg)))
-      void upsertRegistrations([updatedReg])
+      persist(
+        () => saveRegistration(updatedReg, { create: false, asAdmin: currentUser.role === 'admin' }),
+        () => restoreItem(setRegistrations, existing.id, existing),
+        (saved) => setRegistrations((prev) => prev.map((reg) => (reg.id === saved.id ? saved : reg)))
+      )
       showToast('Inscrição atualizada.')
       return { success: true, message: 'Inscrição atualizada.' }
     }
@@ -993,7 +1355,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString(),
     }
     setRegistrations((prev) => [...prev, newReg])
-    void upsertRegistrations([newReg])
+    persist(
+      () => saveRegistration(newReg, { create: true, asAdmin: currentUser.role === 'admin' }),
+      () => setRegistrations((prev) => prev.filter((x) => x.id !== newReg.id)),
+      // o servidor pode acertar campos (ex.: hora do pedido de lugar na carrinha): fica a versão guardada
+      (saved) => setRegistrations((prev) => prev.map((reg) => (reg.id === saved.id ? saved : reg)))
+    )
     const msg =
       race.category === 'individual'
         ? `${input.athlete_name}: presença marcada.`
@@ -1028,8 +1395,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         promoted = before.waitlistPassengers[0].athlete_name
       }
     }
-    setRegistrations((prev) => prev.filter((r) => r.id !== regId))
-    void deleteRegistrationById(regId)
+    if (configured && currentUser.role !== 'admin') {
+      // Só o admin apaga linhas: o atleta cancela marcando a inscrição como cancelada (as listas ignoram-nas)
+      const cancelled: RaceRegistration = { ...reg, status: 'cancelled' }
+      setRegistrations((prev) => prev.map((r) => (r.id === regId ? cancelled : r)))
+      persist(
+        () => saveRegistration(cancelled, { create: false, asAdmin: false }),
+        () => restoreItem(setRegistrations, regId, reg)
+      )
+    } else {
+      setRegistrations((prev) => prev.filter((r) => r.id !== regId))
+      persist(
+        () => deleteRegistrationById(regId),
+        () => restoreItem(setRegistrations, regId, reg)
+      )
+    }
     // o clube já tinha tratado desta inscrição (ou tem a carrinha em jogo): avisa a equipa, para o admin saber
     if (race && !isAdminView && (reg.status === 'enrolled_by_admin' || reg.bib_status !== 'pending' || promoted)) {
       pushNotification({
@@ -1050,7 +1430,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return
     const updated = { ...target, ...patch }
     setRegistrations((prev) => prev.map((r) => (r.id === regId ? updated : r)))
-    void upsertRegistrations([updated])
+    persist(
+      () => saveRegistrationsAdmin([updated]),
+      () => restoreItem(setRegistrations, regId, target)
+    )
   }
 
   const confirmAllPendingForRace = (raceId: string) => {
@@ -1066,13 +1449,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRegistrations((prev) =>
       prev.map((r) => (r.race_id === raceId && r.status === 'interested' ? { ...r, status: 'enrolled_by_admin' } : r))
     )
-    void upsertRegistrations(updatedRegs)
-    pushNotification({
-      title: `Inscrições efetuadas: ${race.title}`,
-      message: `O clube confirmou a inscrição de ${count} atleta(s) em "${race.title}".`,
-      type: 'race_open',
-      related_race_id: raceId,
-    })
+    persistThen(
+      () => saveRegistrationsAdmin(updatedRegs),
+      () => restoreItems(setRegistrations, pendingRegs),
+      () =>
+        pushNotification({
+          title: `Inscrições efetuadas: ${race.title}`,
+          message: `O clube confirmou a inscrição de ${count} atleta(s) em "${race.title}".`,
+          type: 'race_open',
+          related_race_id: raceId,
+        })
+    )
     showToast(`${count} inscrição(ões) confirmada(s).`)
   }
 
@@ -1098,23 +1485,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRegistrations((prev) =>
       prev.map((r) => (ids.has(r.id) ? transformReg(r) : r))
     )
-    void upsertRegistrations(updatedRegs)
     const names = eligible.map((r) => r.athlete_name).join(', ')
+    const notice =
+      action === 'confirm'
+        ? () =>
+            pushNotification({
+              title: `Inscrições efetuadas: ${race.title}`,
+              message: `O clube confirmou a inscrição de ${names} em "${race.title}".`,
+              type: 'race_open',
+              related_race_id: raceId,
+            })
+        : action === 'bib_at_club'
+        ? () =>
+            pushNotification({
+              title: `Dorsais no clube: ${race.title}`,
+              message: `Os dorsais de ${names} em "${race.title}" estão no clube (levantados por ${currentUser.name}) e prontos a entregar.`,
+              type: 'bibs_ready',
+              related_race_id: raceId,
+            })
+        : () => undefined
+    persistThen(
+      () => saveRegistrationsAdmin(updatedRegs),
+      () => restoreItems(setRegistrations, eligible),
+      notice
+    )
     if (action === 'confirm') {
-      pushNotification({
-        title: `Inscrições efetuadas: ${race.title}`,
-        message: `O clube confirmou a inscrição de ${names} em "${race.title}".`,
-        type: 'race_open',
-        related_race_id: raceId,
-      })
       showToast(`${eligible.length} inscrição(ões) confirmada(s).`)
     } else if (action === 'bib_at_club') {
-      pushNotification({
-        title: `Dorsais no clube: ${race.title}`,
-        message: `Os dorsais de ${names} em "${race.title}" estão no clube (levantados por ${currentUser.name}) e prontos a entregar.`,
-        type: 'bibs_ready',
-        related_race_id: raceId,
-      })
       showToast(`${eligible.length} dorsal(ais) marcado(s) como no clube.`)
     } else {
       showToast(`${eligible.length} dorsal(ais) marcado(s) como entregue(s).`)
@@ -1135,14 +1532,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : r
       )
     )
-    void upsertRegistrations(updatedRegs)
-    pushNotification({
-      title: `Dorsais no clube: ${race.title}`,
-      message: `Os dorsais de "${race.title}" estão no clube (levantados por ${pickupBy}) e prontos a entregar.`,
-      type: 'bibs_ready',
-      related_race_id: raceId,
-      pinned: true,
-    })
+    persistThen(
+      () => saveRegistrationsAdmin(updatedRegs),
+      () => restoreItems(setRegistrations, pendingBibs),
+      () =>
+        pushNotification({
+          title: `Dorsais no clube: ${race.title}`,
+          message: `Os dorsais de "${race.title}" estão no clube (levantados por ${pickupBy}) e prontos a entregar.`,
+          type: 'bibs_ready',
+          related_race_id: raceId,
+          pinned: true,
+        })
+    )
     showToast(`${count} dorsais marcados como no clube.`)
   }
 
@@ -1153,22 +1554,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!requireAdmin('criar treinos e eventos')) return null
     const newEvt: TeamEvent = { ...evtInput, id: uid('evt'), created_by_name: currentUser.name, attendees: [] }
     setEvents((prev) => sortByDate([...prev, newEvt], 'time'))
-    void upsertEvents([newEvt])
+    persist(
+      () => saveEvent(newEvt, { create: true }),
+      () => setEvents((prev) => prev.filter((x) => x.id !== newEvt.id))
+    )
     showToast(`"${newEvt.title}" agendado.`)
     return newEvt
   }
 
   const updateEvent = (evt: TeamEvent) => {
     if (!requireAdmin('editar eventos')) return
+    const prevEvt = events.find((e) => e.id === evt.id)
     setEvents((prev) => sortByDate(prev.map((e) => (e.id === evt.id ? evt : e)), 'time'))
-    void upsertEvents([evt])
+    persist(
+      () => saveEvent(evt, { create: false }),
+      () => restoreItem(setEvents, evt.id, prevEvt)
+    )
     showToast('Evento atualizado.')
   }
 
   const deleteEvent = (eventId: string) => {
     if (!requireAdmin('remover eventos')) return
+    const prevEvt = events.find((e) => e.id === eventId)
     setEvents((prev) => prev.filter((e) => e.id !== eventId))
-    void deleteEventById(eventId)
+    persist(
+      () => deleteEventById(eventId),
+      () => {
+        if (prevEvt) restoreItem(setEvents, eventId, prevEvt)
+      }
+    )
     showToast('Evento removido.', 'info')
   }
 
@@ -1182,8 +1596,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         { athlete_id: currentUser.id, athlete_name: currentUser.name, status, note },
       ],
     }
+    const entry = { athlete_id: currentUser.id, athlete_name: currentUser.name, status, note }
     setEvents((prev) => prev.map((e) => (e.id === eventId ? updatedEvt : e)))
-    void upsertEvents([updatedEvt])
+    // Em modo configurado junta a minha presença às que já estão no servidor (não apaga as dos outros)
+    persist(
+      () => saveEventRsvp(eventId, entry),
+      () => restoreItem(setEvents, eventId, evt),
+      (attendees) => setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, attendees } : e)))
+    )
     showToast(status === 'going' ? 'Presença confirmada.' : status === 'maybe' ? 'Marcado como talvez.' : 'Indicaste que não vais.')
   }
 
@@ -1205,8 +1625,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteNotification = (notifId: string) => {
     if (!requireAdmin('remover comunicados')) return
+    const prevNotif = notifications.find((n) => n.id === notifId)
     setNotifications((prev) => prev.filter((n) => n.id !== notifId))
-    void deleteNotificationById(notifId)
+    persist(
+      () => deleteNotificationById(notifId),
+      () => {
+        if (prevNotif) restoreItem(setNotifications, notifId, prevNotif)
+      }
+    )
     showToast('Comunicado removido.', 'info')
   }
 
@@ -1216,7 +1642,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return
     const updated = { ...target, pinned: !target.pinned }
     setNotifications((prev) => prev.map((n) => (n.id === notifId ? updated : n)))
-    void upsertNotifications([updated])
+    persist(
+      () => saveNotification(updated, { create: false }),
+      () => restoreItem(setNotifications, notifId, target)
+    )
   }
 
   const markNotificationRead = (notifId: string) => {
@@ -1224,7 +1653,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target || target.read_by.includes(currentUser.id)) return
     const updated = { ...target, read_by: [...target.read_by, currentUser.id] }
     setNotifications((prev) => prev.map((n) => (n.id === notifId ? updated : n)))
-    void upsertNotifications([updated])
+    persist(
+      () => markNotificationsRead([notifId], currentUser.id),
+      () => restoreItem(setNotifications, notifId, target)
+    )
   }
 
   const markAllNotificationsRead = () => {
@@ -1234,7 +1666,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications((prev) =>
       prev.map((n) => (n.read_by.includes(currentUser.id) ? n : { ...n, read_by: [...n.read_by, currentUser.id] }))
     )
-    if (updated.length > 0) void upsertNotifications(updated)
+    if (updated.length > 0) {
+      const before = notifications.filter((n) => !n.read_by.includes(currentUser.id))
+      persist(
+        () => markNotificationsRead(updated.map((n) => n.id), currentUser.id),
+        () => restoreItems(setNotifications, before)
+      )
+    }
     showToast('Comunicados marcados como lidos.', 'info')
   }
 
@@ -1283,14 +1721,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (isSupabaseConfigured && supabaseHydratedRef.current) {
-        void Promise.all([
-          upsertRaces(result.races),
-          upsertProfiles(cleanSyncProfiles),
-          upsertYouthAthletes(result.youthAthletes),
-          upsertTrofeuSeasons(result.seasons),
-          insertTrofeuSyncLog(result.log),
-          toPush.length > 0 ? upsertNotifications(toPush) : Promise.resolve(),
-        ])
+        // Sincronização do Troféu é só do admin; se o servidor recusar, volta ao que lá está guardado
+        const prev = { races, profiles: baseProfiles, youth: youthAthletes, seasons: trofeuSeasons, logs: trofeuSyncLogs }
+        persist(
+          () =>
+            saveTrofeuSync({
+              races: result.races,
+              profiles: cleanSyncProfiles,
+              youthAthletes: result.youthAthletes,
+              seasons: result.seasons,
+              log: result.log,
+              notifications: toPush,
+            }),
+          () => {
+            setRaces(prev.races)
+            setProfiles(prev.profiles)
+            setYouthAthletes(prev.youth)
+            setTrofeuSeasons(prev.seasons)
+            setTrofeuSyncLogs(prev.logs)
+            setNotifications((p) => p.filter((n) => !toPush.some((x) => x.id === n.id)))
+          }
+        )
       }
 
       if (trigger === 'manual_admin') {
@@ -1307,7 +1758,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!isSupabaseConfigured) return
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
-      if (event === 'SIGNED_OUT') setAuthenticatedUserId(null)
+      if (event === 'SIGNED_OUT' && !sessionEndingRef.current && authenticatedIdRef.current) {
+        // A sessão terminou por outro motivo (renovação falhou, outro separador): volta ao login
+        setTimeout(expireSession, 0)
+      }
     })
     return () => data.subscription.unsubscribe()
   }, [])
@@ -1374,12 +1828,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const target = youthAthletes.find((y) => y.id === personId)
       const updated = target ? applyPatch(target) : undefined
       setYouthAthletes((prev) => prev.map((y) => (y.id === personId ? applyPatch(y) : y)))
-      if (updated) void upsertYouthAthletes([updated])
+      if (updated) {
+        persist(
+          () => saveYouth(updated, { create: false, asAdmin: true }),
+          () => restoreItem(setYouthAthletes, personId, target)
+        )
+      }
     } else {
       const target = baseProfiles.find((p) => p.id === personId)
       const updated = target ? applyPatch({ ...target, dependents: [] }) : undefined
       setProfiles((prev) => prev.map((p) => (p.id === personId ? applyPatch(p) : p)))
-      if (updated) void upsertProfiles([updated])
+      if (updated) {
+        persist(
+          () => saveProfile(updated, { create: false, asAdmin: true }),
+          () => restoreItem(setProfiles, personId, target)
+        )
+      }
     }
     // Atualizar apenas na classificação da época correspondente (cada época tem o seu dorsal)
     const nextSeasons = trofeuSeasons.map((s) =>
@@ -1394,7 +1858,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     )
     setTrofeuSeasons(nextSeasons)
     const changedSeason = nextSeasons.find((s) => s.season === season)
-    if (changedSeason) void upsertTrofeuSeasons([changedSeason])
+    if (changedSeason) {
+      const prevSeasons = trofeuSeasons
+      persist(
+        () => saveTrofeuSeasons([changedSeason]),
+        () => setTrofeuSeasons(prevSeasons)
+      )
+    }
     showToast(cleanDorsal ? `Dorsal #${cleanDorsal} (${season}) associado.` : `Dorsal de ${season} removido.`)
   }
 
@@ -1410,13 +1880,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       next_doc_check_at: race.date >= todayISO() ? nextCheck : race.next_doc_check_at,
     }
     setRaces((prev) => prev.map((r) => (r.id === raceId ? updatedRace : r)))
-    void upsertRaces([updatedRace])
+    persist(
+      () => saveRace(updatedRace, { create: false }),
+      () => restoreItem(setRaces, raceId, race)
+    )
     if (log.new_documents_found === 0) {
       showToast(`Documentação de "${race.title}" verificada no site do Troféu (tudo atualizado).`, 'info')
     }
   }
 
   const resetDemoData = () => {
+    if (configured) {
+      // Nunca apaga a base de dados real a partir da app
+      showToast('Indisponível: a app está ligada à base de dados da equipa.', 'warning')
+      return
+    }
     setYouthAthletes(INITIAL_YOUTH_ATHLETES)
     setProfiles(INITIAL_PROFILES)
     setRaces(INITIAL_RACES)
@@ -1427,15 +1905,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTrofeuSyncLogs([])
     setCurrentUserId('ath-rui-mariano')
     setActiveRoleState('admin')
-    void resetAllSupabaseData({
-      profiles: INITIAL_PROFILES,
-      youthAthletes: INITIAL_YOUTH_ATHLETES,
-      races: INITIAL_RACES,
-      registrations: INITIAL_REGISTRATIONS,
-      events: INITIAL_EVENTS,
-      notifications: INITIAL_NOTIFICATIONS,
-      trofeuSeasons: INITIAL_TROFEU_SEASONS,
-    })
     showToast('Dados limpos para o estado inicial do Troféu.', 'info')
   }
 
@@ -1449,6 +1918,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         events,
         notifications,
         currentUser,
+        teamDirectory,
+        personName,
+        canViewTeamPersonalData,
         isAuthenticated,
         authLoading,
         loginWithEmail,
