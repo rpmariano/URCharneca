@@ -42,6 +42,7 @@ import { countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
 import { Sheet } from './Sheet'
 import { ContextualHint } from './OnboardingCards'
+import { useDesktopAdmin } from '../layout/useDesktopAdmin'
 import { Avatar, Button, Chip, Field, IconButton, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
 const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
@@ -124,6 +125,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     deleteRace,
     showToast,
   } = useApp()
+  const desktop = useDesktopAdmin()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [vehiclesSheetOpen, setVehiclesSheetOpen] = useState(false)
   const [vanAvailDraft, setVanAvailDraft] = useState(race.van_available)
@@ -262,8 +264,14 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const ctaLabel = myRegs.length > 0 ? (registrationOpen ? 'Gerir inscrição' : 'Ver inscrição') : isIndividual ? 'Vou participar' : 'Inscrever'
 
   return (
-    <div className="pb-28 w-full max-w-[480px] mx-auto">
-      <ActivityCover kind={race.category} seed={race.id} imageUrl={race.image_url} alt="" className="w-full aspect-[4/3]">
+    <div className={desktop ? 'desk-detail' : 'pb-28 w-full max-w-[480px] mx-auto'}>
+      <ActivityCover
+        kind={race.category}
+        seed={race.id}
+        imageUrl={race.image_url}
+        alt=""
+        className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'w-full aspect-[4/3]'}
+      >
         <div className="absolute top-3 inset-x-4 flex items-center justify-between">
           <IconButton label="Voltar" floating onClick={onBack}>
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
@@ -274,7 +282,8 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         </div>
       </ActivityCover>
 
-      <div className="px-5 divide-soft">
+      <div className={desktop ? 'desk-detail-grid' : 'px-5'}>
+       <div className={`desk-detail-col divide-soft${desktop ? ' pt-2' : ''}`}>
         {/* Título */}
         <header className="py-6 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -433,6 +442,8 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           </section>
         )}
 
+       </div>
+       <div className={`desk-detail-col divide-soft${desktop ? ' pt-2' : ' border-t border-[var(--border-card)]'}`}>
         {/* Carrinhas e veículos do clube */}
         {(race.van_available || (isAdminView && !isIndividual)) && (
           <section className="py-6 space-y-3">
@@ -646,6 +657,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
             </Button>
           </section>
         )}
+       </div>
       </div>
 
       <StickyActionBar

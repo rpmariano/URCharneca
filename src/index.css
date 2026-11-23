@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@import "./layout/desktop.css";
 
 @theme {
   --color-primary: #0a5fc0;
