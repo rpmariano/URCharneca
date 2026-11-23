@@ -614,7 +614,7 @@ export const ExplorePage: React.FC = () => {
           <div className="pt-6 space-y-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h1 className="t-heading text-[var(--text-1)] first-letter:uppercase">{listTitle}</h1>
+                <h2 className="t-heading text-[var(--text-1)] first-letter:uppercase">{listTitle}</h2>
                 <p className="t-small text-[var(--text-3)]">
                   {list.length} {list.length === 1 ? 'atividade' : 'atividades'}
                   {!selectedDay && (season ? ` · época ${season}` : ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`)}

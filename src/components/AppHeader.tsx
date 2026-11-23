@@ -36,6 +36,8 @@ const BAR_STYLE: React.CSSProperties = {
   color: 'var(--hdr-fg)',
   paddingTop: 'env(safe-area-inset-top, 0px)',
 }
+/** `text-wrap: balance/pretty` global dos h1/p anula o nowrap do `truncate`: força-o aqui. */
+const NOWRAP: React.CSSProperties = { textWrap: 'nowrap' }
 const SHADOW = 'shadow-[0_2px_8px_rgba(0,0,0,0.18)]'
 
 /**
@@ -56,7 +58,7 @@ export const AppHeader: React.FC<{
     <header className={`app-header sticky top-0 z-30 ${SHADOW} ${className}`} style={BAR_STYLE}>
       <div className="flex items-center gap-3 px-5 min-h-14">
         {leading ?? <HeaderEmblem />}
-        <Title className="t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)]">{title}</Title>
+        <Title className="t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)]" style={NOWRAP}>{title}</Title>
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
       </div>
       {children}
@@ -107,6 +109,7 @@ export const DetailBar: React.FC<{
           className={`t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)] transition-opacity duration-150 ${
             solid ? 'opacity-100' : 'opacity-0'
           }`}
+          style={NOWRAP}
           aria-hidden="true"
         >
           {title}

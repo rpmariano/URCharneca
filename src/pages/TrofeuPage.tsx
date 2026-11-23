@@ -119,9 +119,11 @@ export const TrofeuPage: React.FC = () => {
               href={TROFEU_SITE_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 min-h-11 rounded-full bg-[var(--surface-card)] t-small t-strong text-[var(--text-1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hdr-fg)]"
+              aria-label="Site oficial do Troféu (abre noutro separador)"
+              title="Site oficial"
+              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[var(--surface-card)] text-[var(--text-1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hdr-fg)]"
             >
-              Site oficial <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+              <ExternalLink className="w-5 h-5" aria-hidden="true" />
             </a>
             {isAdminView && (
               <HeaderButton label={isSyncingTrofeu ? 'A atualizar' : 'Atualizar dados do site'} disabled={isSyncingTrofeu} onClick={() => void syncTrofeuCascais('manual_admin')}>
