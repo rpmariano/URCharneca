@@ -53,12 +53,24 @@ const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Jul
 const CATEGORIES: Array<{ value: Category; label: string; icon: typeof Sparkles }> = [
   { value: 'all', label: 'Destaques', icon: Sparkles },
   { value: 'provas', label: 'Provas', icon: Flag },
-  { value: 'trofeu_cascais', label: 'Troféu', icon: KIND_ICON.trofeu_cascais },
-  { value: 'equipa', label: 'Clube', icon: KIND_ICON.equipa },
-  { value: 'individual', label: 'Sugeridas', icon: KIND_ICON.individual },
   { value: 'training', label: 'Treinos', icon: KIND_ICON.training },
   { value: 'event', label: 'Eventos', icon: KIND_ICON.event },
 ]
+
+/** Submenu de Provas */
+const RACE_SUBMENU: Array<{ value: Category; label: string; icon: typeof Sparkles }> = [
+  { value: 'provas', label: 'Todas', icon: Flag },
+  { value: 'trofeu_cascais', label: 'Troféu', icon: KIND_ICON.trofeu_cascais },
+  { value: 'equipa', label: 'Clube', icon: KIND_ICON.equipa },
+  { value: 'individual', label: 'Comunidade', icon: KIND_ICON.individual },
+]
+
+/** Época de uma data: de agosto a julho (ex.: 2026-11-22 → 2026/2027) */
+const seasonOf = (date: string) => {
+  const y = Number(date.slice(0, 4))
+  const start = Number(date.slice(5, 7)) >= 8 ? y : y - 1
+  return `${start}/${start + 1}`
+}
 
 const RANGES: Array<{ value: DateRange; label: string; hint: string }> = [
   { value: 'upcoming', label: 'Próximas', hint: 'De hoje em diante' },
@@ -70,7 +82,7 @@ const RANGES: Array<{ value: DateRange; label: string; hint: string }> = [
 
 /** Explicação curta de cada categoria, mostrada por baixo do título da lista. */
 const CATEGORY_HELP: Partial<Record<Category, string>> = {
-  provas: 'Todas as provas: do Troféu de Cascais, do clube e sugeridas por atletas.',
+  provas: 'Todas as provas: do Troféu de Cascais, do clube e da comunidade.',
   trofeu_cascais: CATEGORIA_LABELS.trofeu_cascais.desc,
   equipa: CATEGORIA_LABELS.equipa.desc,
   individual: CATEGORIA_LABELS.individual.desc,
@@ -115,15 +127,18 @@ export const ExplorePage: React.FC = () => {
   const today = todayISO()
 
   const category = parseCategory(params.get('tipo'))
+  const isRaceCategory = category === 'provas' || RACE_KINDS.includes(category as ActivityKind)
   const setCategory = (next: Category) => {
     const p = new URLSearchParams(params)
     if (next === 'all') p.delete('tipo')
     else p.set('tipo', next)
+    if (next !== 'trofeu_cascais') setSeason(null)
     setParams(p, { replace: true })
     window.scrollTo({ top: 0 })
   }
 
   const [range, setRange] = useState<DateRange>('upcoming')
+  const [season, setSeason] = useState<string | null>(null)
   const [from, setFrom] = useState(today)
   const [to, setTo] = useState(addDaysISO(today, 30))
   const [query, setQuery] = useState('')
@@ -177,10 +192,18 @@ export const ExplorePage: React.FC = () => {
 
   const list = useMemo(() => {
     const [a, b] = rangeBounds(range)
+    if (season && !selectedDay) return typed.filter((i) => seasonOf(i.date) === season)
     const filtered = selectedDay ? typed.filter((i) => i.date === selectedDay) : typed.filter((i) => i.date >= a && i.date <= b)
     return range === 'past' && !selectedDay ? [...filtered].reverse() : filtered
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typed, selectedDay, range, from, to, today])
+  }, [typed, selectedDay, range, from, to, today, season])
+
+  // Épocas do Troféu disponíveis (da mais recente à mais antiga)
+  const trofeuSeasonOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of races) if (r.category === 'trofeu_cascais') set.add(seasonOf(r.date))
+    return [...set].sort().reverse()
+  }, [races])
 
   const grouped = useMemo(() => {
     const map = new Map<string, Item[]>()
@@ -367,7 +390,34 @@ export const ExplorePage: React.FC = () => {
             </IconButton>
           )}
         </div>
-        <CategoryTabs value={category} options={CATEGORIES} onChange={setCategory} label="Tipo de atividade" />
+        <CategoryTabs
+          value={isRaceCategory ? 'provas' : category}
+          options={CATEGORIES}
+          onChange={(v) => setCategory(v === 'provas' && isRaceCategory ? category : v)}
+          label="Tipo de atividade"
+        />
+        {isRaceCategory && (
+          <div className="scroll-row gap-2 px-5 pb-3" role="group" aria-label="Tipo de prova">
+            {RACE_SUBMENU.map((o) => {
+              const on = category === o.value
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setCategory(o.value)}
+                  className={`shrink-0 min-h-11 px-4 rounded-full t-small t-strong inline-flex items-center border pressable ${
+                    on
+                      ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent'
+                      : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="px-5">
@@ -575,7 +625,7 @@ export const ExplorePage: React.FC = () => {
                 <h1 className="t-heading text-[var(--text-1)] first-letter:uppercase">{listTitle}</h1>
                 <p className="t-small text-[var(--text-3)]">
                   {list.length} {list.length === 1 ? 'atividade' : 'atividades'}
-                  {!selectedDay && ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`}
+                  {!selectedDay && (season ? ` · época ${season}` : ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`)}
                 </p>
                 {!query.trim() && !selectedDay && CATEGORY_HELP[category] && (
                   <p className="t-small text-[var(--text-3)] mt-2 max-w-[44ch]">{CATEGORY_HELP[category]}</p>
@@ -589,6 +639,31 @@ export const ExplorePage: React.FC = () => {
             </div>
 
             {category === 'trofeu_cascais' && trofeuBanner}
+            {category === 'trofeu_cascais' && trofeuSeasonOptions.length > 0 && (
+              <div className="scroll-row gap-2 -mx-5 px-5" role="group" aria-label="Época do Troféu">
+                {[null, ...trofeuSeasonOptions].map((o) => {
+                  const on = season === o
+                  return (
+                    <button
+                      key={o ?? 'next'}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => {
+                        setSeason(o)
+                        setSelectedDay(null)
+                      }}
+                      className={`shrink-0 min-h-11 px-4 rounded-full t-small t-strong border pressable ${
+                        on
+                          ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent'
+                          : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
+                      }`}
+                    >
+                      {o ?? 'Próximas'}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {list.length === 0 ? (
               <EmptyState

@@ -12,7 +12,7 @@ import { formatDayMonth } from '../utils/formatters'
 export const KIND_SINGULAR: Record<ActivityKind, string> = {
   trofeu_cascais: 'Troféu de Cascais',
   equipa: 'Prova do clube',
-  individual: 'Sugerida',
+  individual: 'Comunidade',
   training: 'Treino',
   event: 'Evento',
 }

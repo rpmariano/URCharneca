@@ -23,6 +23,7 @@ import {
   INITIAL_NOTIFICATIONS,
 } from '../data/seedData'
 import { INITIAL_TROFEU_SEASONS } from '../data/trofeuData'
+import { TROFEU_HISTORY_RACES } from '../data/trofeuHistory'
 import { computeNextBiweeklyCheck, isBiweeklyCheckDue, runTrofeuSync } from '../services/trofeuSyncService'
 import {
   deleteEventById,
@@ -1908,12 +1909,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Dados limpos para o estado inicial do Troféu.', 'info')
   }
 
+  /** Provas da base de dados + histórico do calendário oficial do Troféu (só leitura, sem duplicar o que já existe). */
+  const racesWithHistory = useMemo(() => {
+    const known = new Set(races.map((r) => r.trofeu_competition_id).filter(Boolean))
+    return [...races, ...TROFEU_HISTORY_RACES.filter((h) => !races.some((r) => r.id === h.id) && !known.has(h.trofeu_competition_id))]
+  }, [races])
+
   return (
     <AppContext.Provider
       value={{
         profiles,
         youthAthletes,
-        races,
+        races: racesWithHistory,
         registrations,
         events,
         notifications,
