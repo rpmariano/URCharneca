@@ -57,7 +57,6 @@ export interface YouthAthlete {
   login_email?: string
   login_provider?: 'google' | 'email'
   login_activated_at?: string
-  login_password_hash?: string
   /** IDs dos perfis de adultos responsáveis (máximo 2 adultos!) */
   associated_adult_ids: string[]
 }
@@ -78,7 +77,6 @@ export interface AthleteProfile {
   login_email?: string
   login_provider?: 'google' | 'email'
   login_activated_at?: string
-  login_password_hash?: string
   /** Verdadeiro quando a sessão ativa corresponde a um menor com login autónomo autorizado pelo admin */
   is_minor_account?: boolean
   gender?: 'M' | 'F'

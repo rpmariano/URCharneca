@@ -410,14 +410,14 @@ const AthletesTab: React.FC = () => {
                       <span className="t-small t-strong text-[var(--text-1)]">Acesso e Login na Aplicação (Admin)</span>
                       <Tag
                         tone={
-                          p.login_password_hash || p.auth_user_id
+                          p.auth_user_id
                             ? 'ok'
                             : p.login_authorized || p.role === 'admin'
                             ? 'info'
                             : 'neutral'
                         }
                       >
-                        {p.login_password_hash || p.auth_user_id
+                        {p.auth_user_id
                           ? 'Ativo'
                           : p.login_authorized || p.role === 'admin'
                           ? 'Autorizado'
@@ -465,7 +465,7 @@ const AthletesTab: React.FC = () => {
                         ]}
                       />
                     )}
-                    {(p.login_password_hash || p.auth_user_id) && (
+                    {(p.auth_user_id) && (
                       <div className="flex items-center justify-between gap-2 pt-1">
                         <span className="t-small text-[var(--text-2)] truncate">
                           Palavra-passe configurada ({p.login_provider === 'google' ? 'Google' : 'Email'})
@@ -707,7 +707,7 @@ const ChildrenTab: React.FC = () => {
                         ? 'O menor entra exclusivamente pelo email associado acima (Google ou email/password).'
                         : 'Sem login direto: apenas os adultos associados (máx. 2) ou um admin gerem este perfil.'}
                     </p>
-                    {c.can_self_manage && (c.login_password_hash || c.auth_user_id) && (
+                    {c.can_self_manage && (c.auth_user_id) && (
                       <div className="flex items-center justify-between gap-2 pt-1">
                         <span className="t-small text-[var(--text-2)] truncate">
                           Palavra-passe configurada ({c.login_provider === 'google' ? 'Google' : 'Email'})
