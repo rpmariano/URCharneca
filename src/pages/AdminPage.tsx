@@ -9,6 +9,7 @@ import { calculateAge, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { DataTable, type Column } from '../layout/DataTable'
+import { CsvExportDialog, type CsvField } from '../components/CsvExportDialog'
 import { useDesktopAdmin } from '../layout/useDesktopAdmin'
 import { ActivityCover } from '../components/ActivityCover'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
@@ -353,33 +354,46 @@ const AthletesTab: React.FC = () => {
     { id: 'kids', header: 'Crianças', sortValue: kidCount, render: (p) => <span className="t-num">{kidCount(p)}</span> },
   ]
 
-  const exportCSV = (only?: Set<string>) => {
-    const header = ['Tipo', 'Nome', 'Escalão', 'Nascimento', 'NIF', 'CC', 'Telefone', 'Email', 'T-shirt', 'Responsáveis']
-    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
-    const rows = [
-      ...profiles.filter((p) => !only || only.has(p.id)).map((p) => ['Adulto', p.name, p.escalao, p.birth_date, p.nif, p.cc_number, p.phone, p.email, p.shirt_size, '']),
-      ...youthAthletes.filter(() => !only).map((c) => [
-        'Criança',
-        c.name,
-        c.escalao,
-        c.birth_date,
-        c.nif,
-        c.cc_number || '',
-        '',
-        '',
-        c.shirt_size || '',
-        c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)?.name || '').join(' & '),
-      ]),
-    ]
-    const csv = [header, ...rows].map((r) => r.map(esc).join(';')).join('\n')
-    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'equipa-urcharneca.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-    showToast('Lista exportada.')
-  }
+  const [csvOpen, setCsvOpen] = useState(false)
+  const kidsNames = (p: AthleteProfile) =>
+    youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id)).map((c) => c.name).join(' & ')
+  const accessText = (p: AthleteProfile) => (p.login_email ? 'Login ativo' : p.login_authorized || p.role === 'admin' ? 'Autorizado' : 'Sem login')
+  const dorsaisText = (r?: Record<string, string>) =>
+    Object.entries(r || {}).map(([season, d]) => `${season}: ${d}`).join(' | ')
+  const yn = (v?: boolean) => (v ? 'Sim' : 'Não')
+  const adultTableFields: CsvField<AthleteProfile>[] = [
+    { id: 'name', label: 'Nome', get: (p) => p.name },
+    { id: 'escalao', label: 'Escalão', get: (p) => p.escalao },
+    { id: 'age', label: 'Idade', get: (p) => String(calculateAge(p.birth_date)) },
+    { id: 'dorsal', label: 'Dorsal Troféu', get: (p) => formatTrofeuDorsalTag(p)?.label ?? '' },
+    { id: 'access', label: 'Acesso', get: accessText },
+    { id: 'role', label: 'Perfil', get: (p) => (p.role === 'admin' ? 'Admin' : 'Atleta') },
+    { id: 'kids', label: 'Crianças', get: (p) => String(kidCount(p)) },
+  ]
+  const adultExtraFields: CsvField<AthleteProfile>[] = [
+    { id: 'nickname', label: 'Alcunha', get: (p) => p.nickname },
+    { id: 'email', label: 'Email', get: (p) => p.email },
+    { id: 'phone', label: 'Telefone', get: (p) => p.phone },
+    { id: 'gender', label: 'Género', get: (p) => p.gender ?? '' },
+    { id: 'birth', label: 'Data de nascimento', get: (p) => p.birth_date },
+    { id: 'nif', label: 'NIF', get: (p) => p.nif },
+    { id: 'cc', label: 'Cartão de cidadão', get: (p) => p.cc_number },
+    { id: 'member', label: 'Nº de sócio', get: (p) => p.club_member_number ?? '' },
+    { id: 'fed', label: 'Nº de federado', get: (p) => p.federation_number ?? '' },
+    { id: 'dorsais', label: 'Dorsais por época', get: (p) => dorsaisText(p.dorsais_trofeu) },
+    { id: 'address', label: 'Morada', get: (p) => [p.address, p.postal_code, p.city].filter(Boolean).join(', ') },
+    { id: 'emergency', label: 'Contacto de emergência', get: (p) => [p.emergency_name, p.emergency_relation, p.emergency_phone].filter(Boolean).join(' · ') },
+    { id: 'shirt', label: 'T-shirt', get: (p) => p.shirt_size },
+    { id: 'shorts', label: 'Calções', get: (p) => p.shorts_size ?? '' },
+    { id: 'height', label: 'Altura (cm)', get: (p) => (p.height_cm ? String(p.height_cm) : '') },
+    { id: 'weight', label: 'Peso (kg)', get: (p) => (p.weight_kg ? String(p.weight_kg) : '') },
+    { id: 'blood', label: 'Grupo sanguíneo', get: (p) => p.blood_type ?? '' },
+    { id: 'medical', label: 'Notas médicas', get: (p) => p.medical_notes ?? '' },
+    { id: 'kit', label: 'Kit oficial', get: (p) => yn(p.has_official_kit) },
+    { id: 'loginEmail', label: 'Email de login', get: (p) => p.login_email ?? '' },
+    { id: 'loginProvider', label: 'Método de login', get: (p) => p.login_provider ?? '' },
+    { id: 'kidNames', label: 'Nomes das crianças', get: kidsNames },
+  ]
 
   const athleteDetail = (p: AthleteProfile, kids: YouthAthlete[], dorsalsSummary: string | null) => (
                 <div className="pb-4 pt-1 space-y-4">
@@ -494,6 +508,18 @@ const AthletesTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {csvOpen && (
+        <CsvExportDialog<AthleteProfile>
+          title="Exportar atletas para CSV"
+          rows={picked.size ? tableRows.filter((p) => picked.has(p.id)) : desktop ? tableRows : list}
+          filename="atletas-urcharneca"
+          tableFields={adultTableFields}
+          extraFields={adultExtraFields}
+          rowLabel={(p) => p.name}
+          onClose={() => setCsvOpen(false)}
+          onDone={() => showToast('Lista exportada.')}
+        />
+      )}
       {desktop && (
         <>
           <div className="desk-toolbar">
@@ -521,7 +547,7 @@ const AthletesTab: React.FC = () => {
               {tableRows.length} de {profiles.length}
             </span>
             <div className="flex-1" />
-            <Button size="sm" variant="secondary" onClick={() => exportCSV(picked.size ? picked : undefined)}>
+            <Button size="sm" variant="secondary" onClick={() => setCsvOpen(true)}>
               <Download className="w-4 h-4" aria-hidden="true" /> {picked.size ? `Exportar ${picked.size} selecionados` : 'Exportar CSV'}
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
@@ -574,7 +600,7 @@ const AthletesTab: React.FC = () => {
             aria-label="Pesquisar atletas"
           />
         </div>
-        <IconButton label="Exportar lista em CSV" onClick={() => exportCSV()} className="!w-12 !h-12">
+        <IconButton label="Exportar lista em CSV" onClick={() => setCsvOpen(true)} className="!w-12 !h-12">
           <Download className="w-5 h-5" aria-hidden="true" />
         </IconButton>
       </div>
@@ -744,6 +770,8 @@ const ChildrenTab: React.FC = () => {
   const desktop = useDesktopAdmin()
   const [q, setQ] = useState('')
   const [mode, setMode] = useState<'all' | 'noguardian' | 'self' | 'nodorsal'>('all')
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [csvOpen, setCsvOpen] = useState(false)
   const guardiansOf = (c: YouthAthlete) => c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
@@ -794,6 +822,36 @@ const ChildrenTab: React.FC = () => {
     },
   ]
 
+
+  const dorsaisText = (r?: Record<string, string>) =>
+    Object.entries(r || {}).map(([season, d]) => `${season}: ${d}`).join(' | ')
+  const childTableFields: CsvField<YouthAthlete>[] = [
+    { id: 'name', label: 'Nome', get: (c) => c.name },
+    { id: 'escalao', label: 'Escalão', get: (c) => c.escalao },
+    { id: 'age', label: 'Idade', get: (c) => String(calculateAge(c.birth_date)) },
+    { id: 'dorsal', label: 'Dorsal Troféu', get: (c) => formatTrofeuDorsalTag(c)?.label ?? '' },
+    { id: 'guardians', label: 'Responsáveis', get: (c) => guardiansOf(c).map((g) => g.name).join(' & ') },
+    {
+      id: 'mgmt',
+      label: 'Gestão',
+      get: (c) => (c.can_self_manage ? 'Login próprio' : guardiansOf(c).length > 0 ? `${guardiansOf(c).length}/2 adultos` : 'Sem responsável'),
+    },
+  ]
+  const childExtraFields: CsvField<YouthAthlete>[] = [
+    { id: 'gender', label: 'Género', get: (c) => c.gender ?? '' },
+    { id: 'birth', label: 'Data de nascimento', get: (c) => c.birth_date },
+    { id: 'nif', label: 'NIF', get: (c) => c.nif },
+    { id: 'cc', label: 'Cartão de cidadão', get: (c) => c.cc_number ?? '' },
+    { id: 'shirt', label: 'T-shirt', get: (c) => c.shirt_size ?? '' },
+    { id: 'email', label: 'Email', get: (c) => c.email ?? '' },
+    { id: 'phone', label: 'Telefone', get: (c) => c.phone ?? '' },
+    { id: 'loginEmail', label: 'Email de login', get: (c) => c.login_email ?? '' },
+    { id: 'guardianEmails', label: 'Emails dos responsáveis', get: (c) => guardiansOf(c).map((g) => g.email).filter(Boolean).join(' | ') },
+    { id: 'guardianPhones', label: 'Telefones dos responsáveis', get: (c) => guardiansOf(c).map((g) => g.phone).filter(Boolean).join(' | ') },
+    { id: 'dorsais', label: 'Dorsais por época', get: (c) => dorsaisText(c.dorsais_trofeu) },
+    { id: 'emergency', label: 'Notas de emergência', get: (c) => c.emergency_notes ?? '' },
+    { id: 'medical', label: 'Notas médicas', get: (c) => c.medical_notes ?? '' },
+  ]
 
   const childDetail = (c: YouthAthlete, guardians: AthleteProfile[], dorsalsSummary: string | null) => (
                 <div className="pb-4 pt-1 space-y-3">
@@ -942,6 +1000,9 @@ const ChildrenTab: React.FC = () => {
               {rows.length} de {youthAthletes.length}
             </span>
             <div className="flex-1" />
+            <Button size="sm" variant="secondary" onClick={() => setCsvOpen(true)}>
+              <Download className="w-4 h-4" aria-hidden="true" /> {picked.size ? `Exportar ${picked.size} selecionados` : 'Exportar CSV'}
+            </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus className="w-4 h-4" aria-hidden="true" /> Novo menor
             </Button>
@@ -952,10 +1013,25 @@ const ChildrenTab: React.FC = () => {
             rowKey={(c) => c.id}
             rowLabel={(c) => c.name}
             caption="Menores e jovens da equipa"
+            selectable
+            selected={picked}
+            onSelectedChange={setPicked}
             onRowOpen={(c) => setOpenId(c.id)}
             initialSort={{ id: 'name', dir: 'asc' }}
             empty={youthAthletes.length === 0 ? 'Ainda não há perfis de menores.' : 'Nenhuma criança corresponde à pesquisa ou ao filtro.'}
           />
+          {csvOpen && (
+            <CsvExportDialog<YouthAthlete>
+              title="Exportar crianças para CSV"
+              rows={picked.size ? rows.filter((c) => picked.has(c.id)) : rows}
+              filename="criancas-urcharneca"
+              tableFields={childTableFields}
+              extraFields={childExtraFields}
+              rowLabel={(c) => c.name}
+              onClose={() => setCsvOpen(false)}
+              onDone={() => showToast('Lista exportada.')}
+            />
+          )}
           {openChild && (
             <Sheet
               onClose={() => setOpenId(null)}
