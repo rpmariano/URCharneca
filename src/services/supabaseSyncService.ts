@@ -74,7 +74,6 @@ const fromProfileRow = (row: Record<string, unknown>): AthleteProfile => ({
   login_email: row.login_email ? String(row.login_email) : undefined,
   login_provider: row.login_provider === 'google' || row.login_provider === 'email' ? row.login_provider : undefined,
   login_activated_at: row.login_activated_at ? String(row.login_activated_at) : undefined,
-  login_password_hash: row.login_password_hash ? String(row.login_password_hash) : undefined,
   is_minor_account: Boolean(row.is_minor_account),
   gender: row.gender === 'M' || row.gender === 'F' ? row.gender : undefined,
   birth_date: String(row.birth_date ?? ''),
@@ -160,7 +159,6 @@ const fromYouthRow = (row: Record<string, unknown>): YouthAthlete => ({
   login_email: row.login_email ? String(row.login_email) : undefined,
   login_provider: row.login_provider === 'google' || row.login_provider === 'email' ? row.login_provider : undefined,
   login_activated_at: row.login_activated_at ? String(row.login_activated_at) : undefined,
-  login_password_hash: row.login_password_hash ? String(row.login_password_hash) : undefined,
   associated_adult_ids: Array.isArray(row.associated_adult_ids) ? (row.associated_adult_ids as string[]) : [],
 })
 

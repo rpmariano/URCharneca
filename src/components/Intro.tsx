@@ -12,8 +12,9 @@ import { Avatar, Button, KindBadge, Tag } from './ui'
  * Pode ser vista outra vez em Perfil → "Ver a introdução outra vez".
  */
 export const Intro: React.FC = () => {
-  const { isAdminView, currentUser } = useApp()
-  const { visible, dismiss } = useOnboardingItem('intro-v1')
+  const { isAdminView, currentUser, isAuthenticated } = useApp()
+  const { visible: unseen, dismiss } = useOnboardingItem('intro-v1')
+  const visible = unseen && isAuthenticated
   const [index, setIndex] = useState(0)
   const track = useRef<HTMLDivElement>(null)
   const firstButton = useRef<HTMLButtonElement>(null)

@@ -240,3 +240,5 @@ alter table public.push_subscriptions enable row level security;
 
 -- Sem políticas para anon/authenticated: o acesso fica negado até a fase de autenticação (Supabase Auth)
 -- criar políticas por papel. Ver supabase/migrations/20261123_lockdown.sql.
+
+-- Autenticação, convites e políticas RLS por papel: supabase/migrations/20261124_auth_rls.sql

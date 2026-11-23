@@ -70,7 +70,7 @@ import { Intro } from './components/Intro'
 const TOAST_ICON = { success: CircleCheck, info: Info, warning: CircleAlert }
 
 const AppShell: React.FC = () => {
-  const { toasts, isAuthenticated, authLoading } = useApp()
+  const { toasts, isAuthenticated, authLoading, recoveryMode } = useApp()
   const { pathname } = useLocation()
   // As páginas de detalhe têm a sua própria barra de ação fixa em vez da navegação
   const isDetail = pathname.startsWith('/prova/') || pathname.startsWith('/evento/')
@@ -85,7 +85,7 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="min-h-dvh flex flex-col relative text-[var(--text-1)]">
-      {!isAuthenticated ? (
+      {!isAuthenticated || recoveryMode ? (
         <main className="flex-1 w-full relative">
           <LoginPage />
         </main>

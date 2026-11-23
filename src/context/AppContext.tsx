@@ -62,17 +62,6 @@ const STORAGE_KEYS = {
   TROFEU_SYNC_LOGS: 'urc_trofeu_sync_logs_v7',
 }
 
-async function hashPassword(raw: string): Promise<string> {
-  const bytes = new TextEncoder().encode(`urc_salt_${raw}`)
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const digest = await crypto.subtle.digest('SHA-256', bytes)
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-  return btoa(unescape(encodeURIComponent(`urc_salt_${raw}`)))
-}
-
 const normalizeEmail = (email?: string | null) => (email || '').trim().toLowerCase()
 
 export type ThemeMode = 'balanced' | 'light' | 'dark'
@@ -121,15 +110,16 @@ interface AppContextValue {
   /** Sessão e Autenticação (estritamente pelo email associado na ficha e autorizado pelo admin) */
   isAuthenticated: boolean
   authLoading: boolean
-  loginWithEmail: (
-    email: string,
-    password: string,
-    providerHint?: 'email' | 'google'
-  ) => Promise<ActionResult>
+  loginWithEmail: (email: string, password: string) => Promise<ActionResult>
+  signUpWithEmail: (email: string, password: string) => Promise<ActionResult>
+  requestPasswordReset: (email: string) => Promise<ActionResult>
+  updatePassword: (password: string) => Promise<ActionResult>
+  /** Verdadeiro quando o utilizador abriu a ligação de recuperação e tem de definir nova palavra-passe */
+  recoveryMode: boolean
   loginWithGoogle: () => Promise<ActionResult>
   logout: () => Promise<void>
   setAthleteLoginAuthorization: (athleteId: string, authorized: boolean, emailOverride?: string) => ActionResult
-  resetPersonLoginPassword: (personId: string, isYouth: boolean) => void
+  resetPersonLoginPassword: (personId: string, isYouth: boolean) => void | Promise<void>
   /** Papel ativo na UI. Um administrador pode alternar para a vista de atleta. */
   activeRole: UserRole
   isAdminView: boolean
@@ -268,6 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     loadFromStorage<string | null>(STORAGE_KEYS.AUTHENTICATED_USER_ID, null)
   )
   const [authLoading, setAuthLoading] = useState<boolean>(isSupabaseConfigured)
+  const [recoveryMode, setRecoveryMode] = useState(false)
   const [activeRole, setActiveRoleState] = useState<UserRole>(() =>
     loadFromStorage(STORAGE_KEYS.ACTIVE_VIEW_ROLE, 'admin')
   )
@@ -424,7 +415,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       email: candidateEmail || target.email,
       login_email: candidateEmail || undefined,
       login_authorized: authorized,
-      login_password_hash: emailChanged ? undefined : target.login_password_hash,
       auth_user_id: emailChanged ? undefined : target.auth_user_id,
       dependents: [],
     }
@@ -440,238 +430,146 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: msg }
   }
 
-  const resetPersonLoginPassword = (personId: string, isYouth: boolean) => {
+  const authRedirect = () => `${window.location.origin}${import.meta.env.BASE_URL}`
+
+  /** Envia ao atleta um email para definir (ou repor) a palavra-passe. */
+  const resetPersonLoginPassword = async (personId: string, isYouth: boolean) => {
     if (!requireAdmin('repor palavra-passe de login')) return
-    if (isYouth) {
-      const y = youthAthletes.find((item) => item.id === personId)
-      if (!y) return
-      const updated: YouthAthlete = {
-        ...y,
-        auth_user_id: undefined,
-        login_provider: undefined,
-        login_activated_at: undefined,
-        login_password_hash: undefined,
-      }
-      setYouthAthletes((prev) => prev.map((item) => (item.id === personId ? updated : item)))
-      void upsertYouthAthletes([updated])
-      showToast(`Palavra-passe de ${y.name} reposta. Pode definir nova senha no próximo login com ${y.login_email || y.email}.`, 'info')
+    const target = isYouth ? youthAthletes.find((y) => y.id === personId) : baseProfiles.find((x) => x.id === personId)
+    const mail = normalizeEmail(target?.login_email || target?.email)
+    if (!target || !mail) {
+      showToast('Esta ficha não tem email associado.', 'warning')
       return
     }
-    const p = baseProfiles.find((item) => item.id === personId)
-    if (!p) return
-    const updated: AthleteProfile = {
-      ...p,
-      auth_user_id: undefined,
-      login_provider: undefined,
-      login_activated_at: undefined,
-      login_password_hash: undefined,
-      dependents: [],
+    if (!isSupabaseConfigured) {
+      showToast('Indisponível em modo de demonstração.', 'info')
+      return
     }
-    setProfiles((prev) => prev.map((item) => (item.id === personId ? updated : item)))
-    void upsertProfiles([updated])
-    showToast(`Palavra-passe de ${p.name} reposta. Pode definir nova senha no próximo login com ${p.login_email || p.email}.`, 'info')
+    const { error } = await supabase.auth.resetPasswordForEmail(mail, { redirectTo: authRedirect() })
+    showToast(
+      error ? 'Não foi possível enviar o email. Tenta mais tarde.' : `Enviámos a ${target.name} um email para definir a palavra-passe.`,
+      error ? 'warning' : 'info'
+    )
   }
 
-  const signInAuthorizedPerson = (
-    personId: string,
-    email: string,
-    provider: 'google' | 'email',
-    authUserId?: string,
-    passwordHash?: string,
-    listProfiles = baseProfiles,
-    listYouth = youthAthletes
-  ): ActionResult => {
-    const cleanEmail = normalizeEmail(email)
-    const adult = listProfiles.find((p) => p.id === personId)
-    if (adult) {
-      if (!adult.login_authorized && adult.role !== 'admin') {
-        return {
-          success: false,
-          message: `${adult.name} não tem autorização de login ativa na ficha do atleta. Pede ao administrador para autorizar primeiro.`,
-        }
-      }
-      const updatedAdult: AthleteProfile = {
-        ...adult,
-        login_authorized: true,
-        login_email: cleanEmail,
-        login_provider: provider,
-        login_activated_at: adult.login_activated_at || new Date().toISOString(),
-        auth_user_id: authUserId || adult.auth_user_id,
-        login_password_hash: passwordHash || adult.login_password_hash,
-        email: adult.email || cleanEmail,
-        dependents: [],
-      }
-      setProfiles((prev) => prev.map((p) => (p.id === personId ? updatedAdult : p)))
-      void upsertProfiles([updatedAdult])
-      setCurrentUserId(personId)
-      setAuthenticatedUserId(personId)
-      setActiveRoleState(updatedAdult.role)
-      showToast(`Bem-vindo(a), ${updatedAdult.name}!`)
-      return { success: true, message: `Sessão iniciada como ${updatedAdult.name}.` }
-    }
-
-    const minor = listYouth.find((y) => y.id === personId)
-    if (minor) {
-      if (!minor.can_self_manage) {
-        return {
-          success: false,
-          message: `O perfil de ${minor.name} está gerido pelos adultos responsáveis. O administrador tem de ativar "Login próprio" na ficha.`,
-        }
-      }
-      const updatedMinor: YouthAthlete = {
-        ...minor,
-        login_email: cleanEmail,
-        login_provider: provider,
-        login_activated_at: minor.login_activated_at || new Date().toISOString(),
-        auth_user_id: authUserId || minor.auth_user_id,
-        login_password_hash: passwordHash || minor.login_password_hash,
-        email: minor.email || cleanEmail,
-      }
-      setYouthAthletes((prev) => prev.map((y) => (y.id === personId ? updatedMinor : y)))
-      void upsertYouthAthletes([updatedMinor])
-      setCurrentUserId(personId)
-      setAuthenticatedUserId(personId)
-      setActiveRoleState('athlete')
-      showToast(`Bem-vindo(a), ${updatedMinor.name}!`)
-      return { success: true, message: `Sessão iniciada como ${updatedMinor.name}.` }
-    }
-
-    return { success: false, message: 'Ficha de atleta não encontrada.' }
+  /** Procura os dados a que o utilizador tem acesso (as políticas RLS filtram por papel). */
+  const hydrateRemote = async () => {
+    const remote = await fetchAllFromSupabase({
+      profiles: [],
+      youthAthletes: [],
+      races: INITIAL_RACES,
+      registrations: INITIAL_REGISTRATIONS,
+      events: INITIAL_EVENTS,
+      notifications: INITIAL_NOTIFICATIONS,
+      trofeuSeasons: INITIAL_TROFEU_SEASONS,
+    })
+    if (!remote) return null
+    const cleanProfiles = remote.profiles.map((p) => ({ ...p, dependents: [] }))
+    setYouthAthletes(remote.youthAthletes)
+    setProfiles(cleanProfiles)
+    setRaces(remote.races)
+    setRegistrations(remote.registrations)
+    setEvents(remote.events)
+    setNotifications(remote.notifications)
+    setTrofeuSeasons(remote.trofeuSeasons)
+    setTrofeuSyncLogs(remote.trofeuSyncLogs)
+    supabaseHydratedRef.current = true
+    return { ...remote, profiles: cleanProfiles }
   }
 
-  const resolveEmailOwner = (
-    email: string,
-    listProfiles = baseProfiles,
-    listYouth = youthAthletes
-  ): { kind: 'adult' | 'youth'; id: string; authorized: boolean; hasBoundLogin: boolean; hash?: string } | null => {
-    const clean = normalizeEmail(email)
-    if (!clean) return null
-
-    const adultByLogin = listProfiles.find((p) => normalizeEmail(p.login_email) === clean)
-    if (adultByLogin) {
-      return {
-        kind: 'adult',
-        id: adultByLogin.id,
-        authorized: Boolean(adultByLogin.login_authorized || adultByLogin.role === 'admin'),
-        hasBoundLogin: Boolean(adultByLogin.login_password_hash || adultByLogin.auth_user_id),
-        hash: adultByLogin.login_password_hash,
-      }
+  /** Depois de iniciar sessão: liga a conta à ficha (só emails autorizados pelo admin) e carrega os dados. */
+  const establishSession = async (): Promise<ActionResult & { isAdmin?: boolean; races?: Race[]; logs?: TrofeuSyncLog[] }> => {
+    const { data } = await supabase.auth.getSession()
+    if (!data.session?.user) {
+      setAuthenticatedUserId(null)
+      return { success: false, message: '' }
     }
-    const youthByLogin = listYouth.find((y) => normalizeEmail(y.login_email) === clean)
-    if (youthByLogin) {
-      return {
-        kind: 'youth',
-        id: youthByLogin.id,
-        authorized: Boolean(youthByLogin.can_self_manage),
-        hasBoundLogin: Boolean(youthByLogin.login_password_hash || youthByLogin.auth_user_id),
-        hash: youthByLogin.login_password_hash,
-      }
-    }
-    const adultByContact = listProfiles.find((p) => normalizeEmail(p.email) === clean)
-    if (adultByContact) {
-      return {
-        kind: 'adult',
-        id: adultByContact.id,
-        authorized: Boolean(adultByContact.login_authorized || adultByContact.role === 'admin'),
-        hasBoundLogin: Boolean(adultByContact.login_password_hash || adultByContact.auth_user_id),
-        hash: adultByContact.login_password_hash,
-      }
-    }
-    const youthByContact = listYouth.find((y) => normalizeEmail(y.email) === clean)
-    if (youthByContact) {
-      return {
-        kind: 'youth',
-        id: youthByContact.id,
-        authorized: Boolean(youthByContact.can_self_manage),
-        hasBoundLogin: Boolean(youthByContact.login_password_hash || youthByContact.auth_user_id),
-        hash: youthByContact.login_password_hash,
-      }
-    }
-    return null
-  }
-
-  const loginWithEmail = async (
-    email: string,
-    password: string,
-    providerHint: 'email' | 'google' = 'email'
-  ): Promise<ActionResult> => {
-    const cleanEmail = normalizeEmail(email)
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      return { success: false, message: 'Indica um endereço de email válido.' }
-    }
-    if (!password || password.length < 6) {
-      return { success: false, message: 'A palavra-passe deve ter pelo menos 6 caracteres.' }
-    }
-
-    const owner = resolveEmailOwner(cleanEmail)
-    if (!owner) {
+    const { data: personId, error } = await supabase.rpc('claim_profile')
+    if (error || !personId) {
+      await supabase.auth.signOut()
+      setAuthenticatedUserId(null)
       return {
         success: false,
-        message: 'Não existe nenhuma ficha de atleta com este email associado. Pede ao administrador para associar o teu email na tua ficha.',
+        message: 'Este email não está autorizado. Pede ao administrador para o associar e autorizar na tua ficha.',
       }
     }
-    if (!owner.authorized) {
-      return {
-        success: false,
-        message: 'O teu email está na ficha, mas o login ainda não foi expressamente autorizado pelo administrador.',
-      }
+    const remote = await hydrateRemote()
+    const adult = remote?.profiles.find((x) => x.id === personId)
+    setCurrentUserId(personId as string)
+    setAuthenticatedUserId(personId as string)
+    setActiveRoleState(adult?.role === 'admin' ? 'admin' : 'athlete')
+    return {
+      success: true,
+      message: 'Sessão iniciada.',
+      isAdmin: adult?.role === 'admin',
+      races: remote?.races,
+      logs: remote?.trofeuSyncLogs,
     }
+  }
 
-    const pwdHash = await hashPassword(password)
-    const targetAdult = baseProfiles.find((p) => p.id === owner.id)
-    const targetYouth = youthAthletes.find((y) => y.id === owner.id)
-    const existingHash = targetAdult?.login_password_hash || targetYouth?.login_password_hash
-    let authUserId = targetAdult?.auth_user_id || targetYouth?.auth_user_id
+  const authErrorMessage = (message: string): string => {
+    const m = message.toLowerCase()
+    if (m.includes('invalid login')) return 'Email ou palavra-passe incorretos. Se é o teu primeiro acesso, cria a conta.'
+    if (m.includes('not confirmed')) return 'Confirma primeiro o email (verifica a caixa de correio).'
+    if (m.includes('database error') || m.includes('não foi autorizado')) return 'Este email não foi autorizado pelo administrador.'
+    if (m.includes('already registered')) return 'Já existe uma conta com este email. Entra com a palavra-passe.'
+    if (m.includes('rate limit')) return 'Demasiadas tentativas. Tenta daqui a alguns minutos.'
+    return message
+  }
 
-    if (isSupabaseConfigured) {
-      const signInRes = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
-      if (!signInRes.error && signInRes.data.user) {
-        authUserId = signInRes.data.user.id
-      } else if (!existingHash) {
-        // 1.º acesso do atleta cujo email foi associado e autorizado pelo admin
-        const signUpRes = await supabase.auth.signUp({ email: cleanEmail, password })
-        if (!signUpRes.error && signUpRes.data.user) {
-          authUserId = signUpRes.data.user.id
-        } else if (
-          signUpRes.error &&
-          !signUpRes.error.message.toLowerCase().includes('already registered') &&
-          !signUpRes.error.message.toLowerCase().includes('confirm')
-        ) {
-          return { success: false, message: signUpRes.error.message }
-        }
-      } else if (existingHash !== pwdHash) {
-        return { success: false, message: 'Palavra-passe incorreta para este email.' }
-      }
-    } else if (existingHash && existingHash !== pwdHash) {
-      return { success: false, message: 'Palavra-passe incorreta para este email.' }
-    }
+  const loginWithEmail = async (email: string, password: string): Promise<ActionResult> => {
+    const cleanEmail = normalizeEmail(email)
+    if (!cleanEmail.includes('@')) return { success: false, message: 'Indica um endereço de email válido.' }
+    if (!isSupabaseConfigured) return { success: false, message: 'Ligação à base de dados indisponível.' }
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password })
+    if (error) return { success: false, message: authErrorMessage(error.message) }
+    const res = await establishSession()
+    if (res.success) showToast('Sessão iniciada.')
+    return res
+  }
 
-    return signInAuthorizedPerson(owner.id, cleanEmail, providerHint, authUserId, existingHash || pwdHash)
+  /** Primeiro acesso por email: só funciona se o admin autorizou este email. */
+  const signUpWithEmail = async (email: string, password: string): Promise<ActionResult> => {
+    const cleanEmail = normalizeEmail(email)
+    if (!cleanEmail.includes('@')) return { success: false, message: 'Indica um endereço de email válido.' }
+    if (password.length < 8) return { success: false, message: 'A palavra-passe deve ter pelo menos 8 caracteres.' }
+    if (!isSupabaseConfigured) return { success: false, message: 'Ligação à base de dados indisponível.' }
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: { emailRedirectTo: authRedirect() },
+    })
+    if (error) return { success: false, message: authErrorMessage(error.message) }
+    if (data.session) return establishSession()
+    return { success: true, message: 'Enviámos um email de confirmação. Abre a ligação e depois entra aqui.' }
+  }
+
+  const requestPasswordReset = async (email: string): Promise<ActionResult> => {
+    const cleanEmail = normalizeEmail(email)
+    if (!cleanEmail.includes('@')) return { success: false, message: 'Indica um endereço de email válido.' }
+    if (!isSupabaseConfigured) return { success: false, message: 'Ligação à base de dados indisponível.' }
+    await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo: authRedirect() })
+    // Resposta igual quer o email exista ou não, para não revelar quem é da equipa
+    return { success: true, message: 'Se o email estiver autorizado, enviámos uma ligação para definir a palavra-passe.' }
+  }
+
+  const updatePassword = async (password: string): Promise<ActionResult> => {
+    if (password.length < 8) return { success: false, message: 'A palavra-passe deve ter pelo menos 8 caracteres.' }
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return { success: false, message: authErrorMessage(error.message) }
+    setRecoveryMode(false)
+    const res = await establishSession()
+    return res.success ? { success: true, message: 'Palavra-passe atualizada.' } : res
   }
 
   const loginWithGoogle = async (): Promise<ActionResult> => {
-    if (!isSupabaseConfigured) {
-      return {
-        success: false,
-        fallbackToEmailFlow: true,
-        message: 'Configuração Supabase indisponível. Entra com o email associado na tua ficha e palavra-passe.',
-      }
-    }
-    const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`
+    if (!isSupabaseConfigured) return { success: false, message: 'Ligação à base de dados indisponível.' }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: { prompt: 'select_account' },
-      },
+      options: { redirectTo: authRedirect(), queryParams: { prompt: 'select_account' } },
     })
     if (error || !data?.url) {
-      return {
-        success: false,
-        fallbackToEmailFlow: true,
-        message:
-          'O fornecedor Google OAuth ainda não está ativo no painel Auth do Supabase. Podes entrar já abaixo com o email associado à tua ficha e palavra-passe.',
-      }
+      return { success: false, message: 'O login com Google ainda não está ativo. Usa o email e a palavra-passe.' }
     }
     return { success: true, message: 'A redirecionar para o Google…' }
   }
@@ -864,7 +762,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       can_self_manage: canSelfManage,
       email: candidateEmail || child.email,
       login_email: candidateEmail || undefined,
-      login_password_hash: emailChanged ? undefined : child.login_password_hash,
       auth_user_id: emailChanged ? undefined : child.auth_user_id,
     }
     setYouthAthletes((prev) =>
@@ -1405,84 +1302,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
+  // Ligação de recuperação de palavra-passe (email) e fim de sessão noutro separador
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true)
+      if (event === 'SIGNED_OUT') setAuthenticatedUserId(null)
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
   // Hidratação a partir do Supabase no arranque e sincronização automática bissemanal
   useEffect(() => {
     if (autoSyncedRef.current) return
     autoSyncedRef.current = true
 
     const bootstrap = async () => {
-      let activeProfiles = baseProfiles
-      let activeYouth = youthAthletes
       let currentRaces = races
       let currentLogs = trofeuSyncLogs
-
+      let isAdminUser = false
       if (isSupabaseConfigured) {
-        const remote = await fetchAllFromSupabase({
-          profiles: INITIAL_PROFILES,
-          youthAthletes: INITIAL_YOUTH_ATHLETES,
-          races: INITIAL_RACES,
-          registrations: INITIAL_REGISTRATIONS,
-          events: INITIAL_EVENTS,
-          notifications: INITIAL_NOTIFICATIONS,
-          trofeuSeasons: INITIAL_TROFEU_SEASONS,
-        })
-        if (remote) {
-          const cleanRemoteProfiles = remote.profiles.map((p) => ({ ...p, dependents: [] }))
-          setYouthAthletes(remote.youthAthletes)
-          setProfiles(cleanRemoteProfiles)
-          setRaces(remote.races)
-          setRegistrations(remote.registrations)
-          setEvents(remote.events)
-          setNotifications(remote.notifications)
-          setTrofeuSeasons(remote.trofeuSeasons)
-          setTrofeuSyncLogs(remote.trofeuSyncLogs)
-          activeProfiles = cleanRemoteProfiles
-          activeYouth = remote.youthAthletes
-          currentRaces = remote.races
-          currentLogs = remote.trofeuSyncLogs
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, '') || window.location.search)
+        if (params.get('error_description')) {
+          showToast('Este email não foi autorizado pelo administrador.', 'warning')
+          window.history.replaceState(null, '', window.location.pathname)
         }
-        supabaseHydratedRef.current = true
-
-        // Verificar sessão OAuth / Supabase Auth existente após carregar fichas atualizadas (estritamente pelo email)
-        try {
-          const { data: sessionData } = await supabase.auth.getSession()
-          const authUser = sessionData.session?.user
-          if (authUser?.email) {
-            const owner = resolveEmailOwner(authUser.email, activeProfiles, activeYouth)
-            if (owner && owner.authorized) {
-              const provider = authUser.app_metadata?.provider === 'google' ? 'google' : 'email'
-              signInAuthorizedPerson(
-                owner.id,
-                authUser.email,
-                provider,
-                authUser.id,
-                undefined,
-                activeProfiles,
-                activeYouth
-              )
-            } else {
-              await supabase.auth.signOut()
-              setAuthenticatedUserId(null)
-              showToast(
-                owner
-                  ? 'O login para este email ainda não foi autorizado pelo administrador na ficha do atleta.'
-                  : 'Não existe nenhuma ficha de atleta com este email associado.',
-                'warning'
-              )
-            }
-          }
-        } catch {
-          // ignorar falha silenciosa de sessão
-        } finally {
-          setAuthLoading(false)
-        }
+        const res = await establishSession()
+        if (!res.success && res.message) showToast(res.message, 'warning')
+        isAdminUser = Boolean(res.isAdmin)
+        currentRaces = res.races ?? currentRaces
+        currentLogs = res.logs ?? currentLogs
+        setAuthLoading(false)
       } else {
+        // Modo de demonstração (sem Supabase): dados de exemplo locais e administrador de exemplo
+        setCurrentUserId('ath-admin')
+        setAuthenticatedUserId('ath-admin')
+        setActiveRoleState('admin')
+        isAdminUser = true
         setAuthLoading(false)
       }
 
       const trofeuRacesCount = currentRaces.filter((r) => r.category === 'trofeu_cascais').length
       const lastSync = currentLogs[0]?.timestamp
-      if (trofeuRacesCount < 13 || isBiweeklyCheckDue(lastSync)) {
+      if (isAdminUser && (trofeuRacesCount < 13 || isBiweeklyCheckDue(lastSync))) {
         await syncTrofeuCascais(trofeuRacesCount < 13 ? 'startup' : 'auto_biweekly')
       }
     }
@@ -1590,6 +1452,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated,
         authLoading,
         loginWithEmail,
+        signUpWithEmail,
+        requestPasswordReset,
+        updatePassword,
+        recoveryMode,
         loginWithGoogle,
         logout,
         setAthleteLoginAuthorization,
