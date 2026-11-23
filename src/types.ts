@@ -296,6 +296,15 @@ export interface TrofeuClubStanding {
   prize_amount_eur?: number
 }
 
+/** Resultado de um atleta numa prova do Troféu; `pos` é o lugar nessa prova dentro do escalão. */
+export interface TrofeuStageResult {
+  pos: number
+  points: number
+  time?: string
+  competition_id?: number
+  race_id?: string
+}
+
 export interface TrofeuAthleteStanding {
   id: string
   season: string
@@ -308,6 +317,8 @@ export interface TrofeuAthleteStanding {
   team: string
   dorsal?: string
   points_per_stage: Record<string, number>
+  /** Resultado por prova ('P1', 'P2'...), preenchido pela sincronização automática com o site oficial */
+  stage_results?: Record<string, TrofeuStageResult>
   total: number
   stages_participated: number
   total_season_stages: number
@@ -328,6 +339,8 @@ export interface TrofeuSeasonData {
   club_standings: TrofeuClubStanding[]
   athlete_standings: TrofeuAthleteStanding[]
   last_synced_at: string
+  /** Última vez que as classificações oficiais foram lidas do site (quando o servidor a regista) */
+  results_synced_at?: string
 }
 
 export interface TrofeuSyncLog {
