@@ -55,7 +55,7 @@ import {
 } from '../services/supabaseSyncService'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { TRANSPORT_LABELS } from '../types'
-import { computeVanAllocation } from '../utils/formatters'
+import { computeVanAllocation, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 
 /** v7: gestão de múltiplos veículos, lugares vagos e condutores por prova */
@@ -1201,9 +1201,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pushNotification({
       title: suggested ? `Prova sugerida por ${currentUser.name}: ${newRace.title}` : `Inscrições abertas: ${newRace.title}`,
       message: suggested
-        ? `${currentUser.name} sugeriu "${newRace.title}" (${newRace.date}, ${newRace.location}). Inscrição individual — marca presença na app para irmos juntos.`
-        : `Já te podes inscrever em "${newRace.title}" (${newRace.date}, ${newRace.location}).${
-            newRace.van_available ? ` Carrinha do clube com ${newRace.van_capacity} lugares.` : ''
+        ? `${currentUser.name} sugeriu "${newRace.title}" (${formatShortDate(newRace.date)}, ${newRace.location}). Inscrição individual — marca presença na app para irmos juntos.`
+        : `Já te podes inscrever em "${newRace.title}" (${formatShortDate(newRace.date)}, ${newRace.location}).${
+            newRace.van_available ? ` Há ${newRace.van_capacity} ${newRace.van_capacity === 1 ? 'vaga' : 'vagas'} de transporte.` : ''
           }${newRace.open_to_children ? ' Aberta a crianças.' : ''}`,
       type: suggested ? 'individual_share' : 'race_open',
       related_race_id: newRace.id,
