@@ -359,7 +359,7 @@ export const ProfilePage: React.FC = () => {
 
       {/* Folhas */}
       {sheet === 'data' && (
-        <Sheet onClose={close} ariaLabel="Dados pessoais">
+        <Sheet persistent onClose={close} ariaLabel="Dados pessoais">
           <SheetHeader title="Dados pessoais" onClose={close} />
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <AthleteForm
@@ -461,7 +461,7 @@ export const ProfilePage: React.FC = () => {
       )}
 
       {sheet === 'child-new' && (
-        <Sheet onClose={close} ariaLabel="Novo perfil infantil">
+        <Sheet persistent onClose={close} ariaLabel="Novo perfil infantil">
           <SheetHeader title="Novo perfil infantil" onClose={close} />
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <ChildForm
@@ -478,7 +478,7 @@ export const ProfilePage: React.FC = () => {
       )}
 
       {sheet === 'child-link' && (
-        <Sheet onClose={close} ariaLabel="Associar criança">
+        <Sheet persistent onClose={close} ariaLabel="Associar criança">
           <SheetHeader title="Associar criança" subtitle="Para o 2.º responsável, quando a criança já existe na equipa." onClose={close} />
           <div className="px-5 py-4 space-y-4">
             <Field label="Criança">
@@ -508,7 +508,7 @@ export const ProfilePage: React.FC = () => {
       )}
 
       {editing && (
-        <Sheet onClose={() => setEditingChild(null)} ariaLabel={`Editar ${editing.name}`}>
+        <Sheet persistent onClose={() => setEditingChild(null)} ariaLabel={`Editar ${editing.name}`}>
           <SheetHeader title={editing.name} subtitle="Perfil infantil" onClose={() => setEditingChild(null)} />
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <ChildForm

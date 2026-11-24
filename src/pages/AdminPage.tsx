@@ -672,7 +672,7 @@ const AthletesTab: React.FC = () => {
       )}
 
       {creating && (
-        <Sheet onClose={() => setCreating(false)} ariaLabel="Novo atleta">
+        <Sheet persistent onClose={() => setCreating(false)} ariaLabel="Novo atleta">
           <SheetHeader title="Novo atleta" onClose={() => setCreating(false)} />
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <AthleteForm
@@ -692,7 +692,7 @@ const AthletesTab: React.FC = () => {
       )}
 
       {editing && (
-        <Sheet onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
+        <Sheet persistent onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
           <SheetHeader title={editing.name} subtitle="Editar atleta" onClose={() => setEditId(null)} />
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <AthleteForm
@@ -1121,7 +1121,7 @@ const ChildrenTab: React.FC = () => {
       )}
 
       {creating && (
-        <Sheet onClose={() => setCreating(false)} ariaLabel="Novo perfil de menor">
+        <Sheet persistent onClose={() => setCreating(false)} ariaLabel="Novo perfil de menor">
           <SheetHeader title="Novo perfil de menor" onClose={() => setCreating(false)} />
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
             <Field label="Adulto responsável (obrigatório se gerido por adultos)">
@@ -1153,7 +1153,7 @@ const ChildrenTab: React.FC = () => {
       )}
 
       {editing && (
-        <Sheet onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
+        <Sheet persistent onClose={() => setEditId(null)} ariaLabel={`Editar ${editing.name}`}>
           <SheetHeader title={editing.name} subtitle="Editar perfil de menor" onClose={() => setEditId(null)} />
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <ChildForm

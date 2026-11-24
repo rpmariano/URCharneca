@@ -60,7 +60,7 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
   const heading = editing ? 'Editar' : type === 'training' ? 'Novo treino' : type === 'meeting' ? 'Nova reunião' : 'Novo evento'
 
   return (
-    <Sheet onClose={onClose} ariaLabel={heading}>
+    <Sheet persistent onClose={onClose} ariaLabel={heading}>
       <SheetHeader title={heading} onClose={onClose} />
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         <Field label="Tipo">
@@ -122,6 +122,9 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
 
         <Button type="submit" block>
           {editing ? 'Guardar alterações' : 'Agendar'}
+        </Button>
+        <Button type="button" variant="ghost" block onClick={onClose}>
+          Cancelar
         </Button>
       </form>
     </Sheet>

@@ -25,6 +25,11 @@ interface SheetProps {
   panelClassName?: string
   panelStyle?: React.CSSProperties
   ariaLabel?: string
+  /**
+   * Formulários: não fecha com Esc nem ao clicar fora (para não perder o que foi escrito).
+   * Só fecha pelos botões Cancelar/X ou ao guardar.
+   */
+  persistent?: boolean
 }
 
 export const Sheet: React.FC<SheetProps> = ({
@@ -34,12 +39,15 @@ export const Sheet: React.FC<SheetProps> = ({
   panelClassName = '',
   panelStyle,
   ariaLabel,
+  persistent = false,
 }) => {
   const idRef = useRef<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
   const previousActiveElement = useRef<HTMLElement | null>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const persistentRef = useRef(persistent)
+  persistentRef.current = persistent
 
   useEffect(() => {
     const id = ++sheetIdSeq
@@ -72,7 +80,7 @@ export const Sheet: React.FC<SheetProps> = ({
 
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onCloseRef.current()
+        if (!persistentRef.current) onCloseRef.current()
         return
       }
 
@@ -129,7 +137,7 @@ export const Sheet: React.FC<SheetProps> = ({
       }`}
       style={{ background: 'var(--bg-scrim)' }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget && !persistent) onClose()
       }}
     >
       <div
