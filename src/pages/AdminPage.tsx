@@ -204,12 +204,13 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
 
               <div className="space-y-2">
                 {pendingDorsalPeople.slice(0, 5).map((person) => (
-                  <div key={person.id} className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="t-small t-strong text-[var(--text-1)] truncate">
+                  // Telemóvel: nome numa linha e o campo por baixo, a toda a largura
+                  <div key={person.id} className="flex flex-wrap lg:flex-nowrap items-center gap-2">
+                    <div className="min-w-0 basis-full lg:basis-0 flex-1">
+                      <div className="t-small t-strong text-[var(--text-1)] lg:truncate">
                         {person.name} {person.isYouth && '(Jovem)'}
                       </div>
-                      <div className="t-small text-[var(--text-3)] truncate">
+                      <div className="t-small text-[var(--text-3)] lg:truncate">
                         {person.escalao} · {person.seasons.join(', ') || 'Troféu'}
                       </div>
                     </div>
@@ -220,7 +221,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
                       value={dorsalInputs[person.id] ?? ''}
                       onChange={(e) => setDorsalInputs((prev) => ({ ...prev, [person.id]: e.target.value }))}
                       placeholder="Dorsal"
-                      className="w-24 min-h-11 lg:min-h-9 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
+                      className="min-w-0 flex-1 lg:flex-none lg:w-24 min-h-11 lg:min-h-9 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
                       aria-label={`Dorsal de ${person.name}`}
                     />
                     <Button
