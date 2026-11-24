@@ -8,7 +8,9 @@ import { formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { ActivityCover } from '../components/ActivityCover'
 import { countdownLabel } from '../components/ActivityItems'
-import { EmptyState, PageHeader, Segmented, Tag, kindOfEvent } from '../components/ui'
+import { useDesktopShell } from '../layout/useDesktopShell'
+import { BP, useMediaQuery } from '../layout/useMediaQuery'
+import { EmptyState, PageHeader, SectionTitle, Segmented, Tag, kindOfEvent } from '../components/ui'
 
 interface Entry {
   key: string
@@ -30,6 +32,8 @@ export const RegistrationsPage: React.FC = () => {
   const navigate = useNavigate()
   const today = todayISO()
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
+  const desktop = useDesktopShell()
+  const sideBySide = useMediaQuery(BP.xl) && desktop
 
   const entries = useMemo<Entry[]>(() => {
     const childIds = new Set(youthAthletes.filter((c) => c.associated_adult_ids.includes(currentUser.id)).map((c) => c.id))
@@ -85,59 +89,77 @@ export const RegistrationsPage: React.FC = () => {
   const past = entries.filter((e) => e.date < today).reverse()
   const list = tab === 'upcoming' ? upcoming : past
 
-  return (
-    // page-read: em ecrãs maiores o conteúdo fica numa coluna de leitura de 720 px (layout/responsive.css)
-    <div className="page-read px-5 pb-28 space-y-5">
-      <PageHeader title="Inscrições" />
-      <Segmented
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: 'upcoming', label: `Próximas (${upcoming.length})` },
-          { value: 'past', label: `Passadas (${past.length})` },
-        ]}
+  /** Lista de uma das duas vistas (próximas ou passadas) */
+  const renderList = (which: 'upcoming' | 'past', items: Entry[]) =>
+    items.length === 0 ? (
+      <EmptyState
+        icon={Ticket}
+        title={which === 'upcoming' ? 'Ainda sem inscrições' : 'Sem atividades passadas'}
+        text={
+          which === 'upcoming'
+            ? 'Quando te inscreveres numa prova ou confirmares presença num treino, aparece aqui.'
+            : 'As provas e treinos em que participaste vão aparecer aqui.'
+        }
+        action={which === 'upcoming' ? 'Explorar provas' : undefined}
+        onAction={() => navigate('/?tipo=provas')}
       />
-
-      {list.length === 0 ? (
-        <EmptyState
-          icon={Ticket}
-          title={tab === 'upcoming' ? 'Ainda sem inscrições' : 'Sem atividades passadas'}
-          text={
-            tab === 'upcoming'
-              ? 'Quando te inscreveres numa prova ou confirmares presença num treino, aparece aqui.'
-              : 'As provas e treinos em que participaste vão aparecer aqui.'
-          }
-          action={tab === 'upcoming' ? 'Explorar provas' : undefined}
-          onAction={() => navigate('/?tipo=provas')}
-        />
-      ) : (
-        <div className="divide-soft">
-          {list.map((e) => {
-            const countdown = countdownLabel(e.date)
-            return (
-              <button
-                key={e.key}
-                type="button"
-                onClick={() => navigate(e.to)}
-                className={`w-full py-4 flex items-center gap-4 text-left pressable ${tab === 'past' ? 'opacity-70' : ''}`}
-              >
-                <ActivityCover kind={e.kind} seed={e.seed} imageUrl={e.imageUrl} className="w-[72px] h-[72px] rounded-xl shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{e.title}</span>
-                  <span className="block t-small text-[var(--text-3)] truncate">
-                    {formatShortDate(e.date)} · {e.time}
-                    {countdown ? ` · ${countdown}` : ''}
-                  </span>
-                  <span className="block t-small text-[var(--text-3)] truncate">
-                    {e.who ? `${e.who.split(' ')[0]} · ` : ''}
-                    {e.detail}
-                  </span>
+    ) : (
+      <div className="divide-soft">
+        {items.map((e) => {
+          const countdown = countdownLabel(e.date)
+          return (
+            <button
+              key={e.key}
+              type="button"
+              onClick={() => navigate(e.to)}
+              className={`w-full py-4 flex items-center gap-4 text-left pressable ${which === 'past' ? 'opacity-70' : ''}`}
+            >
+              <ActivityCover kind={e.kind} seed={e.seed} imageUrl={e.imageUrl} className="w-[72px] h-[72px] rounded-xl shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{e.title}</span>
+                <span className="block t-small text-[var(--text-3)] truncate">
+                  {formatShortDate(e.date)} · {e.time}
+                  {countdown ? ` · ${countdown}` : ''}
                 </span>
-                <Tag tone={e.tag.tone}>{e.tag.label}</Tag>
-              </button>
-            )
-          })}
+                <span className="block t-small text-[var(--text-3)] truncate">
+                  {e.who ? `${e.who.split(' ')[0]} · ` : ''}
+                  {e.detail}
+                </span>
+              </span>
+              <Tag tone={e.tag.tone}>{e.tag.label}</Tag>
+            </button>
+          )
+        })}
+      </div>
+    )
+
+  return (
+    // Separadores Próximas/Passadas; em computador largo (>= 1280 px) as duas listas lado a lado (page-wide)
+    <div className={`${sideBySide ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-5`}>
+      <PageHeader title="Inscrições" />
+      {sideBySide ? (
+        <div className="grid grid-cols-2 gap-x-8 xl:gap-x-12 items-start pt-2">
+          <section className="space-y-3 min-w-0" aria-label="Próximas">
+            <SectionTitle title="Próximas" count={upcoming.length} />
+            {renderList('upcoming', upcoming)}
+          </section>
+          <section className="space-y-3 min-w-0" aria-label="Passadas">
+            <SectionTitle title="Passadas" count={past.length} />
+            {renderList('past', past)}
+          </section>
         </div>
+      ) : (
+        <>
+          <Segmented
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'upcoming', label: `Próximas (${upcoming.length})` },
+              { value: 'past', label: `Passadas (${past.length})` },
+            ]}
+          />
+          {renderList(tab, list)}
+        </>
       )}
     </div>
   )

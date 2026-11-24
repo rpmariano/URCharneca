@@ -10,7 +10,7 @@ import { todayISO } from '../utils/dates'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { DataTable, type Column } from '../layout/DataTable'
 import { CsvExportDialog, type CsvField } from '../components/CsvExportDialog'
-import { useDesktopAdmin } from '../layout/useDesktopAdmin'
+import { useDesktopShell } from '../layout/useDesktopShell'
 import { ActivityCover } from '../components/ActivityCover'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { AthleteForm, ChildForm, emptyAthlete, emptyChild } from '../components/PeopleForms'
@@ -56,11 +56,11 @@ export const AdminPage: React.FC = () => {
   const { isAdminView } = useApp()
   const [tab, setTab] = useState<Tab>('panel')
   const [createOpen, setCreateOpen] = useState(false)
-  const desktop = useDesktopAdmin()
+  const desktop = useDesktopShell()
   if (!isAdminView) return <Navigate to="/" replace />
 
   return (
-    // Fora do shell desktop (telemóvel/tablet) o conteúdo fica numa coluna de 960 px no máximo
+    // Telemóvel: coluna de 480 px (page-read não limita mais). Computador: shell com largura útil de 1200/1280 px
     <div
       className={desktop ? 'px-2 pt-0 pb-12 space-y-5' : 'page-read px-5 pb-28 space-y-5'}
       style={desktop ? undefined : ({ '--read-max': '960px' } as React.CSSProperties)}
@@ -145,7 +145,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 lg:gap-4">
         <StatTile value={profiles.length} label="Atletas" tone="blue" onClick={() => onTab('athletes')} />
         <StatTile value={youthAthletes.length} label="Crianças" tone="yellow" onClick={() => onTab('children')} />
         <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" tone="green" onClick={() => onTab('agenda')} />
@@ -314,7 +314,7 @@ const AthletesTab: React.FC = () => {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [profiles, q])
   const editing = editId ? profiles.find((p) => p.id === editId) || null : null
-  const desktop = useDesktopAdmin()
+  const desktop = useDesktopShell()
   const [access, setAccess] = useState<'all' | 'login' | 'authorized' | 'blocked' | 'admin' | 'nodorsal'>('all')
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const tableRows = useMemo(
@@ -780,7 +780,7 @@ const ChildrenTab: React.FC = () => {
   const [draftEmails, setDraftEmails] = useState<Record<string, string>>({})
   const adults = [...profiles].sort((a, b) => a.name.localeCompare(b.name))
   const editing = editId ? youthAthletes.find((c) => c.id === editId) || null : null
-  const desktop = useDesktopAdmin()
+  const desktop = useDesktopShell()
   const [q, setQ] = useState('')
   const [mode, setMode] = useState<'all' | 'noguardian' | 'self' | 'nodorsal'>('all')
   const [picked, setPicked] = useState<Set<string>>(new Set())

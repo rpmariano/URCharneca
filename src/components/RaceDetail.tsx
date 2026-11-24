@@ -41,7 +41,7 @@ import { countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
 import { Sheet } from './Sheet'
 import { ContextualHint } from './OnboardingCards'
-import { useDesktopAdmin } from '../layout/useDesktopAdmin'
+import { useDesktopShell } from '../layout/useDesktopShell'
 import { PersonAvatar } from './PersonAvatar'
 import { Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
 
@@ -125,7 +125,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     deleteRace,
     showToast,
   } = useApp()
-  const desktop = useDesktopAdmin()
+  const desktop = useDesktopShell()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [vehiclesSheetOpen, setVehiclesSheetOpen] = useState(false)
   const [vanAvailDraft, setVanAvailDraft] = useState(race.van_available)
@@ -269,7 +269,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   return (
     <>
     {desktop && bar}
-    {/* Fora do shell desktop: 1 coluna em mobile, 2 colunas a partir de 768 px (layout/responsive.css) */}
+    {/* Telemóvel: 1 coluna (.detail). Computador (>= 1024 px): duas colunas (.desk-detail, layout/desktop.css) */}
     <div className={desktop ? 'desk-detail' : 'detail'}>
       {!desktop && bar}
       <ActivityCover

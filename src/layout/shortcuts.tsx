@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { Sheet } from '../components/Sheet'
-import { SIDEBAR_ITEMS } from './Sidebar'
+import { useSidebarItems } from './Sidebar'
 
 const isTyping = (t: EventTarget | null) => {
   const el = t as HTMLElement | null
@@ -13,6 +13,7 @@ const isTyping = (t: EventTarget | null) => {
 /** Atalhos globais: `/` foca a pesquisa, `g` + letra navega, `?` abre a ajuda. Devolve o estado da ajuda. */
 export const useShortcuts = (enabled: boolean) => {
   const navigate = useNavigate()
+  const items = useSidebarItems()
   const [helpOpen, setHelpOpen] = useState(false)
   const pendingG = useRef<number | null>(null)
 
@@ -27,7 +28,7 @@ export const useShortcuts = (enabled: boolean) => {
       // Com um diálogo aberto (ex.: ficha de atleta) os atalhos ficam parados
       if (document.body.style.overflow === 'hidden') return
       if (pendingG.current) {
-        const hit = SIDEBAR_ITEMS.find((i) => i.key === e.key.toLowerCase())
+        const hit = items.find((i) => i.key === e.key.toLowerCase())
         clearG()
         if (hit) {
           e.preventDefault()
@@ -53,12 +54,14 @@ export const useShortcuts = (enabled: boolean) => {
       window.removeEventListener('keydown', onKey)
       clearG()
     }
-  }, [enabled, navigate])
+  }, [enabled, navigate, items])
 
   return { helpOpen, setHelpOpen }
 }
 
-export const ShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+export const ShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const items = useSidebarItems()
+  return (
   <Sheet onClose={onClose} variant="center" ariaLabel="Atalhos de teclado">
     <div className="p-6 space-y-4 min-w-[320px]">
       <div className="flex items-center justify-between gap-4">
@@ -72,7 +75,7 @@ export const ShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <kbd className="desk-kbd">/</kbd>
         </dt>
         <dd>Focar a pesquisa da página</dd>
-        {SIDEBAR_ITEMS.map((i) => (
+        {items.map((i) => (
           <React.Fragment key={i.to}>
             <dt>
               <kbd className="desk-kbd">g</kbd> <span className="text-[var(--text-3)]">depois</span> <kbd className="desk-kbd">{i.key}</kbd>
@@ -91,4 +94,5 @@ export const ShortcutsHelp: React.FC<{ onClose: () => void }> = ({ onClose }) =>
       </dl>
     </div>
   </Sheet>
-)
+  )
+}

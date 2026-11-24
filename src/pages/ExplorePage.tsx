@@ -20,7 +20,7 @@ import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
-import { useDesktopAdmin } from '../layout/useDesktopAdmin'
+import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
@@ -96,7 +96,7 @@ const parseCategory = (param: string | null): Category => {
   return (KINDS as string[]).includes(param || '') ? (param as ActivityKind) : 'all'
 }
 
-/** Grelha de cartões (container query): 1 coluna em mobile, 2 em tablet (>= 520 px úteis), 3 em desktop (>= 740 px úteis). */
+/** Grelha de cartões (container query): 1 coluna na coluna de telemóvel (480 px), 2 em >= 520 px úteis e 3 em >= 740 px úteis (só se atingem no computador). */
 const CARD_GRID = 'grid grid-cols-1 gap-8 @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6 @min-[740px]:grid-cols-3'
 
 const kindsOf = (c: Category): ActivityKind[] => (c === 'all' ? KINDS : c === 'provas' ? RACE_KINDS : [c])
@@ -126,11 +126,12 @@ export const ExplorePage: React.FC = () => {
   const today = todayISO()
 
   const category = parseCategory(params.get('tipo'))
-  const desktopAdmin = useDesktopAdmin() // no desktop, as categorias estão na barra lateral
-  // Ecrã largo: calendário sempre visível numa coluna lateral fixa (com a barra lateral do admin só a partir de 1440 px)
-  const sideCalendar = useMediaQuery(desktopAdmin ? BP['2xl'] : BP.xl)
-  // Tablet/desktop: o calendário abre com um botão na barra de pesquisa (o botão flutuante é só para mobile)
-  const notMobile = useMediaQuery(BP.sm)
+  const desktop = useDesktopShell() // no computador, as categorias estão na barra lateral
+  // Computador largo (>= 1280 px, já com a barra lateral): calendário sempre visível numa coluna lateral fixa
+  const wideDesktop = useMediaQuery(BP.xl)
+  const sideCalendar = desktop && wideDesktop
+  // Computador estreito (1024-1279 px): o calendário abre com um botão na barra de pesquisa.
+  // Telemóvel (e tablet, que é igual): botão flutuante.
   const isRaceCategory = category === 'provas' || RACE_KINDS.includes(category as ActivityKind)
   const setCategory = (next: Category) => {
     const p = new URLSearchParams(params)
@@ -372,7 +373,7 @@ export const ExplorePage: React.FC = () => {
               <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--run)] border-2 border-[var(--bg-app)]" aria-hidden="true" />
             )}
           </button>
-          {notMobile && !sideCalendar && (
+          {desktop && !sideCalendar && (
             <button
               type="button"
               aria-expanded={calendarOpen}
@@ -393,7 +394,7 @@ export const ExplorePage: React.FC = () => {
             </IconButton>
           )}
         </div>
-        {!desktopAdmin && (
+        {!desktop && (
         <CategoryTabs
           value={isRaceCategory ? 'provas' : category}
           options={CATEGORIES}
@@ -401,7 +402,7 @@ export const ExplorePage: React.FC = () => {
           label="Tipo de atividade"
         />
         )}
-        {isRaceCategory && !desktopAdmin && (
+        {isRaceCategory && !desktop && (
           <div className="scroll-row gap-2 px-5 pb-3" role="group" aria-label="Tipo de prova">
             {RACE_SUBMENU.map((o) => {
               const on = category === o.value
@@ -431,7 +432,7 @@ export const ExplorePage: React.FC = () => {
       </p>
 
       <div className={`px-5 ${sideCalendar ? 'grid grid-cols-[minmax(0,1fr)_300px] gap-8 items-start' : ''}`}>
-        {/* Calendário: por cima da lista (mobile: botão flutuante; tablet: botão na barra) ou coluna lateral fixa em ecrã largo */}
+        {/* Calendário: por cima da lista (telemóvel: botão flutuante; computador estreito: botão na barra) ou coluna lateral fixa em computador largo */}
         {calendarShown && (
           <div className={sideCalendar ? 'col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6' : undefined}>
           <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
@@ -657,6 +658,11 @@ export const ExplorePage: React.FC = () => {
                   <X className="w-4 h-4" aria-hidden="true" /> Limpar dia
                 </Button>
               )}
+              {!selectedDay && !isAdminView && category === 'individual' && (
+                <Button variant="secondary" size="sm" className="shrink-0" onClick={() => openCreateRace()}>
+                  <Plus className="w-4 h-4" aria-hidden="true" /> Sugerir prova
+                </Button>
+              )}
             </div>
 
             {category === 'trofeu_cascais' && trofeuBanner}
@@ -694,8 +700,8 @@ export const ExplorePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Botão flutuante do calendário (expandir / colapsar): só em mobile */}
-      {!notMobile && (
+      {/* Botão flutuante do calendário (expandir / colapsar): só em telemóvel */}
+      {!desktop && (
       <div className="fixed left-1/2 -translate-x-1/2 z-20 bottom-[calc(76px+env(safe-area-inset-bottom,0px))]">
         <button
           type="button"

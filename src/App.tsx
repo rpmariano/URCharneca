@@ -5,7 +5,7 @@ import { AppProvider, useApp } from './context/AppContext'
 import { BottomNav } from './components/BottomNav'
 import { Sidebar } from './layout/Sidebar'
 import { ShortcutsHelp, useShortcuts } from './layout/shortcuts'
-import { useDesktopAdmin, useDesktopAdminClass } from './layout/useDesktopAdmin'
+import { useDesktopShell, useDesktopShellClass } from './layout/useDesktopShell'
 import { ExplorePage } from './pages/ExplorePage'
 import { LoginPage } from './pages/LoginPage'
 import { OPEN_EDITOR_EVENT, type EditorRequest } from './utils/appEvents'
@@ -77,9 +77,9 @@ const AppShell: React.FC = () => {
   const { pathname } = useLocation()
   // As páginas de detalhe têm a sua própria barra de ação fixa em vez da navegação
   const isDetail = pathname.startsWith('/prova/') || pathname.startsWith('/evento/')
-  // Shell desktop: só para administradores em ecrãs >= 1024 px
-  const desktop = useDesktopAdmin()
-  useDesktopAdminClass(desktop)
+  // Shell de computador (barra lateral): todos os utilizadores autenticados em ecrãs >= 1024 px
+  const desktop = useDesktopShell()
+  useDesktopShellClass(desktop)
   const { helpOpen, setHelpOpen } = useShortcuts(desktop)
 
   if (authLoading) {
