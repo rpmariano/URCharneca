@@ -22,6 +22,8 @@ export type BibStatus = 'pending' | 'at_club' | 'delivered'
 export interface YouthAthlete {
   id: string
   name: string
+  /** Foto (data URL JPEG ~256 px, comprimida no cliente). '' = removida; undefined = sem foto / não alterada */
+  photo_url?: string
   gender?: 'M' | 'F'
   birth_date: string
   escalao: string
@@ -67,6 +69,8 @@ export type DependentAthlete = YouthAthlete
 export interface AthleteProfile {
   id: string
   name: string
+  /** Foto (data URL JPEG ~256 px, comprimida no cliente). '' = removida; undefined = sem foto / não alterada */
+  photo_url?: string
   nickname: string
   email: string
   phone: string

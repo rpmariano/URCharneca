@@ -62,6 +62,8 @@ const toProfileRow = (p: AthleteProfile) => ({
   blood_type: p.blood_type ?? null,
   medical_notes: p.medical_notes ?? null,
   has_official_kit: p.has_official_kit ?? true,
+  // Só enviado quando definido: não parte as gravações antes de a migração 20261126 ser aplicada
+  ...(p.photo_url !== undefined ? { photo_url: p.photo_url || null } : {}),
   updated_at: new Date().toISOString(),
 })
 
@@ -69,6 +71,7 @@ const fromProfileRow = (row: Record<string, unknown>): AthleteProfile => ({
   id: String(row.id),
   auth_user_id: row.auth_user_id ? String(row.auth_user_id) : undefined,
   name: String(row.name ?? ''),
+  photo_url: row.photo_url ? String(row.photo_url) : undefined,
   nickname: String(row.nickname ?? ''),
   email: String(row.email ?? ''),
   phone: String(row.phone ?? ''),
@@ -133,6 +136,8 @@ const toYouthRow = (y: YouthAthlete) => ({
   login_provider: y.login_provider ?? null,
   login_activated_at: y.login_activated_at ?? null,
   associated_adult_ids: (y.associated_adult_ids ?? []).slice(0, 2),
+  // Só enviado quando definido: não parte as gravações antes de a migração 20261126 ser aplicada
+  ...(y.photo_url !== undefined ? { photo_url: y.photo_url || null } : {}),
   updated_at: new Date().toISOString(),
 })
 
@@ -140,6 +145,7 @@ const fromYouthRow = (row: Record<string, unknown>): YouthAthlete => ({
   id: String(row.id),
   auth_user_id: row.auth_user_id ? String(row.auth_user_id) : undefined,
   name: String(row.name ?? ''),
+  photo_url: row.photo_url ? String(row.photo_url) : undefined,
   gender: row.gender === 'M' || row.gender === 'F' ? row.gender : undefined,
   birth_date: String(row.birth_date ?? ''),
   escalao: String(row.escalao ?? 'Benjamins A (Sub-10)'),

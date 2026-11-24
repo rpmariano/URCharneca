@@ -4,6 +4,7 @@
  * Estilo "explorar": um só tipo de letra, cantos arredondados, muito espaço em branco.
  */
 import React from 'react'
+import { DefaultAvatar, avatarKind } from './DefaultAvatar'
 import {
   BookOpen,
   CalendarHeart,
@@ -358,28 +359,33 @@ export const DateBlock: React.FC<{ date: string; color?: string }> = ({ date, co
   )
 }
 
-/** Avatar circular com iniciais; `child` usa o tom dourado dos perfis infantis. */
-export const Avatar: React.FC<{ name: string; child?: boolean; size?: number }> = ({ name, child, size = 40 }) => (
-  <div
-    className="rounded-full flex items-center justify-center t-strong shrink-0"
-    style={{
-      width: size,
-      height: size,
-      fontSize: Math.max(12, size * 0.36),
-      background: child ? 'var(--tint-yellow-bg-strong)' : 'var(--brand-blue)',
-      color: child ? 'var(--tint-yellow-fg)' : '#ffffff',
-      boxShadow: child ? undefined : 'inset 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent)',
-    }}
-    aria-hidden="true"
-  >
-    {name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((n) => n[0]?.toUpperCase())
-      .join('')}
-  </div>
-)
+/**
+ * Avatar circular. Com `photo` mostra a foto; sem foto a figura por defeito (azul M / cor-de-rosa F, adulto ou
+ * criança; sem género, figura neutra).
+ * Decorativo: o nome fica sempre no texto ao lado (alt vazio / aria-hidden).
+ */
+export const Avatar: React.FC<{
+  name: string
+  child?: boolean
+  size?: number
+  photo?: string
+  gender?: 'M' | 'F'
+}> = ({ child, size = 40, photo, gender }) => {
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt=""
+        width={size}
+        height={size}
+        draggable={false}
+        className="rounded-full object-cover shrink-0 block"
+        style={{ width: size, height: size, boxShadow: 'inset 0 0 0 1px var(--border-card)' }}
+      />
+    )
+  }
+  return <DefaultAvatar kind={avatarKind(gender, child)} size={size} />
+}
 
 // ---------------------------------------------------------------------------
 // Explorar

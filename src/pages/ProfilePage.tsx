@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext'
 import { calculateAge } from '../utils/formatters'
 import { AthleteForm, ChildForm, emptyChild } from '../components/PeopleForms'
 import { Sheet } from '../components/Sheet'
+import { PhotoAvatarButton } from '../components/PhotoAvatarButton'
 import { GLOSSARY, resetOnboarding } from '../utils/onboarding'
 import {
   Avatar,
@@ -85,7 +86,14 @@ export const ProfilePage: React.FC = () => {
 
       {/* Cartão do atleta */}
       <section className="card-raised p-6 flex items-center gap-5">
-        <Avatar name={currentUser.name} child={currentUser.is_minor_account} size={72} />
+        <PhotoAvatarButton
+          name={currentUser.name}
+          value={currentUser.photo_url}
+          gender={currentUser.gender}
+          child={currentUser.is_minor_account}
+          onChange={(photo) => updateProfile({ ...currentUser, photo_url: photo })}
+          onError={(m) => showToast(m, 'warning')}
+        />
         <div className="min-w-0 flex-1 space-y-1.5">
           <h2 className="t-heading text-[var(--text-1)] truncate">{currentUser.name}</h2>
           <p className="t-small text-[var(--text-3)]">
@@ -213,7 +221,7 @@ export const ProfilePage: React.FC = () => {
                   .filter(Boolean)
                 return (
                   <div key={child.id} className="flex items-center gap-4 py-3">
-                    <Avatar name={child.name} child size={48} />
+                    <Avatar name={child.name} child size={48} photo={child.photo_url} gender={child.gender} />
                     <div className="min-w-0 flex-1">
                       <div className="t-body t-strong text-[var(--text-1)] truncate">
                         {child.name}
@@ -396,7 +404,7 @@ export const ProfilePage: React.FC = () => {
                     }}
                     className="w-full min-h-14 py-3 flex items-center gap-4 text-left cursor-pointer"
                   >
-                    <Avatar name={p.name} />
+                    <Avatar name={p.name} photo={p.photo_url} gender={p.gender} />
                     <span className="min-w-0 flex-1">
                       <span className={`block t-body text-[var(--text-1)] truncate ${selected ? 't-strong' : ''}`}>{p.name}</span>
                       <span className="block t-small text-[var(--text-3)] truncate">
@@ -427,7 +435,7 @@ export const ProfilePage: React.FC = () => {
                         }}
                         className="w-full min-h-14 py-3 flex items-center gap-4 text-left cursor-pointer"
                       >
-                        <Avatar name={m.name} child />
+                        <Avatar name={m.name} child photo={m.photo_url} gender={m.gender} />
                         <span className="min-w-0 flex-1">
                           <span className={`block t-body text-[var(--text-1)] truncate ${selected ? 't-strong' : ''}`}>{m.name}</span>
                           <span className="block t-small text-[var(--text-3)] truncate">

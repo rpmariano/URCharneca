@@ -325,7 +325,13 @@ const AthletesTab: React.FC = () => {
   const openAthlete = openId ? profiles.find((p) => p.id === openId) || null : null
   const kidCount = (p: AthleteProfile) => youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id)).length
   const athleteColumns: Column<AthleteProfile>[] = [
-    { id: 'name', header: 'Nome', sortValue: (p) => p.name, render: (p) => p.name },
+    { id: 'name', header: 'Nome', sortValue: (p) => p.name, render: (p) => (
+        <span className="flex items-center gap-3">
+          <Avatar name={p.name} photo={p.photo_url} gender={p.gender} size={32} />
+          {p.name}
+        </span>
+      ),
+    },
     { id: 'escalao', header: 'Escalão', sortValue: (p) => p.escalao, render: (p) => p.escalao },
     { id: 'age', header: 'Idade', sortValue: (p) => calculateAge(p.birth_date), render: (p) => <span className="t-num">{calculateAge(p.birth_date)}</span> },
     {
@@ -625,7 +631,7 @@ const AthletesTab: React.FC = () => {
                 onClick={() => setOpenId(open ? null : p.id)}
                 aria-expanded={open}
               >
-                <Avatar name={p.name} />
+                <Avatar name={p.name} photo={p.photo_url} gender={p.gender} />
                 <span className="min-w-0 flex-1">
                   <span className="block t-body text-[var(--text-1)] truncate">{p.name}</span>
                   <span className="block t-small text-[var(--text-3)] truncate">
@@ -786,7 +792,13 @@ const ChildrenTab: React.FC = () => {
   }, [youthAthletes, profiles, q, mode])
   const openChild = openId ? youthAthletes.find((c) => c.id === openId) || null : null
   const childColumns: Column<YouthAthlete>[] = [
-    { id: 'name', header: 'Nome', sortValue: (c) => c.name, render: (c) => c.name },
+    { id: 'name', header: 'Nome', sortValue: (c) => c.name, render: (c) => (
+        <span className="flex items-center gap-3">
+          <Avatar name={c.name} child photo={c.photo_url} gender={c.gender} size={32} />
+          {c.name}
+        </span>
+      ),
+    },
     { id: 'escalao', header: 'Escalão', sortValue: (c) => c.escalao, render: (c) => c.escalao },
     { id: 'age', header: 'Idade', sortValue: (c) => calculateAge(c.birth_date), render: (c) => <span className="t-num">{calculateAge(c.birth_date)}</span> },
     {
@@ -1069,7 +1081,7 @@ const ChildrenTab: React.FC = () => {
                 onClick={() => setOpenId(open ? null : c.id)}
                 aria-expanded={open}
               >
-                <Avatar name={c.name} child />
+                <Avatar name={c.name} child photo={c.photo_url} gender={c.gender} />
                 <span className="min-w-0 flex-1">
                   <span className="block t-body text-[var(--text-1)] truncate">{c.name}</span>
                   <span className="block t-small text-[var(--text-3)] truncate">

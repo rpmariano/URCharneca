@@ -10,7 +10,8 @@ import { ActivityCover } from './ActivityCover'
 import { DetailBar } from './AppHeader'
 import { RsvpButtons, countdownLabel } from './ActivityItems'
 import { FactRow, shareLink } from './RaceDetail'
-import { Avatar, Button, KindBadge, SectionTitle, Tag, kindOfEvent } from './ui'
+import { PersonAvatar } from './PersonAvatar'
+import { Button, KindBadge, SectionTitle, Tag, kindOfEvent } from './ui'
 
 /**
  * Detalhe de um treino/evento/reunião em página inteira: capa, data, local, plano de treino,
@@ -69,7 +70,7 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
             <div className="divide-soft">
               {going.map((a) => (
                 <div key={a.athlete_id} className="flex items-center gap-4 py-2.5">
-                  <Avatar name={a.athlete_name} />
+                  <PersonAvatar id={a.athlete_id} name={a.athlete_name} />
                   <span className="t-body text-[var(--text-1)] truncate">{a.athlete_name}</span>
                 </div>
               ))}

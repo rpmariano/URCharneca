@@ -50,6 +50,17 @@
   --gold-ink: #7a5806; /* dourado legível como texto sobre branco */
   --on-gold: #101c36;
 
+  /* Avatares por defeito: azul (M), cor-de-rosa (F), neutro (sem género). Figura >= 3:1 sobre o fundo */
+  --avatar-m-bg: #d6e6fa;
+  --avatar-m-fg: #1f6fd0;
+  --avatar-m-hair: #0d3f80;
+  --avatar-f-bg: #fbdce9;
+  --avatar-f-fg: #d6407f;
+  --avatar-f-hair: #8c1f50;
+  --avatar-n-bg: #e3e8f0;
+  --avatar-n-fg: #7686a0;
+  --avatar-n-hair: #7686a0;
+
   /* Cores do emblema: azul, dourado, vermelho (lira), verde (mar e serra), amarelo (sol), castanho (bola) */
   --brand-blue: #004c94;
   --brand-red: #c8281a;
@@ -183,6 +194,17 @@
   --tint-emerald-bg-strong: rgba(52, 211, 153, 0.22);
   --tint-emerald-border: rgba(52, 211, 153, 0.36);
   --tint-emerald-fg: #a7f3d0;
+
+  /* Avatares por defeito (escuro) */
+  --avatar-m-bg: #16315c;
+  --avatar-m-fg: #6fb0f7;
+  --avatar-m-hair: #b9d8fb;
+  --avatar-f-bg: #4a1c36;
+  --avatar-f-fg: #f27fb0;
+  --avatar-f-hair: #fbc1d9;
+  --avatar-n-bg: #1d2e4d;
+  --avatar-n-fg: #8fa3c4;
+  --avatar-n-hair: #8fa3c4;
 
   --tint-rose-bg: rgba(248, 113, 113, 0.14);
   --tint-rose-bg-strong: rgba(248, 113, 113, 0.22);

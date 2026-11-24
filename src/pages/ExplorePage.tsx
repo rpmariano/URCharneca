@@ -25,8 +25,8 @@ import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityIte
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { CATEGORIA_LABELS, EVENT_TYPE_LABELS } from '../types'
 import { Sheet } from '../components/Sheet'
+import { PersonAvatar } from '../components/PersonAvatar'
 import {
-  Avatar,
   Button,
   CategoryTabs,
   EmptyState,
@@ -564,7 +564,7 @@ export const ExplorePage: React.FC = () => {
                 <div className="divide-soft">
                   {birthdays.map((b) => (
                     <div key={b.id} className="flex items-center gap-4 py-3">
-                      <Avatar name={b.name} child={b.isChild} />
+                      <PersonAvatar id={b.id} name={b.name} child={b.isChild} />
                       <div className="min-w-0 flex-1">
                         <div className="t-body text-[var(--text-1)] truncate">{b.name}</div>
                         <div className="t-small text-[var(--text-3)]">

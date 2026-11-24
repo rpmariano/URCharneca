@@ -305,6 +305,7 @@ const withDependents = (profiles: AthleteProfile[], youth: YouthAthlete[]): Athl
 const youthToAthleteProfile = (y: YouthAthlete): AthleteProfile => ({
   id: y.id,
   name: y.name,
+  photo_url: y.photo_url,
   nickname: y.name.split(' ')[0] || y.name,
   email: y.email || '',
   phone: y.phone || '',
@@ -935,6 +936,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: updated.email,
         phone: updated.phone,
         medical_notes: updated.medical_notes,
+        photo_url: updated.photo_url,
         dorsal_trofeu: updated.dorsal_trofeu,
         needs_admin_review: updated.dorsal_trofeu ? false : minorOrig.needs_admin_review,
       }
