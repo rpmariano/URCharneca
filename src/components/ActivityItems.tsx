@@ -47,11 +47,13 @@ const ActivityCard: React.FC<{
   meta?: React.ReactNode
   status?: React.ReactNode
   extraBadge?: React.ReactNode
+  /** Selo pequeno no canto superior direito da capa; não se sobrepõe às etiquetas da esquerda. */
+  cornerBadge?: React.ReactNode
   dimmed?: boolean
   onOpen?: () => void
   footer?: React.ReactNode
   ariaLabel: string
-}> = ({ variant, kind, kindLabel, seed, imageUrl, title, when, where, meta, status, extraBadge, dimmed, onOpen, footer, ariaLabel }) => {
+}> = ({ variant, kind, kindLabel, seed, imageUrl, title, when, where, meta, status, extraBadge, cornerBadge, dimmed, onOpen, footer, ariaLabel }) => {
   if (variant === 'row') {
     return (
       <div className={dimmed ? 'opacity-60' : ''}>
@@ -84,9 +86,12 @@ const ActivityCard: React.FC<{
           imageUrl={imageUrl}
           className={`w-full rounded-2xl ${wide ? 'aspect-[4/3]' : 'aspect-[16/10]'} @min-[520px]:aspect-[16/9]`}
         >
-          <span className="absolute top-3 left-3 flex flex-wrap gap-1.5 pr-3">
-            <KindBadge kind={kind} label={kindLabel} solid />
-            {extraBadge}
+          <span className="absolute top-3 inset-x-3 flex items-start gap-1.5">
+            <span className="flex-1 min-w-0 flex flex-wrap gap-1.5">
+              <KindBadge kind={kind} label={kindLabel} solid />
+              {extraBadge}
+            </span>
+            {cornerBadge && <span className="shrink-0">{cornerBadge}</span>}
           </span>
           {status && <span className="absolute bottom-3 left-3">{status}</span>}
         </ActivityCover>
@@ -169,8 +174,8 @@ export const RaceListItem: React.FC<{ race: Race; onOpen: () => void; compact?: 
   )
 }
 
-/** Cartão de prova para carrossel horizontal (Destaques). Requer AppProvider. */
-export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, onOpen }) => {
+/** Cartão de prova para carrossel horizontal (Destaques). `isNew` junta o selo "Nova" no canto. Requer AppProvider. */
+export const RaceCard: React.FC<{ race: Race; onOpen?: () => void; isNew?: boolean }> = ({ race, onOpen, isNew }) => {
   const d = useRaceCardData(race)
   return (
     <ActivityCard
@@ -182,6 +187,12 @@ export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, 
       where={race.location}
       onOpen={onOpen}
       {...d}
+      ariaLabel={isNew ? `Nova: ${d.ariaLabel}` : d.ariaLabel}
+      cornerBadge={
+        isNew ? (
+          <span className="block px-2.5 py-1 rounded-full bg-[#b91c1c] text-white t-small t-strong shadow-[var(--shadow-card)]">Nova</span>
+        ) : undefined
+      }
     />
   )
 }

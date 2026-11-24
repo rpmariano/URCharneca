@@ -577,11 +577,8 @@ export const ExplorePage: React.FC = () => {
                   aria-label="Provas com inscrições abertas"
                 >
                   {openRaces.slice(0, 6).map((r) => (
-                    <div key={r.id} role="listitem" className="relative shrink-0 w-[78%] max-w-[320px] @min-[520px]:w-full @min-[520px]:max-w-none [&>*]:w-full! [&>*]:max-w-none!">
-                      {freshRaces.some((f) => f.id === r.id) && (
-                        <span className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-[#b91c1c] text-white t-small t-strong shadow-[var(--shadow-card)]">Nova</span>
-                      )}
-                      <RaceCard race={r} onOpen={() => openRace(r.id)} />
+                    <div key={r.id} role="listitem" className="shrink-0 w-[78%] max-w-[320px] @min-[520px]:w-full @min-[520px]:max-w-none [&>*]:w-full! [&>*]:max-w-none!">
+                      <RaceCard race={r} isNew={freshRaces.some((f) => f.id === r.id)} onOpen={() => openRace(r.id)} />
                     </div>
                   ))}
                 </div>
