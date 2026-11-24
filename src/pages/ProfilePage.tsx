@@ -89,7 +89,7 @@ export const ProfilePage: React.FC = () => {
       <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-10 lg:items-start lg:max-w-[var(--wide-max)]">
       <div className="space-y-8 min-w-0">
       {/* Cartão do atleta */}
-      <section className="block-blue on-blue -mx-5 lg:mx-0 px-5 py-5 flex items-center gap-4 flex-wrap">
+      <section className="block-blue on-blue -mx-5 -mt-8 lg:mx-0 lg:mt-0 px-5 py-5 flex items-center gap-4 flex-wrap">
         <PhotoAvatarButton
           name={currentUser.name}
           value={currentUser.photo_url}
@@ -400,7 +400,7 @@ export const ProfilePage: React.FC = () => {
             onClose={close}
           />
           <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4">
-            <div className="rule-list">
+            <div className="divide-soft">
               {profiles.filter((p) => p.login_authorized || p.role === 'admin').map((p) => {
                 const selected = p.id === currentUser.id
                 return (

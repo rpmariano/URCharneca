@@ -570,7 +570,7 @@ export const ExplorePage: React.FC = () => {
           {isRaceCategory && !desktop && (
             <div className="joined" role="group" aria-label="Tipo de prova">
               {RACE_SUBMENU.map((o) => (
-                <button key={o.value} type="button" aria-pressed={category === o.value} onClick={() => setCategory(o.value)} className={`${joinedBtn(category === o.value)} !h-10`}>
+                <button key={o.value} type="button" aria-pressed={category === o.value} onClick={() => setCategory(o.value)} className={joinedBtn(category === o.value)}>
                   {o.label}
                 </button>
               ))}

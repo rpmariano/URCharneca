@@ -27,7 +27,8 @@ export const BottomNav: React.FC = () => {
       aria-label="Navegação principal"
       className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-30 grid border-t-[3px] border-[var(--rule-strong)]"
       style={{
-        gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        // As colunas acompanham o texto ("Comunicados" é mais largo) e repartem o espaço que sobra
+        gridTemplateColumns: `repeat(${items.length}, auto)`,
         background: 'var(--bg-nav)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
@@ -40,7 +41,7 @@ export const BottomNav: React.FC = () => {
           style={{ outlineOffset: -4 }}
           className={({ isActive }) =>
             `on-nav relative h-[60px] flex items-end justify-center px-1 pb-[15px] font-display font-extrabold leading-none whitespace-nowrap transition-colors ${
-              many ? 'text-[15px] [font-stretch:62%]' : 'text-[17px] [font-stretch:75%]'
+              many ? 'text-[15px] [font-stretch:62%]' : 'text-[16px] [font-stretch:70%]'
             } ${isActive ? 'bg-[var(--run)] text-[var(--on-accent)] [--focus:#ffffff]' : 'text-[var(--text-1)] hover:bg-[var(--surface-raised)]'}`
           }
         >

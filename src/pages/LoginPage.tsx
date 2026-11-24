@@ -96,7 +96,7 @@ export const LoginPage: React.FC = () => {
               <Button type="button" variant="secondary" block disabled={submitting} onClick={() => void run(loginWithGoogle)}>
                 <GoogleIcon /> Continuar com Google
               </Button>
-              <p className="rule-top pt-4 t-small t-strong text-[var(--text-1)]">Ou com email e palavra-passe</p>
+              <p className="rule-top pt-4 !-mb-1 t-body t-strong text-[var(--text-1)]">Ou com email e palavra-passe</p>
             </>
           )}
 
@@ -173,7 +173,9 @@ export const LoginPage: React.FC = () => {
           </form>
 
           {!recoveryMode && (
-            <div className="rule-top pt-2 flex flex-wrap gap-x-2 gap-y-1 -ml-4">
+            <div className="rule-top pt-2">
+            <div className="flex flex-wrap gap-x-2 gap-y-1 -ml-4">
+
               {mode !== 'signin' && (
                 <Button type="button" variant="ghost" size="sm" onClick={() => { setMode('signin'); setConfirm(''); setMessage(null) }}>
                   Já tenho conta
@@ -189,6 +191,7 @@ export const LoginPage: React.FC = () => {
                   Esqueci a palavra-passe
                 </Button>
               )}
+            </div>
             </div>
           )}
         </div>
