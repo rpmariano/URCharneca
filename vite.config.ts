@@ -21,15 +21,33 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         cleanupOutdatedCaches: true,
-        importScripts: ['push-sw.js']
+        importScripts: ['push-sw.js'],
+        // Tipos de letra (Google Fonts): guardados na primeira visita para a app manter o aspeto sem rede.
+        // Sem eles, o CSS usa as alternativas de sistema (ver --font-sans / --font-display em src/index.css).
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-css', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-files',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       manifest: {
         id: base,
         name: 'U.R. Charneca Atletismo',
         short_name: 'URC Atletismo',
-        description: 'App Oficial da Equipa de Atletismo da União Recreativa da Charneca (Armada Azul) — Troféu de Cascais, Provas, Transporte, Dorsais e Treinos',
-        theme_color: '#0a5fc0',
-        background_color: '#f5f8ff',
+        description: 'App Oficial da Equipa de Atletismo da União Recreativa da Charneca (Armada Azul): Troféu de Cascais, provas, transporte, dorsais e treinos',
+        theme_color: '#004c94',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         start_url: base,
