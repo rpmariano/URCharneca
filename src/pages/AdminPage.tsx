@@ -76,6 +76,7 @@ export const AdminPage: React.FC = () => {
       />
       <div className={desktop ? 'max-w-[640px]' : undefined}>
       <Segmented<Tab>
+        label="Secção de gestão"
         value={tab}
         onChange={setTab}
         options={[
@@ -482,6 +483,7 @@ const AthletesTab: React.FC = () => {
                       </p>
                     ) : (
                       <Segmented<'blocked' | 'authorized'>
+                        label={`Login de ${p.name}`}
                         value={p.login_authorized ? 'authorized' : 'blocked'}
                         onChange={(mode) => {
                           const emailVal = (draftEmails[p.id] ?? p.login_email ?? p.email ?? '').trim()
@@ -915,6 +917,7 @@ const ChildrenTab: React.FC = () => {
                       </div>
                     </Field>
                     <Segmented<'adults' | 'self'>
+                      label={`Modo de acesso de ${c.name}`}
                       value={c.can_self_manage ? 'self' : 'adults'}
                       onChange={(mode) => {
                         const emailVal = (draftEmails[c.id] ?? c.login_email ?? c.email ?? '').trim()
@@ -1387,6 +1390,7 @@ const AgendaTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <Segmented
+        label="Quando"
         value={when}
         onChange={setWhen}
         options={[

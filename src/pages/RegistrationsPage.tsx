@@ -207,6 +207,7 @@ export const RegistrationsPage: React.FC = () => {
       ) : (
         <>
           <Segmented
+            label="Quando"
             value={tab}
             onChange={setTab}
             options={[

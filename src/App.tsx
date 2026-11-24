@@ -22,8 +22,9 @@ const CreateEventModal = lazy(() => import('./components/CreateEventModal').then
 const CreateNoticeModal = lazy(() => import('./components/CreateNoticeModal').then((m) => ({ default: m.CreateNoticeModal })))
 
 const PageFallback: React.FC = () => (
-  <div className="py-20 flex justify-center">
-    <div className="w-7 h-7 rounded-full border-2 border-[var(--run)] border-t-transparent animate-spin" aria-label="A carregar" />
+  <div className="py-20 flex justify-center" role="status">
+    <div className="w-7 h-7 rounded-full border-2 border-[var(--run)] border-t-transparent animate-spin" aria-hidden="true" />
+    <span className="sr-only">A carregar…</span>
   </div>
 )
 

@@ -3,7 +3,7 @@
  * (index.css), para que os temas fiquem coerentes em todos os ecrãs.
  * Estilo "explorar": um só tipo de letra, cantos arredondados, muito espaço em branco.
  */
-import React from 'react'
+import React, { useId } from 'react'
 import { DefaultAvatar, avatarKind } from './DefaultAvatar'
 import {
   BookOpen,
@@ -522,19 +522,40 @@ export const StickyActionBar: React.FC<{ children: React.ReactNode; summary?: Re
 export const inputClass =
   'w-full rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3.5 py-2.5 min-h-12 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]'
 
-/** Rótulo de formulário que envolve um input; usar com a classe `inputClass`. */
+/**
+ * Rótulo de formulário que envolve um input; usar com a classe `inputClass`. A dica fica fora do rótulo
+ * (ligada por `aria-describedby`), para não entrar no nome do campo. Com um `Segmented` o rótulo dá nome ao
+ * grupo, sem `<label>` (tocar no texto carregava no primeiro botão).
+ */
 export const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode; className?: string }> = ({
   label,
   hint,
   children,
   className = '',
-}) => (
-  <label className={`block ${className}`}>
-    <span className="block t-small t-strong text-[var(--text-1)] mb-1.5">{label}</span>
-    {children}
-    {hint && <span className="block t-small text-[var(--text-3)] mt-1">{hint}</span>}
-  </label>
-)
+}) => {
+  const id = useId()
+  const labelId = `${id}label`
+  const hintId = hint ? `${id}hint` : undefined
+  const isGroup = React.Children.toArray(children).some((c) => React.isValidElement(c) && c.type === Segmented)
+  const controls = React.Children.map(children, (c) => {
+    if (!React.isValidElement<React.AriaAttributes>(c)) return c
+    if (c.type === Segmented) return React.cloneElement(c, { 'aria-labelledby': labelId, 'aria-describedby': hintId })
+    if (hintId && (c.type === 'input' || c.type === 'select' || c.type === 'textarea')) {
+      return React.cloneElement(c, { 'aria-describedby': hintId })
+    }
+    return c
+  })
+  const Wrapper = isGroup ? 'div' : 'label'
+  return (
+    <div className={`block ${className}`}>
+      <Wrapper className="block">
+        <span id={labelId} className="block t-small t-strong text-[var(--text-1)] mb-1.5">{label}</span>
+        {controls}
+      </Wrapper>
+      {hint && <span id={hintId} className="block t-small text-[var(--text-3)] mt-1">{hint}</span>}
+    </div>
+  )
+}
 
 /** Interruptor com rótulo e descrição. */
 export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }> = ({
@@ -598,17 +619,25 @@ export const SheetHeader: React.FC<{ title: string; subtitle?: string; onClose: 
   </div>
 )
 
-/** Seletor segmentado (2 a 4 opções). */
+/** Seletor segmentado (2 a 4 opções). Dar-lhe nome com `label` ou pô-lo dentro de um `Field`. */
 export const Segmented = <T extends string>({
   value,
   options,
   onChange,
+  label,
+  ...aria
 }: {
   value: T
   options: Array<{ value: T; label: React.ReactNode }>
   onChange: (v: T) => void
+  label?: string
+  'aria-labelledby'?: string
+  'aria-describedby'?: string
 }) => (
   <div
+    role="group"
+    aria-label={label}
+    {...aria}
     className="grid gap-1 p-1 rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)]"
     style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
   >

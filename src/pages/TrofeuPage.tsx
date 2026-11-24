@@ -177,6 +177,7 @@ export const TrofeuPage: React.FC = () => {
       </section>
 
       <Segmented<TrofeuTab>
+        label="Secção do Troféu"
         value={tab}
         onChange={setTab}
         options={[

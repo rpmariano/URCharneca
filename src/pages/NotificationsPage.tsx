@@ -70,6 +70,7 @@ export const NotificationsPage: React.FC = () => {
   const content = (
     <>
       <Segmented
+        label="Filtrar comunicados"
         value={filter}
         onChange={setFilter}
         options={[

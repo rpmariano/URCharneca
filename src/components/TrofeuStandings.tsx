@@ -418,6 +418,7 @@ export const AthleteStandingsView: React.FC<{
         {mineCount > 0 && (
           <div className="lg:w-72">
             <Segmented<'mine' | 'all'>
+              label="Atletas a mostrar"
               value={mineOnly ? 'mine' : 'all'}
               onChange={setMineChoice}
               options={[
