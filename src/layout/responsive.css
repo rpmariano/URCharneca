@@ -1,0 +1,118 @@
+﻿/* =========================================================================
+   Layout responsivo (todos os utilizadores). Breakpoints iguais aos do Tailwind
+   (index.css): mobile < 640, tablet 640-1023, desktop >= 1024, wide >= 1440.
+
+   - Mobile: coluna de 480 px (como sempre).
+   - Tablet: a app ocupa a largura do ecrã; continua com navegação inferior.
+   - Desktop/wide (atleta, ou admin sem a vista de gestão): coluna larga centrada
+     (1120 / 1280 px) com navegação inferior; não é o shell desktop.
+   - O shell desktop com barra lateral (só admin) está em desktop.css.
+   As regras ficam em @layer components para que os utilitários do Tailwind as possam afinar.
+   ========================================================================= */
+:root {
+  --app-max: 480px;      /* largura da coluna da app (#root, barras fixas) */
+  --read-max: 720px;     /* largura confortável de leitura (listas, perfil) */
+  --wide-max: 1120px;    /* páginas em duas colunas */
+  --app-header-h: 64px;  /* altura do cabeçalho fixo (atualizada pelo AppHeader) */
+}
+@media (min-width: 640px) {
+  :root { --app-max: 100%; }
+}
+@media (min-width: 1024px) {
+  :root { --app-max: 1120px; }
+}
+@media (min-width: 1440px) {
+  :root { --app-max: 1280px; }
+}
+
+@layer components {
+  /* Barras fixas no fundo (ação de detalhe, presença): mesma largura da coluna da app */
+  .fixed-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--app-max);
+    z-index: 30;
+  }
+
+  /* Navegação inferior: em ecrãs largos os separadores não se espalham pela largura toda */
+  .bottom-nav {
+    max-width: var(--app-max);
+    padding-inline: max(0px, calc((100% - 600px) / 2));
+  }
+
+  /* Páginas de leitura (Inscrições, Comunicados, Perfil, Troféu): o cabeçalho ocupa a largura
+     toda; o resto do conteúdo fica numa coluna de leitura centrada. */
+  .page-read > :where(:not(.app-header)) {
+    max-width: var(--read-max);
+    margin-inline: auto;
+  }
+  .page-wide > :where(:not(.app-header)) {
+    max-width: var(--wide-max);
+    margin-inline: auto;
+  }
+
+  /* Detalhe de prova/evento (fora do shell desktop) */
+  .detail {
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    padding-bottom: 7rem;
+  }
+  .detail-cover {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+  .detail-body,
+  .fixed-bar-pad {
+    padding-inline: 20px;
+  }
+  .detail-side {
+    border-top: 1px solid var(--border-card);
+  }
+
+  @media (min-width: 640px) {
+    .detail {
+      max-width: none;
+    }
+    /* Capa com altura limitada: não ocupa o ecrã inteiro num tablet */
+    .detail-cover {
+      aspect-ratio: auto;
+      /* também limitada pela altura (telemóvel em paisagem) */
+      height: clamp(160px, min(34vw, 45dvh), 340px);
+    }
+    .detail-body,
+    .fixed-bar-pad {
+      padding-inline: 32px;
+    }
+  }
+
+  /* Duas colunas no detalhe quando cabem (info | quem vai e ações) */
+  @media (min-width: 768px) {
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: 40px;
+      align-items: start;
+    }
+    .detail-side {
+      border-top: 0;
+    }
+  }
+  @media (min-width: 1024px) {
+    .detail-grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      column-gap: 56px;
+    }
+  }
+}
+
+/* Telemóvel em paisagem (pouca altura): o cabeçalho alto (pesquisa + categorias) deixa de ser fixo
+   para não tapar o conteúdo; a navegação inferior continua visível. Fora de @layer para vencer `sticky`. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header-tall {
+    position: relative;
+  }
+}

@@ -165,7 +165,7 @@
   }
 
   /* Barras fixas de detalhe: alinhadas com a área de conteúdo, não com o centro do ecrã */
-  html.desktop-admin [class*="bottom-0"][class*="max-w-[480px]"] {
+  html.desktop-admin .fixed-bar {
     left: 248px;
     right: 0;
     width: auto;
@@ -180,6 +180,11 @@
     left: calc(50% + 124px);
     translate: -50% 0;
     bottom: 88px;
+  }
+
+  /* Detalhe de evento (layout responsivo .detail) com a mesma largura máxima do detalhe de prova */
+  html.desktop-admin .detail {
+    max-width: 1200px;
   }
 
   /* Detalhe de prova/evento em duas colunas */
@@ -270,7 +275,7 @@
   }
   .desk-table td.desk-wrap {
     white-space: normal;
-    min-width: 220px;
+    min-width: 180px;
   }
   .desk-table thead th {
     position: sticky;
@@ -337,5 +342,20 @@
     padding: 40px 12px !important;
     text-align: center !important;
     color: var(--text-3);
+  }
+}
+
+/* Entre 1024 e 1199 px (com a barra lateral sobra pouco espaço): as colunas menos importantes
+   (`col-opt`) escondem-se para a tabela caber sem deslocamento horizontal. */
+@media (min-width: 1024px) and (max-width: 1199.98px) {
+  .desk-table .col-opt {
+    display: none;
+  }
+  .desk-table td.desk-wrap {
+    min-width: 160px;
+  }
+  .desk-table th,
+  .desk-table td {
+    padding-inline: 10px;
   }
 }
