@@ -60,7 +60,11 @@ export const AdminPage: React.FC = () => {
   if (!isAdminView) return <Navigate to="/" replace />
 
   return (
-    <div className={desktop ? 'px-2 pt-0 pb-12 space-y-5' : 'px-5 pb-28 space-y-5'}>
+    // Fora do shell desktop (telemóvel/tablet) o conteúdo fica numa coluna de 960 px no máximo
+    <div
+      className={desktop ? 'px-2 pt-0 pb-12 space-y-5' : 'page-read px-5 pb-28 space-y-5'}
+      style={desktop ? undefined : ({ '--read-max': '960px' } as React.CSSProperties)}
+    >
       <PageHeader
         bleed={desktop ? '-mx-2' : undefined}
         title="Gerir a equipa"
@@ -141,14 +145,16 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatTile value={profiles.length} label="Atletas" tone="blue" onClick={() => onTab('athletes')} />
         <StatTile value={youthAthletes.length} label="Crianças" tone="yellow" onClick={() => onTab('children')} />
         <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" tone="green" onClick={() => onTab('agenda')} />
       </div>
 
+      {/* Em ecrã largo (>= 1280 px) as duas secções do painel ficam lado a lado */}
+      <div className="space-y-8 xl:space-y-0 xl:grid xl:grid-cols-2 xl:gap-8 xl:items-start">
       {/* Troféu de Cascais — Sincronização & Gestão de Dorsais */}
-      <section className="space-y-3">
+      <section className="space-y-3 min-w-0">
         <SectionTitle
           title="Troféu de Cascais · Sincronização"
           action="Abrir Troféu"
@@ -229,7 +235,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
         </div>
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-2 min-w-0">
         <SectionTitle title="Inscrições e dorsais" />
         {work.length === 0 ? (
           <EmptyState icon={ClipboardCheck} title="Tudo em dia" text="Não há inscrições nem dorsais pendentes nas próximas provas." />
@@ -269,6 +275,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
           </div>
         )}
       </section>
+      </div>
     </div>
   )
 }
@@ -333,7 +340,7 @@ const AthletesTab: React.FC = () => {
       ),
     },
     { id: 'escalao', header: 'Escalão', sortValue: (p) => p.escalao, render: (p) => p.escalao },
-    { id: 'age', header: 'Idade', sortValue: (p) => calculateAge(p.birth_date), render: (p) => <span className="t-num">{calculateAge(p.birth_date)}</span> },
+    { id: 'age', header: 'Idade', className: 'col-opt', sortValue: (p) => calculateAge(p.birth_date), render: (p) => <span className="t-num">{calculateAge(p.birth_date)}</span> },
     {
       id: 'dorsal',
       header: 'Dorsal Troféu',
@@ -356,8 +363,8 @@ const AthletesTab: React.FC = () => {
       render: (p) =>
         p.login_email ? <Tag tone="ok">Login ativo</Tag> : p.login_authorized || p.role === 'admin' ? <Tag tone="info">Autorizado</Tag> : <Tag>Sem login</Tag>,
     },
-    { id: 'role', header: 'Perfil', sortValue: (p) => p.role, render: (p) => (p.role === 'admin' ? <Tag tone="warn">Admin</Tag> : 'Atleta') },
-    { id: 'kids', header: 'Crianças', sortValue: kidCount, render: (p) => <span className="t-num">{kidCount(p)}</span> },
+    { id: 'role', header: 'Perfil', className: 'col-opt', sortValue: (p) => p.role, render: (p) => (p.role === 'admin' ? <Tag tone="warn">Admin</Tag> : 'Atleta') },
+    { id: 'kids', header: 'Crianças', className: 'col-opt', sortValue: kidCount, render: (p) => <span className="t-num">{kidCount(p)}</span> },
   ]
 
   const [csvOpen, setCsvOpen] = useState(false)
@@ -800,7 +807,7 @@ const ChildrenTab: React.FC = () => {
       ),
     },
     { id: 'escalao', header: 'Escalão', sortValue: (c) => c.escalao, render: (c) => c.escalao },
-    { id: 'age', header: 'Idade', sortValue: (c) => calculateAge(c.birth_date), render: (c) => <span className="t-num">{calculateAge(c.birth_date)}</span> },
+    { id: 'age', header: 'Idade', className: 'col-opt', sortValue: (c) => calculateAge(c.birth_date), render: (c) => <span className="t-num">{calculateAge(c.birth_date)}</span> },
     {
       id: 'dorsal',
       header: 'Dorsal Troféu',
@@ -828,6 +835,7 @@ const ChildrenTab: React.FC = () => {
     {
       id: 'mgmt',
       header: 'Gestão',
+      className: 'col-opt',
       sortValue: (c) => (c.can_self_manage ? '1' : guardiansOf(c).length > 0 ? '2' : '3'),
       render: (c) =>
         c.can_self_manage ? <Tag tone="ok">Login próprio</Tag> : guardiansOf(c).length > 0 ? <Tag tone="info">{guardiansOf(c).length}/2 adultos</Tag> : <Tag tone="danger">Sem responsável</Tag>,
@@ -1241,7 +1249,7 @@ const RegistrationsTable: React.FC = () => {
       },
     },
     { id: 'date', header: 'Data', sortValue: (r) => raceById.get(r.race_id)?.date ?? '', render: (r) => formatShortDate(raceById.get(r.race_id)?.date ?? '') },
-    { id: 'distance', header: 'Distância', sortValue: (r) => r.distance, render: (r) => r.distance },
+    { id: 'distance', header: 'Distância', className: 'col-opt', sortValue: (r) => r.distance, render: (r) => r.distance },
     { id: 'status', header: 'Estado', sortValue: (r) => STATUS_LABEL[r.status].label, render: (r) => <Tag tone={STATUS_LABEL[r.status].tone}>{STATUS_LABEL[r.status].label}</Tag> },
     {
       id: 'bib',
@@ -1254,7 +1262,7 @@ const RegistrationsTable: React.FC = () => {
         </span>
       ),
     },
-    { id: 'transport', header: 'Transporte', sortValue: (r) => TRANSPORT_LABELS[r.transport_mode].short, render: (r) => TRANSPORT_LABELS[r.transport_mode].short },
+    { id: 'transport', header: 'Transporte', className: 'col-opt', sortValue: (r) => TRANSPORT_LABELS[r.transport_mode].short, render: (r) => TRANSPORT_LABELS[r.transport_mode].short },
   ]
 
   // As ações do contexto são por prova: agrupar a seleção.
