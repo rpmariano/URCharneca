@@ -1,14 +1,14 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { CalendarHeart, CircleUserRound, Dumbbell, Flag, Keyboard, Megaphone, Search, ShieldCheck, Sparkles, Ticket } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
-export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; key: string }> = [
+export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; key: string; adminOnly?: boolean }> = [
   { to: '/', label: 'Explorar', icon: Search, end: true, key: 'e' },
   { to: '/inscricoes', label: 'Inscrições', icon: Ticket, key: 'i' },
   { to: '/comunicados', label: 'Comunicados', icon: Megaphone, key: 'c' },
-  { to: '/admin', label: 'Gerir', icon: ShieldCheck, key: 'g' },
+  { to: '/admin', label: 'Gerir', icon: ShieldCheck, key: 'g', adminOnly: true },
   { to: '/perfil', label: 'Perfil', icon: CircleUserRound, key: 'p' },
 ]
 
@@ -24,9 +24,16 @@ const EXPLORE_SUB: Array<{ tipo: string; label: string; icon: LucideIcon; level:
 ]
 const RACE_TIPOS = ['provas', 'trofeu_cascais', 'equipa', 'individual']
 
-/** Barra lateral fixa do shell desktop (só para administradores, >= 1024 px). */
+/** Itens da barra lateral para o papel ativo: "Gerir" só aparece na vista de administrador. */
+export const useSidebarItems = () => {
+  const { isAdminView } = useApp()
+  return useMemo(() => SIDEBAR_ITEMS.filter((i) => !i.adminOnly || isAdminView), [isAdminView])
+}
+
+/** Barra lateral fixa do shell de computador (todos os utilizadores, >= 1024 px; "Gerir" só para administradores). */
 export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
-  const { unreadNotificationsCount, currentUser } = useApp()
+  const { unreadNotificationsCount, currentUser, isAdminView } = useApp()
+  const items = useSidebarItems()
   const { pathname, search } = useLocation()
   const tipo = new URLSearchParams(search).get('tipo') ?? ''
   const onExplore = pathname === '/'
@@ -36,12 +43,12 @@ export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
         <img src={`${import.meta.env.BASE_URL}urc-emblema.jpg`} alt="" width={40} height={40} className="rounded-full" />
         <div className="min-w-0">
           <div className="t-body t-strong text-[var(--text-1)] truncate">U.R. Charneca</div>
-          <div className="t-small text-[var(--text-3)]">Gestão da equipa</div>
+          <div className="t-small text-[var(--text-3)]">{isAdminView ? 'Gestão da equipa' : 'Atletismo'}</div>
         </div>
       </div>
       <div className="brand-stripe mx-2 -mt-2" aria-hidden="true" />
       <nav aria-label="Navegação principal" className="desk-nav">
-        {SIDEBAR_ITEMS.map((item) => (
+        {items.map((item) => (
           <React.Fragment key={item.to}>
           <NavLink to={item.to} end={item.end} className={({ isActive }) => `desk-nav-link${isActive && item.to !== '/' ? ' is-active' : ''}${item.to === '/' && onExplore ? ' is-parent' : ''}`}>
             <item.icon className="w-5 h-5 shrink-0" aria-hidden="true" />

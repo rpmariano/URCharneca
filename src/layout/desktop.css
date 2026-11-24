@@ -1,12 +1,17 @@
 /* =========================================================================
-   Shell desktop (só administradores, >= 1024 px). Ativado pela classe
-   `desktop-admin` no <html>; abaixo de 1024 px nada aqui se aplica.
+   Shell de computador (todos os utilizadores autenticados, >= 1024 px). Ativado pela classe
+   `desktop-shell` no <html>; abaixo de 1024 px nada aqui se aplica (a app é a de telemóvel).
+   O que é só de administrador (Gerir, tabelas de gestão, exportar) depende de `isAdminView` nos componentes.
    ========================================================================= */
 @media (min-width: 1024px) {
-  html.desktop-admin body {
+  /* Largura útil do conteúdo ao lado da barra lateral */
+  html.desktop-shell {
+    --desk-max: 1200px;
+  }
+  html.desktop-shell body {
     background-color: var(--bg-app);
   }
-  html.desktop-admin #root {
+  html.desktop-shell #root {
     max-width: none;
     box-shadow: none;
   }
@@ -121,7 +126,7 @@
     min-width: 0;
   }
   .desk-content {
-    max-width: 1200px;
+    max-width: var(--desk-max);
     margin: 0 auto;
     padding: 0 16px;
   }
@@ -165,31 +170,26 @@
   }
 
   /* Barras fixas de detalhe: alinhadas com a área de conteúdo, não com o centro do ecrã */
-  html.desktop-admin .fixed-bar {
+  html.desktop-shell .fixed-bar {
     left: 248px;
     right: 0;
     width: auto;
     max-width: none;
     transform: none;
     translate: none;
-    padding-left: max(24px, calc((100% - 1200px) / 2 + 24px));
-    padding-right: max(24px, calc((100% - 1200px) / 2 + 24px));
+    padding-left: max(24px, calc((100vw - 248px - var(--desk-max)) / 2 + 24px));
+    padding-right: max(24px, calc((100vw - 248px - var(--desk-max)) / 2 + 24px));
   }
   /* Avisos curtos centrados na área de conteúdo, sem barra inferior */
-  html.desktop-admin [role="status"][class*="max-w-[440px]"] {
+  html.desktop-shell [role="status"][class*="max-w-[440px]"] {
     left: calc(50% + 124px);
     translate: -50% 0;
     bottom: 88px;
   }
 
-  /* Detalhe de evento (layout responsivo .detail) com a mesma largura máxima do detalhe de prova */
-  html.desktop-admin .detail {
-    max-width: 1200px;
-  }
-
   /* Detalhe de prova/evento em duas colunas */
   .desk-detail {
-    max-width: 1200px;
+    max-width: var(--desk-max);
     margin: 0 auto;
     padding: 24px 24px 120px;
   }
@@ -342,6 +342,12 @@
     padding: 40px 12px !important;
     text-align: center !important;
     color: var(--text-3);
+  }
+}
+
+@media (min-width: 1440px) {
+  html.desktop-shell {
+    --desk-max: 1280px;
   }
 }
 
