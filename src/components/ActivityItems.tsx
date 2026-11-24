@@ -117,7 +117,13 @@ const useRaceCardData = (race: Race) => {
   const pending = regs.filter((r) => r.status === 'interested').length
   const countdown = countdownLabel(race.date)
   const metaParts = [
-    regs.length === 0 ? (race.date < todayISO() ? '' : 'Sê o primeiro a inscrever-te') : `${regs.length} ${regs.length === 1 ? 'inscrito' : 'inscritos'}`,
+    regs.length === 0
+      ? mine.length > 0
+        ? 'Já estás inscrito'
+        : race.date < todayISO()
+        ? ''
+        : 'Sê o primeiro a inscrever-te'
+      : `${regs.length} ${regs.length === 1 ? 'inscrito' : 'inscritos'}`,
     race.van_available ? (van.availableSeats > 0 ? `carrinha ${van.confirmedPassengers.length}/${van.capacity}` : 'carrinha cheia') : '',
   ].filter(Boolean)
 
