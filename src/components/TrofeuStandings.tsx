@@ -435,7 +435,7 @@ export const AthleteStandingsView: React.FC<{
             className="w-full rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] pl-11 pr-11 min-h-12 lg:min-h-11 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Procurar nome, escalão ou dorsal"
+            placeholder="Procurar atleta"
             aria-label="Procurar atletas do Troféu"
           />
           {q && (
@@ -449,7 +449,7 @@ export const AthleteStandingsView: React.FC<{
             </button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2 lg:flex lg:gap-3">
+        <div className="grid grid-cols-[minmax(0,5fr)_minmax(0,4fr)] gap-2 lg:flex lg:gap-3">
           <label className="block min-w-0">
             <span className="sr-only">Escalão</span>
             <select
@@ -457,7 +457,7 @@ export const AthleteStandingsView: React.FC<{
               onChange={(e) => setEscalao(e.target.value)}
               className="w-full min-w-0 rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
             >
-              <option value="all">Todos os escalões</option>
+              <option value="all">Escalão: todos</option>
               {escalaoOptions.map((e) => (
                 <option key={e} value={e}>
                   {e}
@@ -475,12 +475,12 @@ export const AthleteStandingsView: React.FC<{
               }}
               className="w-full min-w-0 rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
             >
-              <option value="pos:asc">Por lugar no escalão</option>
-              <option value="total:desc">Por pontos (mais)</option>
-              <option value="name:asc">Por nome (A–Z)</option>
-              {sort.key === 'pos' && sort.dir === 'desc' && <option value="pos:desc">Por lugar (inverso)</option>}
-              {sort.key === 'total' && sort.dir === 'asc' && <option value="total:asc">Por pontos (menos)</option>}
-              {sort.key === 'name' && sort.dir === 'desc' && <option value="name:desc">Por nome (Z–A)</option>}
+              <option value="pos:asc">Por lugar</option>
+              <option value="total:desc">Mais pontos</option>
+              <option value="name:asc">Nome (A–Z)</option>
+              {sort.key === 'pos' && sort.dir === 'desc' && <option value="pos:desc">Lugar (inv.)</option>}
+              {sort.key === 'total' && sort.dir === 'asc' && <option value="total:asc">Menos pts</option>}
+              {sort.key === 'name' && sort.dir === 'desc' && <option value="name:desc">Nome (Z–A)</option>}
             </select>
           </label>
         </div>

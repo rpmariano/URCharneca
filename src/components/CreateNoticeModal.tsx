@@ -48,7 +48,7 @@ export const CreateNoticeModal: React.FC<{ relatedRaceId?: string; onClose: () =
         <Field label="Mensagem *">
           <textarea rows={5} className={inputClass} required value={message} onChange={(e) => setMessage(e.target.value)} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           <Field label="Tipo">
             <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as NotificationType)}>
               {TYPES.map((t) => (

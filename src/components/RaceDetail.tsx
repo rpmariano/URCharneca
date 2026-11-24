@@ -803,22 +803,23 @@ const VehicleSelectField: React.FC<{
   vehicles: VehicleAllocation[]
   value: string
   onChange: (val: string) => void
-}> = ({ vehicles, value, onChange }) => (
-  <Field label="Veículo">
-    <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Qualquer veículo com vaga</option>
-      {vehicles.map((va) => (
-        <option key={va.vehicle.id} value={va.vehicle.id}>
-          {va.vehicle.name}
-          {va.vehicle.driver_name ? ` (Condutor: ${va.vehicle.driver_name})` : ''}
-          {va.availableSeats > 0
-            ? ` — ${va.availableSeats} ${va.availableSeats === 1 ? 'lugar vago' : 'lugares vagos'}`
-            : ' — Lotado'}
-        </option>
-      ))}
-    </select>
-  </Field>
-)
+}> = ({ vehicles, value, onChange }) => {
+  // O condutor fica na dica: dentro da opção o texto era cortado no telemóvel
+  const driver = vehicles.find((va) => va.vehicle.id === value)?.vehicle.driver_name
+  return (
+    <Field label="Veículo" hint={driver ? `Condutor: ${driver}` : undefined}>
+      <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Qualquer com vaga</option>
+        {vehicles.map((va) => (
+          <option key={va.vehicle.id} value={va.vehicle.id}>
+            {va.vehicle.name}
+            {va.availableSeats > 0 ? ` · ${va.availableSeats} ${va.availableSeats === 1 ? 'vago' : 'vagos'}` : ' · Lotado'}
+          </option>
+        ))}
+      </select>
+    </Field>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Linha de inscrição (adulto ou criança)
@@ -1077,7 +1078,7 @@ const RosterRow: React.FC<{
         <div className="pb-4 pt-1 space-y-3">
           {admin && (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
                 <Field label="Estado">
                   <select
                     className={inputClass}
@@ -1218,7 +1219,7 @@ const AdminEnroll: React.FC<{ race: Race; raceRegs: RaceRegistration[]; vehicles
           )}
         </select>
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Field label="Distância">
           <select className={inputClass} value={distance} onChange={(e) => setDistance(e.target.value)}>
             {distances.map((d) => (
