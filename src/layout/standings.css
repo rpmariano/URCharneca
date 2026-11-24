@@ -1,13 +1,26 @@
 /* =========================================================================
    Tabelas de classificação (components/StandingsTable.tsx). Só tokens do tema.
+   Direção "Pista": lugar em número grande (Archivo muito condensada), pontos em Archivo condensada,
+   réguas finas entre linhas, cabeçalho com régua de 2 px; a linha destacada (U.R. Charneca, "os meus")
+   é um bloco dourado. A classificação de clubes usa o tema escuro (`.scope-dark`), como um marcador.
    - .st-page: telemóvel (< 1024 px). Sem deslocamento horizontal; o cabeçalho cola por baixo do AppHeader.
    - .st-box: computador. A tabela tem a sua área de deslocamento (horizontal e vertical), o cabeçalho
      fica fixo no topo dessa área e a coluna do nome fica fixa à esquerda.
    ========================================================================= */
 .st-wrap {
-  border: 1px solid var(--border-card);
-  border-radius: 14px;
-  background: var(--surface-card);
+  background: var(--bg-app);
+}
+
+/* Marcador: zona escura que sangra até às margens no telemóvel (o contentor da página tem 20 px de margem) */
+.st-board {
+  margin-inline: -20px;
+  padding: 20px 20px 24px;
+}
+@media (min-width: 1024px) {
+  .st-board {
+    margin-inline: auto;
+    padding: 28px 28px 24px;
+  }
 }
 .st-page {
   overflow-x: clip;
@@ -23,8 +36,8 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.3;
   color: var(--text-1);
 }
 .st-table th,
@@ -32,8 +45,16 @@
   padding: 6px 8px;
   text-align: left;
   vertical-align: middle;
-  border-bottom: 1px solid var(--border-card);
-  background: var(--surface-card);
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-app);
+}
+.st-table th:first-child,
+.st-table td:first-child {
+  padding-left: 0;
+}
+.st-table th:last-child,
+.st-table td:last-child {
+  padding-right: 0;
 }
 .st-box .st-table th,
 .st-box .st-table td {
@@ -48,30 +69,30 @@
 .st-table td {
   white-space: nowrap;
 }
+.st-table tbody th {
+  font-weight: 600;
+}
 
-/* Cabeçalho fixo */
+/* Cabeçalho fixo: texto pequeno, régua de 2 px por baixo */
 .st-table thead th {
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--surface-raised);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text-3);
   white-space: nowrap;
   height: 40px;
+  border-bottom: 2px solid var(--text-1);
 }
 .st-page .st-table thead th {
   top: var(--app-header-h, 64px);
 }
-.st-wrap .st-table thead tr:first-child th:first-child {
-  border-top-left-radius: 13px;
-}
-.st-wrap .st-table thead tr:first-child th:last-child {
-  border-top-right-radius: 13px;
-}
 
 /* Coluna do nome: ocupa o espaço que sobra e trunca em telemóvel; fixa à esquerda no computador */
+.st-col-pos {
+  width: 56px;
+}
 .st-page .st-name {
   width: 100%;
   max-width: 0;
@@ -81,26 +102,23 @@
   left: 0;
   z-index: 2;
   box-sizing: border-box;
-  width: 80px;
-  min-width: 80px;
+  width: 72px;
+  min-width: 72px;
 }
 .st-box thead .st-col-pos {
   z-index: 4;
 }
 .st-box .st-name {
   position: sticky;
-  left: 80px;
+  left: 72px;
   z-index: 2;
   width: 100%;
   max-width: 0;
   min-width: 240px;
-  box-shadow: inset -1px 0 0 var(--border-card);
+  box-shadow: inset -1px 0 0 var(--rule);
 }
 .st-box thead .st-name {
   z-index: 4;
-}
-.st-table tbody th {
-  font-weight: inherit;
 }
 
 /* Ordenação */
@@ -112,14 +130,13 @@
   padding: 0 4px;
   margin: 0 -4px;
   border: 0;
-  border-radius: 6px;
   background: transparent;
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 .st-sort:hover {
-  background: var(--border-card);
+  background: var(--surface-raised);
 }
 .st-sort-ic {
   width: 14px;
@@ -127,7 +144,7 @@
   flex-shrink: 0;
 }
 .st-sort-ic.is-idle {
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 /* Linha expansível: o nome é um botão (>= 44 px em telemóvel) */
@@ -136,7 +153,7 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  min-height: 44px;
+  min-height: 52px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -146,7 +163,7 @@
   cursor: pointer;
 }
 .st-box .st-expand {
-  min-height: 36px;
+  min-height: 40px;
 }
 .st-expand-body {
   flex: 1;
@@ -156,7 +173,7 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: var(--text-3);
+  color: var(--text-1);
   transition: transform 0.15s ease;
 }
 .is-open .st-chev {
@@ -166,32 +183,47 @@
 .st-sort:focus-visible,
 .st-group-btn:focus-visible,
 .st-more:focus-visible {
-  outline: 2px solid var(--run);
-  outline-offset: -2px;
-  border-radius: 8px;
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
 }
 
+.st-row > * {
+  height: 62px;
+}
+.st-box .st-row > * {
+  height: 52px;
+}
 .st-row:hover > * {
   background: var(--surface-card-hover);
 }
 
-/* Linhas destacadas ("os meus", a U.R. Charneca): fundo opaco (a coluna fixa não deixa ver o que passa por baixo) */
+/* Linhas destacadas ("os meus", a U.R. Charneca): bloco dourado com texto escuro */
+.st-row.is-hi,
+.st-details.is-hi {
+  --text-1: #0d1726;
+  --text-2: #0d1726;
+  --text-3: #0d1726;
+  --link: #0d1726;
+  --focus: #0d1726;
+  --rule: #b18c22;
+}
 .st-row.is-hi > *,
 .st-details.is-hi > * {
-  background: linear-gradient(var(--tint-blue-bg), var(--tint-blue-bg)), var(--surface-card);
+  background: var(--gold);
+  color: #0d1726;
 }
-.st-row.is-hi > :first-child {
-  box-shadow: inset 4px 0 0 var(--run);
+.st-row.is-hi > * {
+  height: 80px;
 }
-.st-box .st-row.is-hi > .st-name:first-child {
-  box-shadow: inset 4px 0 0 var(--run), inset -1px 0 0 var(--border-card);
+.st-box .st-row.is-hi > * {
+  height: 60px;
 }
 .st-row.is-open > * {
   border-bottom-color: transparent;
 }
 
 .st-details > td {
-  padding: 0 8px 10px;
+  padding: 0 8px 12px 0;
   white-space: normal;
 }
 .st-details-body {
@@ -202,6 +234,7 @@
 .st-group-head > th {
   padding: 0 !important;
   background: var(--surface-raised) !important;
+  border-bottom: 0;
 }
 .st-box .st-group-head > th {
   position: sticky;
@@ -217,8 +250,10 @@
   border: 0;
   background: transparent;
   color: var(--text-1);
-  font: inherit;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-stretch: 75%;
+  font-size: 19px;
+  font-weight: 800;
   text-align: left;
   cursor: pointer;
 }
@@ -226,7 +261,7 @@ span.st-group-btn {
   cursor: default;
 }
 .st-box .st-group-btn {
-  min-height: 38px;
+  min-height: 40px;
   position: sticky;
   left: 0;
   width: auto;
@@ -236,64 +271,79 @@ span.st-group-btn {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: var(--text-2);
+  color: var(--text-1);
 }
 .st-group-label {
   min-width: 0;
 }
 .st-group-meta {
+  font-family: var(--font-sans);
+  font-stretch: 100%;
   font-size: 13px;
   font-weight: 400;
-  color: var(--text-3);
+  color: var(--text-2);
   white-space: nowrap;
 }
 
 .st-gap > td {
   text-align: center;
-  color: var(--text-3);
+  color: var(--text-2);
   padding: 2px 8px;
   line-height: 1;
+  height: auto !important;
 }
 
 .st-state {
   padding: 32px 12px !important;
   text-align: center !important;
-  color: var(--text-3);
+  color: var(--text-2);
   white-space: normal !important;
 }
 
-/* Lugar com medalha discreta */
+/* Lugar: número grande; o 1.º a amarelo (sobre escuro) ou dourado escuro (sobre claro) */
 .st-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  height: 28px;
-  padding: 0 6px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  background: var(--surface-raised);
-  color: var(--text-2);
+  display: inline-block;
+  min-width: 36px;
+  font-family: var(--font-display);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: 36px;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.st-box .st-rank {
+  font-size: 30px;
 }
 .st-rank.is-gold {
-  background: var(--tint-yellow-bg-strong);
-  color: var(--tint-yellow-fg);
-  box-shadow: inset 0 0 0 1px var(--tint-yellow-border);
+  color: var(--gold-ink);
 }
-.st-rank.is-silver {
-  background: var(--surface-raised);
-  color: var(--text-1);
-  box-shadow: inset 0 0 0 1px var(--border-card-strong);
+.st-row.is-hi .st-rank {
+  font-size: 56px;
+  color: #0d1726;
 }
-.st-rank.is-bronze {
-  background: var(--tint-brown-bg-strong);
-  color: var(--tint-brown-fg);
-  box-shadow: inset 0 0 0 1px var(--tint-brown-border);
+.st-box .st-row.is-hi .st-rank {
+  font-size: 40px;
 }
-.st-rank.is-hi {
-  background: var(--run);
-  color: var(--on-accent);
+
+/* Pontos totais em Archivo condensada */
+.st-pts {
+  font-family: var(--font-display);
+  font-stretch: 75%;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.st-box .st-pts {
+  font-size: 22px;
+}
+.st-row.is-hi .st-pts {
+  font-weight: 900;
+  font-size: 40px;
+}
+.st-box .st-row.is-hi .st-pts {
+  font-size: 28px;
 }
 
 /* Pontos de uma prova (computador): pontos e, em pequeno, o lugar */
@@ -305,29 +355,30 @@ span.st-group-btn {
 }
 .st-stage-pos {
   font-size: 12px;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 .st-dash {
-  color: var(--text-3);
+  color: var(--text-2);
 }
 
 /* Barra de pontos relativa ao 1.º */
 .st-bar {
   display: block;
-  height: 4px;
-  margin-top: 4px;
-  border-radius: 9999px;
-  background: var(--surface-raised);
+  height: 3px;
+  margin-top: 6px;
+  background: var(--rule);
   overflow: hidden;
 }
 .st-bar > span {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: var(--border-card-strong);
+  background: var(--text-3);
+}
+.st-row.is-hi .st-bar {
+  background: rgba(13, 23, 38, 0.2);
 }
 .st-row.is-hi .st-bar > span {
-  background: var(--run);
+  background: #0d1726;
 }
 
 /* Etiqueta "Tu" / "A teu cargo" */
@@ -336,12 +387,11 @@ span.st-group-btn {
   align-items: center;
   gap: 3px;
   padding: 0 6px;
-  border-radius: 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 20px;
-  background: var(--tint-blue-bg-strong);
-  color: var(--tint-blue-fg);
+  background: #0d1726;
+  color: #ffffff;
   white-space: nowrap;
 }
 
@@ -349,28 +399,27 @@ span.st-group-btn {
 .st-more {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   width: 100%;
-  min-height: 44px;
+  min-height: 48px;
   border: 0;
-  border-top: 1px solid var(--border-card);
   background: transparent;
-  color: var(--tint-blue-fg);
+  color: var(--link);
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 0 0 14px 14px;
 }
 .st-more:hover {
-  background: var(--surface-card-hover);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-/* Barra "A tua equipa" fixa por cima da navegação inferior (telemóvel) */
+/* Barra "A tua equipa" fixa por cima da navegação inferior (telemóvel): bloco dourado */
 .st-pin {
   position: sticky;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: calc(60px + 3px + env(safe-area-inset-bottom, 0px) + 8px);
   z-index: 5;
 }
 .st-pin.is-hidden {

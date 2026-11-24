@@ -22,11 +22,11 @@ export const PhotoAvatarButton: React.FC<{
         disabled={busy}
         onClick={() => inputRef.current?.click()}
         aria-label="Mudar a minha foto"
-        className="relative shrink-0 rounded-full pressable min-w-11 min-h-11"
+        className="relative shrink-0 pressable min-w-11 min-h-11"
       >
         <Avatar name={name} photo={value} gender={gender} child={child} size={size} />
         <span
-          className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center bg-[var(--run)] text-[var(--on-accent)] border-2 border-[var(--surface-card)]"
+          className="absolute -bottom-1 -right-1 w-8 h-8 flex items-center justify-center bg-[var(--run)] text-[var(--on-accent)] border-2 border-[var(--surface-card)]"
           aria-hidden="true"
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}

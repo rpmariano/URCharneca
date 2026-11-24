@@ -36,7 +36,6 @@ export {
   kindOfRace,
 } from '../components/ui'
 export { Sheet } from '../components/Sheet'
-export { ActivityCover } from '../components/ActivityCover'
 
 // Componentes da app (precisam do AppProvider)
 export { AppProvider, useApp } from '../context/AppContext'

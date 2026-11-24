@@ -1,30 +1,31 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { CircleUserRound, Megaphone, Search, ShieldCheck, Ticket } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useOpenRaces } from '../utils/openRaces'
 import { plural } from '../utils/formatters'
+import { Counter } from './ui'
 
 /**
  * Navegação inferior: Explorar · Inscrições · Comunicados · Perfil (+ Gerir para administradores).
+ * Só texto (Archivo condensada), régua escura de 3 px por cima; o separador ativo fica preenchido a azul.
  */
 export const BottomNav: React.FC = () => {
   const { isAdminView, unreadNotificationsCount } = useApp()
   const { fresh } = useOpenRaces()
 
-  const items: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; badge?: number; badgeLabel?: string }> = [
-    { to: '/', label: 'Explorar', icon: Search, end: true, badge: fresh.length, badgeLabel: plural(fresh.length, 'prova nova', 'provas novas') },
-    { to: '/inscricoes', label: 'Inscrições', icon: Ticket },
-    { to: '/comunicados', label: 'Comunicados', icon: Megaphone, badge: unreadNotificationsCount },
-    ...(isAdminView ? [{ to: '/admin', label: 'Gerir', icon: ShieldCheck }] : []),
-    { to: '/perfil', label: 'Perfil', icon: CircleUserRound },
+  const items: Array<{ to: string; label: string; end?: boolean; badge?: number; badgeLabel?: string }> = [
+    { to: '/', label: 'Explorar', end: true, badge: fresh.length, badgeLabel: plural(fresh.length, 'prova nova', 'provas novas') },
+    { to: '/inscricoes', label: 'Inscrições' },
+    { to: '/comunicados', label: 'Comunicados', badge: unreadNotificationsCount },
+    ...(isAdminView ? [{ to: '/admin', label: 'Gerir' }] : []),
+    { to: '/perfil', label: 'Perfil' },
   ]
+  const many = items.length > 4
 
   return (
     <nav
       aria-label="Navegação principal"
-      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-30 grid border-t border-[var(--border-card)]"
+      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-30 grid border-t-[3px] border-[var(--rule-strong)]"
       style={{
         gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
         background: 'var(--bg-nav)',
@@ -36,36 +37,20 @@ export const BottomNav: React.FC = () => {
           key={item.to}
           to={item.to}
           end={item.end}
+          style={{ outlineOffset: -4 }}
           className={({ isActive }) =>
-            `relative min-h-16 pt-2 pb-1.5 flex flex-col items-center justify-center gap-1 text-xs transition-colors ${
-              isActive ? 'text-[var(--tint-blue-fg)] t-strong' : 'text-[var(--text-3)]'
-            }`
+            `on-nav relative h-[60px] flex items-end justify-center px-1 pb-[15px] font-display font-extrabold leading-none whitespace-nowrap transition-colors ${
+              many ? 'text-[15px] [font-stretch:62%]' : 'text-[17px] [font-stretch:75%]'
+            } ${isActive ? 'bg-[var(--run)] text-[var(--on-accent)] [--focus:#ffffff]' : 'text-[var(--text-1)] hover:bg-[var(--surface-raised)]'}`
           }
         >
-          {({ isActive }) => (
+          <span className="max-w-full overflow-hidden text-ellipsis">{item.label}</span>
+          {Boolean(item.badge) && (
             <>
-              {isActive && (
-                <span aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-b-full bg-[var(--gold)]" />
-              )}
-              <span
-                className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-colors ${
-                  isActive ? 'bg-[var(--tint-blue-bg-strong)]' : ''
-                }`}
-              >
-                <item.icon className="w-6 h-6" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden="true" />
-                {Boolean(item.badge) && (
-                  <>
-                    <span
-                      aria-hidden="true"
-                      className="absolute -top-1 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#b91c1c] text-white text-xs t-strong leading-none flex items-center justify-center"
-                    >
-                      {item.badge}
-                    </span>
-                    <span className="sr-only">{item.badge} {item.badgeLabel ?? 'por ler'}</span>
-                  </>
-                )}
+              <Counter value={item.badge!} className="absolute top-1 right-1 !min-w-[20px] !h-5 !px-1 !text-[12px]" />
+              <span className="sr-only">
+                {item.badge} {item.badgeLabel ?? 'por ler'}
               </span>
-              <span className="max-w-full tracking-tight whitespace-nowrap">{item.label}</span>
             </>
           )}
         </NavLink>

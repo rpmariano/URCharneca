@@ -1,19 +1,57 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Share } from 'lucide-react'
+import { ChevronLeft, Share } from 'lucide-react'
 import { useRetract } from '../layout/useScrollRetract'
 
-/** Emblema do clube (pequeno, com anel dourado). Decorativo: o título da barra diz onde estamos. */
-export const HeaderEmblem: React.FC = () => (
+/** Emblema do clube (quadrado, sem moldura). Decorativo: o título da barra diz onde estamos. */
+export const HeaderEmblem: React.FC<{ size?: number }> = ({ size = 40 }) => (
   <img
     src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
     alt=""
-    width={32}
-    height={32}
-    className="w-8 h-8 rounded-lg object-cover shrink-0 bg-[var(--hdr-bg)] ring-2 ring-[var(--hdr-ring)]"
+    width={size}
+    height={size}
+    className="hdr-emblem object-cover shrink-0 block"
+    style={{ width: size, height: size }}
   />
 )
 
-/** Botão redondo para usar sobre a barra azul (alvo de 44 px, foco visível). */
+/**
+ * Botões unidos para o bloco azul (separadores de uma página: Clubes, Atletas, ...). O ativo fica branco com
+ * texto azul. Grupo com `aria-pressed` (como o `Segmented`).
+ */
+export const HeaderSegmented = <T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T
+  options: Array<{ value: T; label: string }>
+  onChange: (v: T) => void
+  label: string
+}) => (
+  // Até 4 opções dividem a largura; com mais, a fila desliza na horizontal
+  <div role="group" aria-label={label} className={options.length > 4 ? 'scroll-row joined-row' : 'joined'}>
+    {options.map((o) => {
+      const on = value === o.value
+      return (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={on}
+          onClick={() => onChange(o.value)}
+          className={`${options.length > 4 ? 'shrink-0 px-4' : 'min-w-0 px-1.5'} h-11 border-2 border-[#ffffff] t-small t-strong whitespace-nowrap cursor-pointer transition-colors ${
+            on ? 'bg-[#ffffff] text-[#004c94]' : 'bg-transparent text-[#ffffff] hover:bg-[#ffffff]/15'
+          }`}
+          style={on ? { outlineOffset: 3 } : undefined}
+        >
+          {o.label}
+        </button>
+      )
+    })}
+  </div>
+)
+
+/** Botão quadrado branco para usar sobre o bloco azul (alvo de 44 px, foco branco). */
 export const HeaderButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }> = ({
   label,
   className = '',
@@ -26,7 +64,7 @@ export const HeaderButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement
     aria-label={label}
     title={label}
     {...rest}
-    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 pressable bg-[var(--surface-card)] text-[var(--text-1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hdr-fg)] ${className}`}
+    className={`w-11 h-11 flex items-center justify-center shrink-0 pressable bg-[#ffffff] text-[#004c94] hover:bg-[#dfe8f3] ${className}`}
   >
     {children}
   </button>
@@ -37,13 +75,12 @@ const BAR_STYLE: React.CSSProperties = {
   color: 'var(--hdr-fg)',
   paddingTop: 'env(safe-area-inset-top, 0px)',
 }
-/** `text-wrap: balance/pretty` global dos h1/p anula o nowrap do `truncate`: força-o aqui. */
+/** `text-wrap: pretty` global dos parágrafos anula o nowrap do `truncate`: força-o aqui. */
 const NOWRAP: React.CSSProperties = { textWrap: 'nowrap' }
-const SHADOW = 'shadow-[0_2px_8px_rgba(0,0,0,0.18)]'
 
 /**
- * Barra de topo fixa (sticky) de cada ecrã: emblema (ou elemento `leading`), título e ação opcional.
- * `children` fica também fixo, por baixo da barra (pesquisa, separadores).
+ * Bloco azul fixo (sticky) no topo de cada ecrã: título em Archivo condensada, ações e o emblema à direita.
+ * `children` fica também fixo, por baixo da barra (pesquisa, separadores), dentro do mesmo bloco azul.
  * `titleAs="p"` evita um segundo h1 quando o ecrã já tem o seu próprio título na página.
  */
 export const AppHeader: React.FC<{
@@ -57,7 +94,9 @@ export const AppHeader: React.FC<{
   collapsible?: boolean
   /** Com `collapsible`: recolhe os `children` (a altura do cabeçalho na página não muda, não há saltos). */
   retracted?: boolean
-}> = ({ title, action, leading, titleAs = 'h1', className = '', children, collapsible = false, retracted = false }) => {
+  /** Sem emblema à direita (barras com várias ações, onde o título precisa do espaço). */
+  emblem?: boolean
+}> = ({ title, action, leading, titleAs = 'h1', className = '', children, collapsible = false, retracted = false, emblem = true }) => {
   const Title = titleAs
   const tools = useRetract(collapsible && retracted)
   const ref = useRef<HTMLElement>(null)
@@ -77,16 +116,19 @@ export const AppHeader: React.FC<{
     // Em `collapsible` o <header> é transparente: o fundo azul fica só na barra, que tapa o que recolhe por trás
     <header
       ref={ref}
-      className={`app-header sticky top-0 z-30 ${children ? 'app-header-tall' : ''} ${collapsible ? 'pointer-events-none' : SHADOW} ${className}`}
+      className={`app-header on-blue sticky top-0 z-30 ${children ? 'app-header-tall' : ''} ${collapsible ? 'pointer-events-none' : ''} ${className}`}
       style={collapsible ? undefined : BAR_STYLE}
     >
       <div
-        className={`flex items-center gap-3 px-5 min-h-14 ${collapsible ? `relative z-10 pointer-events-auto ${SHADOW}` : ''}`}
+        className={`flex items-center gap-3 px-5 min-h-16 py-2 ${collapsible ? 'relative z-10 pointer-events-auto' : ''}`}
         style={collapsible ? BAR_STYLE : undefined}
       >
-        {leading ?? <HeaderEmblem />}
-        <Title className="t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)]" style={NOWRAP}>{title}</Title>
+        {leading}
+        <Title className="flex-1 min-w-0 line-clamp-2 break-words font-display text-[28px] leading-[0.95] font-black [font-stretch:75%] text-[var(--hdr-fg)]">
+          {title}
+        </Title>
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
+        {emblem && <HeaderEmblem />}
       </div>
       {collapsible ? (
         <div {...tools.props} className={`app-header-tools ${tools.hidden ? 'is-retracted' : ''}`}>
@@ -100,58 +142,52 @@ export const AppHeader: React.FC<{
 }
 
 /**
- * Barra fixa dos detalhes de prova/evento. Em `overlay` fica transparente sobre a capa (voltar e partilhar
- * flutuantes) e ganha o fundo azul com o título ao descer para lá da capa. Sem `overlay` é sempre azul.
+ * Barra fixa dos detalhes de prova/evento: "Voltar" à esquerda, partilhar e emblema à direita.
+ * O título aparece na barra depois de o topo da página (`.detail-hero`) sair do ecrã.
+ * `overlay` mantém-se por compatibilidade (já não há capa por baixo).
  */
 export const DetailBar: React.FC<{
   title: string
   onBack: () => void
   onShare: () => void
   overlay?: boolean
-}> = ({ title, onBack, onShare, overlay = true }) => {
+}> = ({ title, onBack, onShare }) => {
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
-    if (!overlay) return
     const onScroll = () => {
-      // A capa tem 4:3 no telemóvel e altura limitada em ecrãs maiores: mede-se a capa real
-      const el = document.querySelector<HTMLElement>('.detail-cover')
-      const cover = el ? el.offsetHeight : Math.min(window.innerWidth, 480) * 0.75
-      setScrolled(window.scrollY > cover - 72)
+      const el = document.querySelector<HTMLElement>('.detail-hero')
+      const limit = el ? el.offsetTop + el.offsetHeight - 64 : 160
+      setScrolled(window.scrollY > limit)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [overlay])
+  }, [])
 
-  const solid = !overlay || scrolled
-  const btn = solid ? '' : 'shadow-[var(--shadow-float)]'
   return (
-    <header className={`app-header sticky top-0 z-30 ${overlay ? 'h-0' : ''}`}>
-      <div
-        className={`flex items-center gap-3 px-4 min-h-14 transition-colors duration-150 ${
-          overlay ? 'absolute inset-x-0 top-0' : ''
-        } ${solid ? SHADOW : ''}`}
-        style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          background: solid ? 'var(--hdr-bg)' : 'transparent',
-          color: 'var(--hdr-fg)',
-        }}
-      >
-        <HeaderButton label="Voltar" onClick={onBack} className={btn}>
-          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-        </HeaderButton>
+    <header className="app-header on-blue sticky top-0 z-30" style={BAR_STYLE}>
+      <div className="flex items-center gap-3 pl-2 pr-5 min-h-16 py-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="min-h-11 pl-2 pr-3 flex items-center gap-1.5 shrink-0 text-[15px] t-strong text-[var(--hdr-fg)] hover:underline underline-offset-4 cursor-pointer"
+        >
+          <ChevronLeft className="w-5 h-5" strokeWidth={2.5} aria-hidden="true" />
+          Voltar
+        </button>
         <p
-          className={`t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)] transition-opacity duration-150 ${
-            solid ? 'opacity-100' : 'opacity-0'
+          className={`flex-1 min-w-0 truncate font-display text-[20px] leading-none font-extrabold [font-stretch:75%] text-[var(--hdr-fg)] transition-opacity duration-150 ${
+            scrolled ? 'opacity-100' : 'opacity-0'
           }`}
           style={NOWRAP}
           aria-hidden="true"
         >
           {title}
         </p>
-        <HeaderButton label="Partilhar" onClick={onShare} className={btn}>
+        <HeaderButton label="Partilhar" onClick={onShare}>
           <Share className="w-5 h-5" aria-hidden="true" />
         </HeaderButton>
+        <HeaderEmblem />
       </div>
     </header>
   )
