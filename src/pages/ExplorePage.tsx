@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Cake,
@@ -237,6 +237,29 @@ export const ExplorePage: React.FC = () => {
     })
   }, [cursor])
 
+  // Uma só paragem de Tab nos dias: o último com foco, o escolhido, hoje ou o dia 1 do mês mostrado
+  const [focusDay, setFocusDay] = useState('')
+  const daysRef = useRef<HTMLDivElement>(null)
+  const moveFocus = useRef(false)
+  const monthPrefix = `${cursor.y}-${String(cursor.m + 1).padStart(2, '0')}`
+  const tabDay = [focusDay, selectedDay, today].find((d) => d?.startsWith(monthPrefix)) ?? `${monthPrefix}-01`
+  useEffect(() => {
+    if (!moveFocus.current) return
+    moveFocus.current = false
+    daysRef.current?.querySelector<HTMLElement>(`[data-date="${focusDay}"]`)?.focus()
+  }, [focusDay])
+  const onDayKey = (e: React.KeyboardEvent, date: string) => {
+    const weekday = (new Date(`${date}T12:00:00`).getDay() + 6) % 7 // segunda = 0
+    const steps: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7, Home: -weekday, End: 6 - weekday }
+    if (!(e.key in steps)) return
+    e.preventDefault()
+    if (steps[e.key] === 0) return
+    const next = addDaysISO(date, steps[e.key])
+    moveFocus.current = true
+    setCursor({ y: Number(next.slice(0, 4)), m: Number(next.slice(5, 7)) - 1 })
+    setFocusDay(next)
+  }
+
   const shiftMonth = (delta: number) =>
     setCursor(({ y, m }) => {
       const d = new Date(y, m + delta, 1)
@@ -358,6 +381,84 @@ export const ExplorePage: React.FC = () => {
     ? 'Provas'
     : CATEGORIES.find((c) => c.value === category)?.label || KIND_SINGULAR[category]
 
+  // Em computador largo vem depois da lista no DOM (ordem de foco) e a grelha põe-no na coluna da direita
+  const calendar = calendarShown && (
+    <div className={sideCalendar ? 'col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6' : undefined}>
+     <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
+      <div className="flex items-center justify-between">
+        <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
+          <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+        </IconButton>
+        <h2 className="t-body t-strong text-[var(--text-1)]">
+          {MONTHS[cursor.m]} {cursor.y}
+        </h2>
+        <IconButton label="Mês seguinte" onClick={() => shiftMonth(1)}>
+          <ChevronRight className="w-5 h-5" aria-hidden="true" />
+        </IconButton>
+      </div>
+      <div className="grid grid-cols-7 text-center text-xs text-[var(--text-3)]" aria-hidden="true">
+        {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
+          <span key={d}>{d}</span>
+        ))}
+      </div>
+      <div
+        ref={daysRef}
+        className="grid grid-cols-7 gap-y-1"
+        role="group"
+        aria-label={`Dias de ${MONTHS[cursor.m]} ${cursor.y}. Usa as setas para mudar de dia.`}
+      >
+        {calendarDays.map(({ date, inMonth }) => {
+          const ks = dayKinds.get(date)
+          const selected = selectedDay === date
+          const isToday = date === today
+          return (
+            <button
+              key={date}
+              type="button"
+              onClick={() => setSelectedDay(selected ? null : date)}
+              data-date={date}
+              tabIndex={date === tabDay ? 0 : -1}
+              onFocus={() => setFocusDay(date)}
+              onKeyDown={(e) => onDayKey(e, date)}
+              aria-current={isToday ? 'date' : undefined}
+              aria-label={`${formatLongDate(date)}${ks ? `, ${ks.size} tipo(s) de atividade` : ', sem atividades'}`}
+              aria-pressed={selected}
+              className="min-h-11 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+            >
+              <span
+                className={`w-9 h-9 rounded-full flex items-center justify-center t-small t-num ${
+                  selected
+                    ? 'bg-[var(--text-1)] text-[var(--bg-app)] t-strong'
+                    : isToday
+                    ? 'border border-[var(--text-1)] text-[var(--text-1)] t-strong'
+                    : inMonth
+                    ? ks
+                      ? 'text-[var(--text-1)] t-strong'
+                      : 'text-[var(--text-2)]'
+                    : 'text-[var(--text-3)] opacity-60'
+                }`}
+              >
+                {Number(date.slice(8))}
+              </span>
+              <span className="flex gap-0.5 h-1.5" aria-hidden="true">
+                {ks && [...ks].slice(0, 3).map((k) => <span key={k} className="w-1.5 h-1.5 rounded-full" style={{ background: KIND_COLOR[k] }} />)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-3)] pt-1">
+        {KINDS.map((k) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLOR[k] }} aria-hidden="true" />
+            {KIND_SINGULAR[k]}
+          </span>
+        ))}
+      </div>
+     </section>
+    </div>
+  )
+
   return (
     <div className="pb-28">
       {/* Topo fixo: barra do clube + pesquisa + categorias */}
@@ -438,73 +539,8 @@ export const ExplorePage: React.FC = () => {
       </p>
 
       <div className={`px-5 ${sideCalendar ? 'grid grid-cols-[minmax(0,1fr)_300px] gap-8 items-start' : ''}`}>
-        {/* Calendário: por cima da lista (telemóvel: botão flutuante; computador estreito: botão na barra) ou coluna lateral fixa em computador largo */}
-        {calendarShown && (
-          <div className={sideCalendar ? 'col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6' : undefined}>
-          <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
-            <div className="flex items-center justify-between">
-              <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
-                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
-              </IconButton>
-              <h2 className="t-body t-strong text-[var(--text-1)]">
-                {MONTHS[cursor.m]} {cursor.y}
-              </h2>
-              <IconButton label="Mês seguinte" onClick={() => shiftMonth(1)}>
-                <ChevronRight className="w-5 h-5" aria-hidden="true" />
-              </IconButton>
-            </div>
-            <div className="grid grid-cols-7 text-center text-xs text-[var(--text-3)]" aria-hidden="true">
-              {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
-                <span key={d}>{d}</span>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-y-1">
-              {calendarDays.map(({ date, inMonth }) => {
-                const ks = dayKinds.get(date)
-                const selected = selectedDay === date
-                const isToday = date === today
-                return (
-                  <button
-                    key={date}
-                    type="button"
-                    onClick={() => setSelectedDay(selected ? null : date)}
-                    aria-label={`${formatLongDate(date)}${ks ? `, ${ks.size} tipo(s) de atividade` : ', sem atividades'}`}
-                    aria-pressed={selected}
-                    className="min-h-11 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-                  >
-                    <span
-                      className={`w-9 h-9 rounded-full flex items-center justify-center t-small t-num ${
-                        selected
-                          ? 'bg-[var(--text-1)] text-[var(--bg-app)] t-strong'
-                          : isToday
-                          ? 'border border-[var(--text-1)] text-[var(--text-1)] t-strong'
-                          : inMonth
-                          ? ks
-                            ? 'text-[var(--text-1)] t-strong'
-                            : 'text-[var(--text-2)]'
-                          : 'text-[var(--text-3)] opacity-60'
-                      }`}
-                    >
-                      {Number(date.slice(8))}
-                    </span>
-                    <span className="flex gap-0.5 h-1.5" aria-hidden="true">
-                      {ks && [...ks].slice(0, 3).map((k) => <span key={k} className="w-1.5 h-1.5 rounded-full" style={{ background: KIND_COLOR[k] }} />)}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-3)] pt-1">
-              {KINDS.map((k) => (
-                <span key={k} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLOR[k] }} aria-hidden="true" />
-                  {KIND_SINGULAR[k]}
-                </span>
-              ))}
-            </div>
-          </section>
-          </div>
-        )}
+        {/* Calendário por cima da lista (telemóvel e computador estreito) */}
+        {!sideCalendar && calendar}
 
         {/* Contentor (container query): as grelhas de cartões adaptam-se à largura disponível, com ou sem barra lateral */}
         <div className="@container min-w-0 col-start-1 row-start-1">
@@ -728,6 +764,7 @@ export const ExplorePage: React.FC = () => {
           </div>
         )}
         </div>
+        {sideCalendar && calendar}
       </div>
 
       {/* Botão flutuante do calendário (expandir / colapsar): só em telemóvel */}

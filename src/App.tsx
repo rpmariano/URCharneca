@@ -100,9 +100,20 @@ const AppShell: React.FC = () => {
       ) : (
         <>
           <ScrollToTop />
+          {/* Primeira paragem de Tab: passa à frente da barra lateral */}
+          <a
+            href="#conteudo"
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById('conteudo')?.focus()
+            }}
+            className="sr-only focus:not-sr-only focus:fixed! focus:top-2 focus:left-2 focus:z-[120] focus:px-4! focus:py-3! focus:rounded-xl focus:bg-[var(--text-1)] focus:text-[var(--bg-app)] focus:shadow-[var(--shadow-float)] t-small t-strong"
+          >
+            Saltar para o conteúdo
+          </a>
           {/* Sem z-index de propósito: os modais usam <Sheet> (portal para document.body) */}
           {desktop && <Sidebar onHelp={() => setHelpOpen(true)} />}
-          <main id="conteudo" className={`flex-1 w-full relative${desktop ? ' desk-main' : ''}`}>
+          <main id="conteudo" tabIndex={-1} className={`flex-1 w-full relative outline-none${desktop ? ' desk-main' : ''}`}>
             <div className={desktop && !isDetail ? 'desk-content' : undefined}>
             <Suspense fallback={<PageFallback />}>
               <Routes>
