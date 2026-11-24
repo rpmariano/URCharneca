@@ -23,6 +23,7 @@ import { todayISO } from '../utils/dates'
 import { useOpenRaces } from '../utils/openRaces'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
+import { useRetract, useScrollingDown } from '../layout/useScrollRetract'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
@@ -132,6 +133,9 @@ export const ExplorePage: React.FC = () => {
   // Computador largo (>= 1280 px, já com a barra lateral): calendário sempre visível numa coluna lateral fixa
   const wideDesktop = useMediaQuery(BP.xl)
   const sideCalendar = desktop && wideDesktop
+  // Telemóvel: ao descer, a pesquisa, as categorias e o botão do calendário recolhem; voltam ao subir
+  const scrollingDown = useScrollingDown(!desktop, 220)
+  const fab = useRetract(scrollingDown)
   // Computador estreito (1024-1279 px): o calendário abre com um botão na barra de pesquisa.
   // Telemóvel (e tablet, que é igual): botão flutuante.
   const isRaceCategory = category === 'provas' || RACE_KINDS.includes(category as ActivityKind)
@@ -357,7 +361,7 @@ export const ExplorePage: React.FC = () => {
   return (
     <div className="pb-28">
       {/* Topo fixo: barra do clube + pesquisa + categorias */}
-      <AppHeader title="Explorar">
+      <AppHeader title="Explorar" collapsible={!desktop} retracted={scrollingDown}>
        <div className="border-b border-[var(--border-card)] text-[var(--text-1)]" style={{ background: 'var(--bg-header)' }}>
         <div className="flex items-center gap-2 px-5 pt-3 pb-2">
           <div className="flex-1 min-w-0">
@@ -731,7 +735,10 @@ export const ExplorePage: React.FC = () => {
 
       {/* Botão flutuante do calendário (expandir / colapsar): só em telemóvel */}
       {!desktop && (
-      <div className="fixed left-1/2 -translate-x-1/2 z-20 bottom-[calc(76px+env(safe-area-inset-bottom,0px))]">
+      <div
+        {...fab.props}
+        className={`fab fixed left-1/2 -translate-x-1/2 z-20 bottom-[calc(76px+env(safe-area-inset-bottom,0px))] ${fab.hidden ? 'is-retracted' : ''}`}
+      >
         <button
           type="button"
           aria-expanded={calendarOpen}

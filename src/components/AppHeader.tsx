@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Share } from 'lucide-react'
+import { useRetract } from '../layout/useScrollRetract'
 
 /** Emblema do clube (pequeno, com anel dourado). Decorativo: o título da barra diz onde estamos. */
 export const HeaderEmblem: React.FC = () => (
@@ -52,8 +53,13 @@ export const AppHeader: React.FC<{
   titleAs?: 'h1' | 'p'
   className?: string
   children?: React.ReactNode
-}> = ({ title, action, leading, titleAs = 'h1', className = '', children }) => {
+  /** Telemóvel: os `children` podem recolher para trás da barra (ver `retracted`). */
+  collapsible?: boolean
+  /** Com `collapsible`: recolhe os `children` (a altura do cabeçalho na página não muda, não há saltos). */
+  retracted?: boolean
+}> = ({ title, action, leading, titleAs = 'h1', className = '', children, collapsible = false, retracted = false }) => {
   const Title = titleAs
+  const tools = useRetract(collapsible && retracted)
   const ref = useRef<HTMLElement>(null)
   // Publica a altura do cabeçalho em --app-header-h (colunas laterais fixas usam-na para ficar por baixo dele)
   useEffect(() => {
@@ -68,17 +74,27 @@ export const AppHeader: React.FC<{
     }
   }, [])
   return (
+    // Em `collapsible` o <header> é transparente: o fundo azul fica só na barra, que tapa o que recolhe por trás
     <header
       ref={ref}
-      className={`app-header sticky top-0 z-30 ${children ? 'app-header-tall' : ''} ${SHADOW} ${className}`}
-      style={BAR_STYLE}
+      className={`app-header sticky top-0 z-30 ${children ? 'app-header-tall' : ''} ${collapsible ? 'pointer-events-none' : SHADOW} ${className}`}
+      style={collapsible ? undefined : BAR_STYLE}
     >
-      <div className="flex items-center gap-3 px-5 min-h-14">
+      <div
+        className={`flex items-center gap-3 px-5 min-h-14 ${collapsible ? `relative z-10 pointer-events-auto ${SHADOW}` : ''}`}
+        style={collapsible ? BAR_STYLE : undefined}
+      >
         {leading ?? <HeaderEmblem />}
         <Title className="t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)]" style={NOWRAP}>{title}</Title>
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
       </div>
-      {children}
+      {collapsible ? (
+        <div {...tools.props} className={`app-header-tools ${tools.hidden ? 'is-retracted' : ''}`}>
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </header>
   )
 }

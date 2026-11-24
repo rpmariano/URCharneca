@@ -366,6 +366,37 @@ p {
 .scroll-row::-webkit-scrollbar { display: none; }
 
 /* =========================================================================
+   Telemóvel: ferramentas do cabeçalho (AppHeader `collapsible`) e botão flutuante
+   recolhem ao descer. Só mudam com transform/opacity: o conteúdo não salta.
+   ========================================================================= */
+.app-header-tools {
+  pointer-events: auto;
+  background: var(--bg-app);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.app-header-tools.is-retracted {
+  transform: translateY(-100%);
+  box-shadow: none;
+  pointer-events: none;
+}
+/* Paisagem com pouca altura: o cabeçalho já não é fixo (layout/responsive.css), não há nada a recolher */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header-tools.is-retracted {
+    transform: none;
+    pointer-events: auto;
+  }
+}
+.fab {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.fab.is-retracted {
+  transform: translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =========================================================================
    Formulários
    ========================================================================= */
 input[type="text"],
