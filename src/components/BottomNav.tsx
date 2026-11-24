@@ -3,15 +3,17 @@ import { NavLink } from 'react-router-dom'
 import { CircleUserRound, Megaphone, Search, ShieldCheck, Ticket } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useOpenRaces } from '../utils/openRaces'
 
 /**
  * Navegação inferior: Explorar · Inscrições · Comunicados · Perfil (+ Gerir para administradores).
  */
 export const BottomNav: React.FC = () => {
   const { isAdminView, unreadNotificationsCount } = useApp()
+  const { fresh } = useOpenRaces()
 
-  const items: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; badge?: number }> = [
-    { to: '/', label: 'Explorar', icon: Search, end: true },
+  const items: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; badge?: number; badgeLabel?: string }> = [
+    { to: '/', label: 'Explorar', icon: Search, end: true, badge: fresh.length, badgeLabel: 'provas novas' },
     { to: '/inscricoes', label: 'Inscrições', icon: Ticket },
     { to: '/comunicados', label: 'Comunicados', icon: Megaphone, badge: unreadNotificationsCount },
     ...(isAdminView ? [{ to: '/admin', label: 'Gerir', icon: ShieldCheck }] : []),
@@ -58,7 +60,7 @@ export const BottomNav: React.FC = () => {
                     >
                       {item.badge}
                     </span>
-                    <span className="sr-only">{item.badge} por ler</span>
+                    <span className="sr-only">{item.badge} {item.badgeLabel ?? 'por ler'}</span>
                   </>
                 )}
               </span>

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { CircleUserRound, Flag, Keyboard, Megaphone, Search, ShieldCheck, Sparkles, Ticket } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useOpenRaces } from '../utils/openRaces'
 import { KIND_COLOR, KIND_ICON } from '../components/ui'
 
 export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; key: string; adminOnly?: boolean }> = [
@@ -34,6 +35,7 @@ export const useSidebarItems = () => {
 /** Barra lateral fixa do shell de computador (todos os utilizadores, >= 1024 px; "Gerir" só para administradores). */
 export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
   const { unreadNotificationsCount, currentUser, isAdminView } = useApp()
+  const { fresh } = useOpenRaces()
   const items = useSidebarItems()
   const { pathname, search } = useLocation()
   const tipo = new URLSearchParams(search).get('tipo') ?? ''
@@ -54,6 +56,14 @@ export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
           <NavLink to={item.to} end={item.end} className={({ isActive }) => `desk-nav-link${isActive && item.to !== '/' ? ' is-active' : ''}${item.to === '/' && onExplore ? ' is-parent' : ''}`}>
             <item.icon className="w-5 h-5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{item.label}</span>
+            {item.to === '/' && fresh.length > 0 && (
+              <>
+                <span aria-hidden="true" className="desk-badge">
+                  {fresh.length}
+                </span>
+                <span className="sr-only">{fresh.length} provas novas</span>
+              </>
+            )}
             {item.to === '/comunicados' && unreadNotificationsCount > 0 && (
               <>
                 <span aria-hidden="true" className="desk-badge">
