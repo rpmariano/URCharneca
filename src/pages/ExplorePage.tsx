@@ -847,9 +847,10 @@ export const ExplorePage: React.FC = () => {
         )}
         </div>
         {sideCalendar && (
-          <div className="col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6 space-y-6">
-            {calendar}
+          // A coluna estica até ao fim da linha da grelha: o marcador fica em cima e o calendário cola ao topo ao descer
+          <div className="col-start-2 row-start-1 self-stretch pt-6 space-y-6">
             {showHighlights && trofeuBoard}
+            <div className="sticky top-[calc(var(--app-header-h)+16px)]">{calendar}</div>
           </div>
         )}
       </div>

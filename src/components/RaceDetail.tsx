@@ -720,7 +720,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           </>
         }
       >
-        <Button size="lg" className="min-w-[44%]" disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
+        <Button size="lg" className="min-w-[44%] lg:min-w-0 lg:w-[332px]" disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
           {ctaLabel}
         </Button>
       </StickyActionBar>

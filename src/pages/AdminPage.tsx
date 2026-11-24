@@ -76,7 +76,7 @@ export const AdminPage: React.FC = () => {
           </Button>
         }
       />
-      <div className={desktop ? 'max-w-[640px]' : undefined}>
+      <div className={desktop ? 'max-w-[760px]' : undefined}>
       <Segmented<Tab>
         label="Secção de gestão"
         value={tab}
