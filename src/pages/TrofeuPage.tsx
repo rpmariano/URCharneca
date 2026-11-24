@@ -11,7 +11,6 @@ import {
   History,
   Map as MapIcon,
   RefreshCw,
-  Search,
   ShieldCheck,
   Trophy,
   Users,
@@ -29,14 +28,11 @@ import { formatShortDate } from '../utils/formatters'
 import { seasonOf, todayISO } from '../utils/dates'
 import { AppHeader, HeaderButton } from '../components/AppHeader'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
-import { Button, Chip, EmptyState, SectionTitle, Segmented, Tag, inputClass } from '../components/ui'
+import { Button, Chip, EmptyState, SectionTitle, Segmented, Tag } from '../components/ui'
+import { AthleteStandingsView, ClubStandingsView } from '../components/TrofeuStandings'
+import { useDesktopShell } from '../layout/useDesktopShell'
 
 type TrofeuTab = 'clubes' | 'atletas' | 'provas' | 'regulamento'
-
-/** Mínimo de provas para entrar nos prémios finais individuais: 70% das provas (Regulamento, ponto 5.3.1). */
-const minStagesForPrize = (total: number) => Math.ceil(total * 0.7)
-
-const stageNumber = (code: string) => Number(code.replace(/\D/g, '')) || 0
 
 const formatSyncedAt = (iso: string) => {
   const d = new Date(iso)
@@ -61,14 +57,15 @@ export const TrofeuPage: React.FC = () => {
     syncTrofeuResults,
     isSyncingTrofeuResults,
     checkRaceDocumentsNow,
+    currentUser,
+    youthAthletes,
   } = useApp()
 
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>(
     () => trofeuSeasons.find((s) => s.status === 'open')?.season || '2026/2027'
   )
   const [tab, setTab] = useState<TrofeuTab>('clubes')
-  const [escalaoFilter, setEscalaoFilter] = useState<string>('all')
-  const [searchQ, setSearchQ] = useState('')
+  const isDesktop = useDesktopShell()
 
   const today = todayISO()
   // Só épocas em que a U.R. Charneca teve atletas (ou a época em curso)
@@ -82,21 +79,11 @@ export const TrofeuPage: React.FC = () => {
   )
 
   const standings = activeSeason?.athlete_standings || []
-  const escalaoOptions = useMemo(() => {
-    const groups = new Set<string>()
-    for (const a of standings) groups.add(a.escalao.replace(/\s*\([MF]\)$/, ''))
-    return ['all', ...Array.from(groups)]
-  }, [standings])
-
-  const displayedAthletes = useMemo(() => {
-    const q = searchQ.trim().toLowerCase()
-    return standings.filter((a) => {
-      if (escalaoFilter !== 'all' && !a.escalao.toLowerCase().includes(escalaoFilter.toLowerCase())) return false
-      if (!q) return true
-      return a.name.toLowerCase().includes(q) || a.escalao.toLowerCase().includes(q) || Boolean(a.dorsal?.toLowerCase().includes(q))
-    })
-  }, [standings, escalaoFilter, searchQ])
-
+  // Fichas "minhas": o próprio e as crianças a cargo (para o filtro "Os meus" e o destaque nas linhas)
+  const myChildIds = useMemo(
+    () => youthAthletes.filter((y) => y.associated_adult_ids.includes(currentUser.id)).map((y) => y.id),
+    [youthAthletes, currentUser.id]
+  )
   // Provas da época escolhida (o calendário histórico vem do site oficial)
   const seasonRaces = useMemo(
     () =>
@@ -111,6 +98,19 @@ export const TrofeuPage: React.FC = () => {
   const urc = activeSeason?.club_standings.find((c) => c.is_urc)
   const isOpen = activeSeason?.status === 'open'
 
+  const syncedAt = activeSeason ? formatSyncedAt(activeSeason.results_synced_at || activeSeason.last_synced_at) : ''
+  const syncInfo = (syncedAt || (isAdminView && isOpen && isSupabaseConfigured)) && (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {syncedAt && <p className="t-small text-[var(--text-3)]">Dados oficiais atualizados em {syncedAt}</p>}
+      {isAdminView && isOpen && isSupabaseConfigured && (
+        <Button size="sm" variant="secondary" disabled={isSyncingTrofeuResults} onClick={() => void syncTrofeuResults()} aria-busy={isSyncingTrofeuResults}>
+          <RefreshCw className={`w-4 h-4 ${isSyncingTrofeuResults ? 'animate-spin' : ''}`} aria-hidden="true" />
+          {isSyncingTrofeuResults ? 'A atualizar…' : 'Atualizar classificações'}
+        </Button>
+      )}
+    </div>
+  )
+
   if (!activeSeason) {
     return (
       <div className="px-5 pt-6">
@@ -120,8 +120,11 @@ export const TrofeuPage: React.FC = () => {
   }
 
   return (
-    // page-read com coluna de 960 px: as listas de atletas e provas passam a 2 colunas no computador
-    <div className="page-read px-5 pb-28 space-y-5" style={{ '--read-max': '960px' } as React.CSSProperties}>
+    // page-read: coluna de 960 px (provas em 2 colunas no computador); as tabelas de classificação usam até 1200 px
+    <div
+      className="page-read px-5 pb-28 space-y-5"
+      style={{ '--read-max': tab === 'clubes' || tab === 'atletas' ? '1200px' : '960px' } as React.CSSProperties}
+    >
       <AppHeader
         className="-mx-5"
         title="Troféu de Cascais"
@@ -161,8 +164,6 @@ export const TrofeuPage: React.FC = () => {
               active={s.season === activeSeason.season}
               onClick={() => {
                 setSelectedSeasonId(s.season)
-                setEscalaoFilter('all')
-                setSearchQ('')
               }}
             >
               {s.season}
@@ -215,29 +216,12 @@ export const TrofeuPage: React.FC = () => {
           )}
 
           {activeSeason.club_standings.length > 0 ? (
-            <section className="space-y-3">
-              <SectionTitle title="Classificação por clubes" count={activeSeason.club_standings.length} />
-              <div className="divide-soft">
-                {activeSeason.club_standings.map((c) => (
-                  <div key={`${c.season}-${c.team}`} className={`py-3 px-2 rounded-xl flex items-center gap-3 ${c.is_urc ? 'bg-[var(--tint-blue-bg)] px-3' : ''}`}>
-                    <span
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center t-small t-strong t-num shrink-0 ${
-                        c.pos <= 3
-                          ? 'bg-[var(--tint-amber-bg-strong)] text-[var(--tint-amber-fg)]'
-                          : c.is_urc
-                          ? 'bg-[var(--run)] text-[var(--on-accent)]'
-                          : 'bg-[var(--surface-raised)] text-[var(--text-2)]'
-                      }`}
-                    >
-                      {c.pos}.º
-                    </span>
-                    <div className={`min-w-0 flex-1 t-body truncate ${c.is_urc ? 't-strong text-[var(--run)]' : 'text-[var(--text-1)]'}`}>{c.team}</div>
-                    <div className="text-right shrink-0">
-                      <span className="t-body t-strong t-num text-[var(--text-1)]">{c.total}</span> <span className="t-small text-[var(--text-3)]">pts</span>
-                    </div>
-                  </div>
-                ))}
+            <section className="space-y-3" aria-labelledby="trofeu-clubes-h">
+              <div id="trofeu-clubes-h">
+                <SectionTitle title="Classificação por clubes" count={activeSeason.club_standings.length} />
               </div>
+              {syncInfo}
+              <ClubStandingsView key={activeSeason.season} season={activeSeason} isDesktop={isDesktop} />
             </section>
           ) : (
             <EmptyState
@@ -246,7 +230,6 @@ export const TrofeuPage: React.FC = () => {
               text="O detalhe prova a prova desta época está nos documentos oficiais abaixo."
             />
           )}
-
           {(activeSeason.awarded_collective_pdf || activeSeason.awarded_individual_pdf) && (
             <section className="space-y-2">
               <SectionTitle title="Documentos oficiais" />
@@ -292,138 +275,31 @@ export const TrofeuPage: React.FC = () => {
             </div>
           )}
 
-          {(() => {
-            const syncedAt = formatSyncedAt(activeSeason.results_synced_at || activeSeason.last_synced_at)
-            return (
-              <div className="space-y-2">
-                {syncedAt && <p className="t-small text-[var(--text-3)]">Dados oficiais atualizados em {syncedAt}</p>}
-                {isAdminView && isOpen && isSupabaseConfigured && (
-                  <Button size="sm" variant="secondary" disabled={isSyncingTrofeuResults} onClick={() => void syncTrofeuResults()} aria-busy={isSyncingTrofeuResults}>
-                    <RefreshCw className={`w-4 h-4 ${isSyncingTrofeuResults ? 'animate-spin' : ''}`} aria-hidden="true" />
-                    {isSyncingTrofeuResults ? 'A atualizar…' : 'Atualizar classificações'}
-                  </Button>
-                )}
-              </div>
-            )
-          })()}
+          {syncInfo}
 
-          {standings.length === 0 ? (
+          {standings.length === 0 && !isSyncingTrofeuResults ? (
             <EmptyState icon={Users} title="Sem atletas nesta época" text="Quando houver classificações da U.R. Charneca, aparecem aqui." />
           ) : (
-            <>
-              <div className="relative">
-                <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-                <input
-                  type="search"
-                  className={`${inputClass} pl-11`}
-                  value={searchQ}
-                  onChange={(e) => setSearchQ(e.target.value)}
-                  placeholder="Procurar atleta, escalão ou dorsal"
-                  aria-label="Procurar atletas do Troféu"
-                />
+            <section className="space-y-3" aria-labelledby="trofeu-atletas-h">
+              <div id="trofeu-atletas-h">
+                <SectionTitle title="Atletas da U.R. Charneca" count={standings.length} />
               </div>
-
-              {escalaoOptions.length > 2 && (
-                <div className="scroll-row gap-2">
-                  {escalaoOptions.map((esc) => (
-                    <Chip key={esc} active={escalaoFilter === esc} onClick={() => setEscalaoFilter(esc)}>
-                      {esc === 'all' ? 'Todos' : esc}
-                    </Chip>
-                  ))}
-                </div>
-              )}
-
-              <SectionTitle title="Atletas da U.R. Charneca" count={displayedAthletes.length} />
-              <p className="t-small text-[var(--text-3)]">Lugar acumulado no escalão; pontos por prova abaixo.</p>
-
-              {displayedAthletes.length === 0 ? (
-                <EmptyState icon={Users} title="Nada encontrado" text="Experimenta outro escalão ou outra pesquisa." />
-              ) : (
-                <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-                  {displayedAthletes.map((a) => {
-                    const need = minStagesForPrize(a.total_season_stages)
-                    const meets = a.stages_participated >= need
-                    const pct = Math.min(100, Math.round((a.stages_participated / Math.max(1, a.total_season_stages)) * 100))
-                    return (
-                      <div key={a.id} className="card p-4 space-y-3">
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`w-9 h-9 rounded-lg flex items-center justify-center t-small t-strong t-num shrink-0 ${
-                              a.pos > 0 && a.pos <= 3 ? 'bg-[var(--tint-amber-bg-strong)] text-[var(--tint-amber-fg)]' : 'bg-[var(--surface-raised)] text-[var(--text-2)]'
-                            }`}
-                            aria-label={a.pos > 0 ? `${a.pos}.º lugar` : 'Sem classificação'}
-                          >
-                            {a.pos > 0 ? `${a.pos}.º` : '—'}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="t-body t-strong text-[var(--text-1)] truncate">{a.name}</div>
-                            <div className="t-small text-[var(--text-3)]">
-                              {a.escalao}
-                              {a.birth_year > 0 ? ` · ${a.birth_year}` : ''}
-                              {a.dorsal ? ` · dorsal ${a.dorsal}` : ' · sem dorsal'}
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className="t-heading t-num text-[var(--text-1)]">{a.total}</div>
-                            <div className="t-small text-[var(--text-3)]">pontos</div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between t-small text-[var(--text-2)]">
-                            <span>
-                              {a.stages_participated} de {a.total_season_stages} provas
-                            </span>
-                            <span className={meets ? 'text-[var(--ok)] t-strong' : 'text-[var(--text-3)]'}>
-                              {meets ? 'Já cumpre o mínimo para prémios' : `Para prémios: mínimo ${need} provas`}
-                            </span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-[var(--surface-raised)] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Provas feitas">
-                            <div className="h-full rounded-full bg-[var(--run)]" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-
-                        {a.stage_results && Object.keys(a.stage_results).length > 0 ? (
-                          <ul className="space-y-1" aria-label={`Resultados por prova de ${a.name}`}>
-                            {Object.entries(a.stage_results)
-                              .sort(([x], [y]) => stageNumber(x) - stageNumber(y))
-                              .map(([stage, r]) => (
-                                <li key={stage} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-raised)] t-small t-num text-[var(--text-2)]">
-                                  <strong className="text-[var(--text-1)]">{stage}</strong>
-                                  <span aria-hidden="true">·</span>
-                                  <span>{r.pos}.º no escalão</span>
-                                  <span aria-hidden="true">·</span>
-                                  <span>
-                                    <strong className="text-[var(--text-1)]">{r.points}</strong> pts
-                                  </span>
-                                  {r.time && (
-                                    <>
-                                      <span aria-hidden="true">·</span>
-                                      <span>{r.time}</span>
-                                    </>
-                                  )}
-                                </li>
-                              ))}
-                          </ul>
-                        ) : Object.keys(a.points_per_stage).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {Object.entries(a.points_per_stage).map(([stage, pts]) => (
-                              <span key={stage} className="px-2 py-0.5 rounded-md bg-[var(--surface-raised)] t-small t-num text-[var(--text-2)]">
-                                {stage}: <strong>{pts}</strong>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </>
+              <p className="t-small text-[var(--text-3)]">
+                O lugar é o acumulado no escalão (soma dos pontos das provas). Para os prémios finais conta ter feito pelo menos 70% das provas.
+              </p>
+              <AthleteStandingsView
+                key={activeSeason.season}
+                season={activeSeason}
+                isDesktop={isDesktop}
+                isAdminView={isAdminView}
+                currentUserId={currentUser.id}
+                childIds={myChildIds}
+                loading={isSyncingTrofeuResults}
+              />
+            </section>
           )}
         </div>
       )}
-
       {/* ------------------------------ PROVAS ------------------------------ */}
       {tab === 'provas' && (
         <div className="space-y-4">
