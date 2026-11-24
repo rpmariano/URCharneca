@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "./layout/responsive.css";
 @import "./layout/desktop.css";
+@import "./layout/standings.css";
 
 @theme {
   --color-primary: #0a5fc0;

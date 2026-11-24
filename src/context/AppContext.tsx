@@ -55,7 +55,7 @@ import {
 } from '../services/supabaseSyncService'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { TRANSPORT_LABELS } from '../types'
-import { computeVanAllocation } from '../utils/formatters'
+import { computeVanAllocation, formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 
 /** v7: gestão de múltiplos veículos, lugares vagos e condutores por prova */
@@ -167,7 +167,7 @@ interface AppContextValue {
   createRace: (race: NewRace) => Race
   updateRace: (race: Race) => void
   deleteRace: (raceId: string) => void
-  registerForRace: (input: RegisterForRaceInput) => ActionResult
+  registerForRace: (input: RegisterForRaceInput, opts?: { race?: Race }) => ActionResult
   cancelRegistration: (regId: string) => void
   updateRegistrationByAdmin: (
     regId: string,
@@ -1201,9 +1201,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pushNotification({
       title: suggested ? `Prova sugerida por ${currentUser.name}: ${newRace.title}` : `Inscrições abertas: ${newRace.title}`,
       message: suggested
-        ? `${currentUser.name} sugeriu "${newRace.title}" (${newRace.date}, ${newRace.location}). Inscrição individual — marca presença na app para irmos juntos.`
-        : `Já te podes inscrever em "${newRace.title}" (${newRace.date}, ${newRace.location}).${
-            newRace.van_available ? ` Carrinha do clube com ${newRace.van_capacity} lugares.` : ''
+        ? `${currentUser.name} sugeriu "${newRace.title}" (${formatShortDate(newRace.date)}, ${newRace.location}). Inscrição individual — marca presença na app para irmos juntos.`
+        : `Já te podes inscrever em "${newRace.title}" (${formatShortDate(newRace.date)}, ${newRace.location}).${
+            newRace.van_available ? ` Há ${newRace.van_capacity} ${newRace.van_capacity === 1 ? 'vaga' : 'vagas'} de transporte.` : ''
           }${newRace.open_to_children ? ' Aberta a crianças.' : ''}`,
       type: suggested ? 'individual_share' : 'race_open',
       related_race_id: newRace.id,
@@ -1259,9 +1259,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return !(race.category !== 'individual' && race.registration_deadline && race.registration_deadline < todayLocal)
   }
 
-  const registerForRace = (input: RegisterForRaceInput): ActionResult => {
-    const race = races.find((r) => r.id === input.race_id)
-    if (!race) return { success: false, message: 'Prova não encontrada.' }
+  const registerForRace = (input: RegisterForRaceInput, opts?: { race?: Race }): ActionResult => {
+    // `opts.race`: prova acabada de criar, que ainda não está na lista deste render
+    const race = opts?.race ?? races.find((r) => r.id === input.race_id)
+    if (!race) {
+      showToast('Prova não encontrada. Tenta inscrever-te a partir da página da prova.', 'warning')
+      return { success: false, message: 'Prova não encontrada.' }
+    }
 
     if (!registrationOpenFor(race)) {
       const msg = race.date < todayISO() ? 'Esta prova já se realizou.' : 'O prazo de inscrição terminou.'

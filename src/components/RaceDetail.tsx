@@ -691,7 +691,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
       </StickyActionBar>
 
       {sheetOpen && (
-        <Sheet onClose={() => setSheetOpen(false)} ariaLabel={isIndividual ? 'A minha presença' : 'Inscrição'}>
+        <Sheet persistent onClose={() => setSheetOpen(false)} ariaLabel={isIndividual ? 'A minha presença' : 'Inscrição'}>
           <SheetHeader title={isIndividual ? 'A minha presença' : 'Inscrição'} subtitle={race.title} onClose={() => setSheetOpen(false)} />
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {!registrationOpen && !myReg && (
