@@ -20,6 +20,7 @@ import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
+import { useDesktopAdmin } from '../layout/useDesktopAdmin'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
@@ -121,6 +122,7 @@ export const ExplorePage: React.FC = () => {
   const today = todayISO()
 
   const category = parseCategory(params.get('tipo'))
+  const desktopAdmin = useDesktopAdmin() // no desktop, as categorias estão na barra lateral
   const isRaceCategory = category === 'provas' || RACE_KINDS.includes(category as ActivityKind)
   const setCategory = (next: Category) => {
     const p = new URLSearchParams(params)
@@ -361,13 +363,15 @@ export const ExplorePage: React.FC = () => {
             </IconButton>
           )}
         </div>
+        {!desktopAdmin && (
         <CategoryTabs
           value={isRaceCategory ? 'provas' : category}
           options={CATEGORIES}
           onChange={(v) => setCategory(v === 'provas' && isRaceCategory ? category : v)}
           label="Tipo de atividade"
         />
-        {isRaceCategory && (
+        )}
+        {isRaceCategory && !desktopAdmin && (
           <div className="scroll-row gap-2 px-5 pb-3" role="group" aria-label="Tipo de prova">
             {RACE_SUBMENU.map((o) => {
               const on = category === o.value

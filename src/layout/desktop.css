@@ -63,6 +63,29 @@
     font-weight: 600;
     box-shadow: inset 4px 0 0 var(--gold);
   }
+  .desk-nav-link.is-parent {
+    color: var(--text-1);
+    font-weight: 600;
+  }
+  .desk-subnav {
+    list-style: none;
+    margin: 0 0 6px 22px;
+    padding: 0 0 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 2px solid var(--border-card);
+  }
+  .desk-sub-link {
+    min-height: 36px;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .desk-sub-link.is-level2 {
+    padding-left: 26px;
+    font-size: 13px;
+    min-height: 32px;
+  }
   .desk-nav-link:focus-visible,
   .desk-sort:focus-visible,
   .desk-rowlink:focus-visible,
