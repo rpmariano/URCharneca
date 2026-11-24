@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { AlertTriangle, Check, ClipboardCheck, Download, LogIn, Pencil, Plus, RefreshCw, Search, ShieldCheck, Ticket, Trophy, UserPlus, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { AthleteProfile, RaceRegistration, TransportMode, YouthAthlete } from '../types'
-import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, TRANSPORT_LABELS } from '../types'
+import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import { calculateAge, countSeasonStages, formatShortDate, plural } from '../utils/formatters'
 import { seasonOf, todayISO } from '../utils/dates'
@@ -1188,13 +1188,6 @@ const ChildrenTab: React.FC = () => {
 
 // ---------------------------------------------------------------------------
 /** Inscrições e dorsais em tabela (só desktop): filtros, seleção múltipla e ações em bloco por prova. */
-const STATUS_LABEL: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
-  interested: { label: 'Aguarda o clube', tone: 'warn' },
-  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
-  self_enrolled: { label: 'Vai', tone: 'info' },
-  cancelled: { label: 'Cancelado', tone: 'neutral' },
-}
-
 const RegistrationsTable: React.FC = () => {
   const { races, registrations, applyToRegistrations } = useApp()
   const navigate = useNavigate()
@@ -1263,7 +1256,7 @@ const RegistrationsTable: React.FC = () => {
     },
     { id: 'date', header: 'Data', sortValue: (r) => raceById.get(r.race_id)?.date ?? '', render: (r) => formatShortDate(raceById.get(r.race_id)?.date ?? '') },
     { id: 'distance', header: 'Distância', className: 'col-opt', sortValue: (r) => r.distance, render: (r) => r.distance },
-    { id: 'status', header: 'Estado', sortValue: (r) => STATUS_LABEL[r.status].label, render: (r) => <Tag tone={STATUS_LABEL[r.status].tone}>{STATUS_LABEL[r.status].label}</Tag> },
+    { id: 'status', header: 'Estado', sortValue: (r) => REG_STATUS_LABELS[r.status].label, render: (r) => <Tag tone={REG_STATUS_LABELS[r.status].tone}>{REG_STATUS_LABELS[r.status].label}</Tag> },
     {
       id: 'bib',
       header: 'Dorsal',

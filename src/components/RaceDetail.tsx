@@ -23,7 +23,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import type { Race, RaceRegistration, RaceVehicle, TransportMode, YouthAthlete } from '../types'
-import { BIB_STATUS_LABELS, CATEGORIA_LABELS, TRANSPORT_LABELS } from '../types'
+import { BIB_STATUS_LABELS, CATEGORIA_LABELS, REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import {
   computeVanAllocation,
   formatLongDate,
@@ -45,13 +45,6 @@ import { ContextualHint } from './OnboardingCards'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { PersonAvatar } from './PersonAvatar'
 import { Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
-
-const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
-  interested: { label: 'Aguarda o clube', tone: 'warn' },
-  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
-  self_enrolled: { label: 'Vai', tone: 'info' },
-  cancelled: { label: 'Cancelado', tone: 'neutral' },
-}
 
 /** O que cada opção de transporte significa, mostrado por baixo do seletor. */
 const TRANSPORT_HELP: Record<TransportMode, string> = {
@@ -438,7 +431,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                         {vehName ? ` (${vehName})` : ''}
                       </div>
                     </div>
-                    <Tag tone={STATUS_TAG[r.status].tone}>{STATUS_TAG[r.status].label}</Tag>
+                    <Tag tone={REG_STATUS_LABELS[r.status].tone}>{REG_STATUS_LABELS[r.status].label}</Tag>
                   </div>
                 )
               })}
@@ -890,7 +883,7 @@ const RegistrationRow: React.FC<{
         </div>
         {existing && (
           <span className="pop-in">
-            <Tag tone={STATUS_TAG[existing.status].tone}>{STATUS_TAG[existing.status].label}</Tag>
+            <Tag tone={REG_STATUS_LABELS[existing.status].tone}>{REG_STATUS_LABELS[existing.status].label}</Tag>
           </span>
         )}
       </div>
@@ -1028,7 +1021,7 @@ const RosterRow: React.FC<{
                 : ''}
             </div>
           </div>
-          <Tag tone={STATUS_TAG[reg.status].tone}>{STATUS_TAG[reg.status].label}</Tag>
+          <Tag tone={REG_STATUS_LABELS[reg.status].tone}>{REG_STATUS_LABELS[reg.status].label}</Tag>
         </button>
       </div>
       {open && editable && (
@@ -1042,8 +1035,8 @@ const RosterRow: React.FC<{
                     value={reg.status}
                     onChange={(e) => onPatch({ status: e.target.value as RaceRegistration['status'] })}
                   >
-                    <option value="interested">Aguarda o clube</option>
-                    <option value="enrolled_by_admin">Inscrito</option>
+                    <option value="interested">{REG_STATUS_LABELS.interested.label}</option>
+                    <option value="enrolled_by_admin">{REG_STATUS_LABELS.enrolled_by_admin.label}</option>
                   </select>
                 </Field>
                 <Field label="Dorsal">

@@ -8,6 +8,14 @@ export type RegistrationStatus =
   | 'self_enrolled'      // Inscrito individualmente ("Também vou!")
   | 'cancelled'          // Cancelado / desistiu
 
+/** Rótulo e tom de cada estado de uma inscrição: os mesmos em todos os ecrãs. */
+export const REG_STATUS_LABELS: Record<RegistrationStatus, { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
+  interested: { label: 'Pedido enviado', tone: 'warn' },
+  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
+  self_enrolled: { label: 'Por conta própria', tone: 'info' },
+  cancelled: { label: 'Cancelado', tone: 'neutral' },
+}
+
 export type TransportMode =
   | 'van_roundtrip'      // Carrinha da Charneca (Ida e Volta)
   | 'van_return_only'    // Carrinha da Charneca (Só Regresso)
