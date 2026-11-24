@@ -398,7 +398,7 @@ export const SearchPill: React.FC<{
   placeholder?: string
   trailing?: React.ReactNode
 }> = ({ value, onChange, placeholder = 'Procurar', trailing }) => (
-  <div className="flex items-center gap-2 pl-5 pr-1.5 min-h-14 rounded-full bg-[var(--surface-card)] border border-[var(--border-card)] shadow-[var(--shadow-card)]">
+  <div className="flex items-center gap-2 pl-5 pr-1.5 min-h-14 rounded-full bg-[var(--surface-card)] border border-[var(--border-card-strong)] shadow-[var(--shadow-card)]">
     <Search className="w-5 h-5 text-[var(--text-1)] shrink-0" aria-hidden="true" />
     <input
       type="search"
