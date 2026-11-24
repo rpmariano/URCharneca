@@ -88,15 +88,18 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
     } else {
       const created = createRace(payload)
       if (alsoRegister) {
-        registerForRace({
-          race_id: created.id,
-          athlete_id: currentUser.id,
-          athlete_name: currentUser.name,
-          is_dependent: false,
-          escalao: currentUser.escalao,
-          distance: created.distances[0],
-          transport_mode: 'own_transport',
-        })
+        registerForRace(
+          {
+            race_id: created.id,
+            athlete_id: currentUser.id,
+            athlete_name: currentUser.name,
+            is_dependent: false,
+            escalao: currentUser.escalao,
+            distance: created.distances[0],
+            transport_mode: 'own_transport',
+          },
+          { race: created }
+        )
       }
     }
     onClose()
