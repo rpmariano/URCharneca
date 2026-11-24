@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ticket } from 'lucide-react'
+import { Search, Ticket } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind } from '../types'
 import { TRANSPORT_LABELS } from '../types'
@@ -10,7 +10,7 @@ import { ActivityCover } from '../components/ActivityCover'
 import { countdownLabel } from '../components/ActivityItems'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
-import { EmptyState, PageHeader, SectionTitle, Segmented, Tag, kindOfEvent } from '../components/ui'
+import { Chip, EmptyState, PageHeader, SectionTitle, Segmented, Tag, inputClass, kindOfEvent } from '../components/ui'
 
 interface Entry {
   key: string
@@ -22,6 +22,8 @@ interface Entry {
   title: string
   detail: string
   who?: string
+  /** quem está inscrito: o próprio ('me') ou o id da criança */
+  person: string
   tag: { label: string; tone: 'ok' | 'warn' | 'info' }
   to: string
 }
@@ -34,6 +36,8 @@ export const RegistrationsPage: React.FC = () => {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
   const desktop = useDesktopShell()
   const sideBySide = useMediaQuery(BP.xl) && desktop
+  const [person, setPerson] = useState<string>('all')
+  const [query, setQuery] = useState('')
 
   const entries = useMemo<Entry[]>(() => {
     const childIds = new Set(youthAthletes.filter((c) => c.associated_adult_ids.includes(currentUser.id)).map((c) => c.id))
@@ -57,6 +61,7 @@ export const RegistrationsPage: React.FC = () => {
         title: race.title,
         detail: `${r.distance} · ${TRANSPORT_LABELS[r.transport_mode].short}`,
         who: r.is_dependent ? r.athlete_name : undefined,
+        person: r.is_dependent ? r.dependent_id || r.athlete_id : 'me',
         tag:
           r.status === 'interested'
             ? { label: 'Aguarda o clube', tone: 'warn' }
@@ -78,6 +83,7 @@ export const RegistrationsPage: React.FC = () => {
         imageUrl: e.image_url,
         title: e.title,
         detail: e.location,
+        person: 'me',
         tag: mine.status === 'going' ? { label: 'Vais', tone: 'ok' } : { label: 'Talvez', tone: 'warn' },
         to: `/evento/${e.id}`,
       })
@@ -85,8 +91,23 @@ export const RegistrationsPage: React.FC = () => {
     return out.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
   }, [registrations, races, events, youthAthletes, currentUser.id])
 
-  const upcoming = entries.filter((e) => e.date >= today)
-  const past = entries.filter((e) => e.date < today).reverse()
+  // Pessoas com inscrições (eu e as crianças), para o filtro
+  const people = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const e of entries) {
+      if (!map.has(e.person)) map.set(e.person, e.person === 'me' ? 'Eu' : (e.who || 'Criança').split(' ')[0])
+    }
+    return [...map.entries()].sort((a, b) => (a[0] === 'me' ? -1 : b[0] === 'me' ? 1 : a[1].localeCompare(b[1], 'pt')))
+  }, [entries])
+  const q = query.trim().toLowerCase()
+  const filtered = entries.filter(
+    (e) =>
+      (person === 'all' || e.person === person) &&
+      (!q || e.title.toLowerCase().includes(q) || e.detail.toLowerCase().includes(q) || (e.who || '').toLowerCase().includes(q))
+  )
+  const upcoming = filtered.filter((e) => e.date >= today)
+  const past = filtered.filter((e) => e.date < today).reverse()
+  const filtering = person !== 'all' || q !== ''
   const list = tab === 'upcoming' ? upcoming : past
 
   /** Lista de uma das duas vistas (próximas ou passadas) */
@@ -94,14 +115,21 @@ export const RegistrationsPage: React.FC = () => {
     items.length === 0 ? (
       <EmptyState
         icon={Ticket}
-        title={which === 'upcoming' ? 'Ainda sem inscrições' : 'Sem atividades passadas'}
+        title={filtering ? 'Nada encontrado' : which === 'upcoming' ? 'Ainda sem inscrições' : 'Sem atividades passadas'}
         text={
-          which === 'upcoming'
+          filtering
+            ? 'Não há inscrições com este filtro. Experimenta outra pessoa ou outra pesquisa.'
+            : which === 'upcoming'
             ? 'Quando te inscreveres numa prova ou confirmares presença num treino, aparece aqui.'
             : 'As provas e treinos em que participaste vão aparecer aqui.'
         }
-        action={which === 'upcoming' ? 'Explorar provas' : undefined}
-        onAction={() => navigate('/?tipo=provas')}
+        action={filtering ? 'Limpar filtros' : which === 'upcoming' ? 'Explorar provas' : undefined}
+        onAction={() => {
+          if (filtering) {
+            setPerson('all')
+            setQuery('')
+          } else navigate('/?tipo=provas')
+        }}
       />
     ) : (
       <div className="divide-soft">
@@ -137,6 +165,34 @@ export const RegistrationsPage: React.FC = () => {
     // Separadores Próximas/Passadas; em computador largo (>= 1280 px) as duas listas lado a lado (page-wide)
     <div className={`${sideBySide ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-5`}>
       <PageHeader title="Inscrições" />
+
+      {entries.length > 0 && (
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+            <input
+              type="search"
+              className={`${inputClass} pl-11`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Procurar nas minhas inscrições"
+              aria-label="Procurar nas minhas inscrições"
+            />
+          </div>
+          {people.length > 1 && (
+            <div className="scroll-row gap-2" role="group" aria-label="Filtrar por pessoa">
+              <Chip active={person === 'all'} onClick={() => setPerson('all')}>
+                Todos
+              </Chip>
+              {people.map(([id, label]) => (
+                <Chip key={id} active={person === id} onClick={() => setPerson(id)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {sideBySide ? (
         <div className="grid grid-cols-2 gap-x-8 xl:gap-x-12 items-start pt-2">
           <section className="space-y-3 min-w-0" aria-label="Próximas">
