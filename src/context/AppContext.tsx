@@ -167,7 +167,7 @@ interface AppContextValue {
   createRace: (race: NewRace) => Race
   updateRace: (race: Race) => void
   deleteRace: (raceId: string) => void
-  registerForRace: (input: RegisterForRaceInput) => ActionResult
+  registerForRace: (input: RegisterForRaceInput, opts?: { race?: Race }) => ActionResult
   cancelRegistration: (regId: string) => void
   updateRegistrationByAdmin: (
     regId: string,
@@ -1259,9 +1259,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return !(race.category !== 'individual' && race.registration_deadline && race.registration_deadline < todayLocal)
   }
 
-  const registerForRace = (input: RegisterForRaceInput): ActionResult => {
-    const race = races.find((r) => r.id === input.race_id)
-    if (!race) return { success: false, message: 'Prova não encontrada.' }
+  const registerForRace = (input: RegisterForRaceInput, opts?: { race?: Race }): ActionResult => {
+    // `opts.race`: prova acabada de criar, que ainda não está na lista deste render
+    const race = opts?.race ?? races.find((r) => r.id === input.race_id)
+    if (!race) {
+      showToast('Prova não encontrada. Tenta inscrever-te a partir da página da prova.', 'warning')
+      return { success: false, message: 'Prova não encontrada.' }
+    }
 
     if (!registrationOpenFor(race)) {
       const msg = race.date < todayISO() ? 'Esta prova já se realizou.' : 'O prazo de inscrição terminou.'
