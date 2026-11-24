@@ -269,18 +269,19 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   return (
     <>
     {desktop && bar}
-    <div className={desktop ? 'desk-detail' : 'pb-28 w-full max-w-[480px] mx-auto'}>
+    {/* Fora do shell desktop: 1 coluna em mobile, 2 colunas a partir de 768 px (layout/responsive.css) */}
+    <div className={desktop ? 'desk-detail' : 'detail'}>
       {!desktop && bar}
       <ActivityCover
         kind={race.category}
         seed={race.id}
         imageUrl={race.image_url}
         alt=""
-        className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'w-full aspect-[4/3]'}
+        className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'detail-cover'}
       />
 
-      <div className={desktop ? 'desk-detail-grid' : 'px-5'}>
-       <div className={`desk-detail-col divide-soft${desktop ? ' pt-2' : ''}`}>
+      <div className={desktop ? 'desk-detail-grid' : 'detail-body detail-grid'}>
+       <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ''}`}>
         {/* Título */}
         <header className="py-6 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -442,7 +443,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         )}
 
        </div>
-       <div className={`desk-detail-col divide-soft${desktop ? ' pt-2' : ' border-t border-[var(--border-card)]'}`}>
+       <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ' detail-side'}`}>
         {/* Carrinhas e veículos do clube */}
         {(race.van_available || (isAdminView && !isIndividual)) && (
           <section className="py-6 space-y-3">
