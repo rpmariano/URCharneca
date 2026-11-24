@@ -1,0 +1,379 @@
+/* =========================================================================
+   Tabelas de classificação (components/StandingsTable.tsx). Só tokens do tema.
+   - .st-page: telemóvel (< 1024 px). Sem deslocamento horizontal; o cabeçalho cola por baixo do AppHeader.
+   - .st-box: computador. A tabela tem a sua área de deslocamento (horizontal e vertical), o cabeçalho
+     fica fixo no topo dessa área e a coluna do nome fica fixa à esquerda.
+   ========================================================================= */
+.st-wrap {
+  border: 1px solid var(--border-card);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.st-page {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+.st-box {
+  overflow: auto;
+  max-height: calc(100dvh - var(--app-header-h, 64px) - 32px);
+  overscroll-behavior-x: contain;
+}
+
+.st-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text-1);
+}
+.st-table th,
+.st-table td {
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-card);
+  background: var(--surface-card);
+}
+.st-box .st-table th,
+.st-box .st-table td {
+  padding: 6px 10px;
+}
+.st-table .st-r {
+  text-align: right;
+}
+.st-table .st-c {
+  text-align: center;
+}
+.st-table td {
+  white-space: nowrap;
+}
+
+/* Cabeçalho fixo */
+.st-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--surface-raised);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  height: 40px;
+}
+.st-page .st-table thead th {
+  top: var(--app-header-h, 64px);
+}
+.st-wrap .st-table thead tr:first-child th:first-child {
+  border-top-left-radius: 13px;
+}
+.st-wrap .st-table thead tr:first-child th:last-child {
+  border-top-right-radius: 13px;
+}
+
+/* Coluna do nome: ocupa o espaço que sobra e trunca em telemóvel; fixa à esquerda no computador */
+.st-page .st-name {
+  width: 100%;
+  max-width: 0;
+}
+.st-box .st-col-pos {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 80px;
+  min-width: 80px;
+}
+.st-box thead .st-col-pos {
+  z-index: 4;
+}
+.st-box .st-name {
+  position: sticky;
+  left: 80px;
+  z-index: 2;
+  width: 100%;
+  max-width: 0;
+  min-width: 240px;
+  box-shadow: inset -1px 0 0 var(--border-card);
+}
+.st-box thead .st-name {
+  z-index: 4;
+}
+.st-table tbody th {
+  font-weight: inherit;
+}
+
+/* Ordenação */
+.st-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 4px;
+  margin: 0 -4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.st-sort:hover {
+  background: var(--border-card);
+}
+.st-sort-ic {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.st-sort-ic.is-idle {
+  opacity: 0.6;
+}
+
+/* Linha expansível: o nome é um botão (>= 44 px em telemóvel) */
+.st-expand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.st-box .st-expand {
+  min-height: 36px;
+}
+.st-expand-body {
+  flex: 1;
+  min-width: 0;
+}
+.st-chev {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: transform 0.15s ease;
+}
+.is-open .st-chev {
+  transform: rotate(180deg);
+}
+.st-expand:focus-visible,
+.st-sort:focus-visible,
+.st-group-btn:focus-visible,
+.st-more:focus-visible {
+  outline: 2px solid var(--run);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.st-row:hover > * {
+  background: var(--surface-card-hover);
+}
+
+/* Linhas destacadas ("os meus", a U.R. Charneca): fundo opaco (a coluna fixa não deixa ver o que passa por baixo) */
+.st-row.is-hi > *,
+.st-details.is-hi > * {
+  background: linear-gradient(var(--tint-blue-bg), var(--tint-blue-bg)), var(--surface-card);
+}
+.st-row.is-hi > :first-child {
+  box-shadow: inset 4px 0 0 var(--run);
+}
+.st-box .st-row.is-hi > .st-name:first-child {
+  box-shadow: inset 4px 0 0 var(--run), inset -1px 0 0 var(--border-card);
+}
+.st-row.is-open > * {
+  border-bottom-color: transparent;
+}
+
+.st-details > td {
+  padding: 0 8px 10px;
+  white-space: normal;
+}
+.st-details-body {
+  padding-left: 0;
+}
+
+/* Grupos (escalões) */
+.st-group-head > th {
+  padding: 0 !important;
+  background: var(--surface-raised) !important;
+}
+.st-box .st-group-head > th {
+  position: sticky;
+  left: 0;
+}
+.st-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+span.st-group-btn {
+  cursor: default;
+}
+.st-box .st-group-btn {
+  min-height: 38px;
+  position: sticky;
+  left: 0;
+  width: auto;
+  max-width: 100%;
+}
+.st-group-ic {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+.st-group-label {
+  min-width: 0;
+}
+.st-group-meta {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.st-gap > td {
+  text-align: center;
+  color: var(--text-3);
+  padding: 2px 8px;
+  line-height: 1;
+}
+
+.st-state {
+  padding: 32px 12px !important;
+  text-align: center !important;
+  color: var(--text-3);
+  white-space: normal !important;
+}
+
+/* Lugar com medalha discreta */
+.st-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-raised);
+  color: var(--text-2);
+}
+.st-rank.is-gold {
+  background: var(--tint-yellow-bg-strong);
+  color: var(--tint-yellow-fg);
+  box-shadow: inset 0 0 0 1px var(--tint-yellow-border);
+}
+.st-rank.is-silver {
+  background: var(--surface-raised);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--border-card-strong);
+}
+.st-rank.is-bronze {
+  background: var(--tint-brown-bg-strong);
+  color: var(--tint-brown-fg);
+  box-shadow: inset 0 0 0 1px var(--tint-brown-border);
+}
+.st-rank.is-hi {
+  background: var(--run);
+  color: var(--on-accent);
+}
+
+/* Pontos de uma prova (computador): pontos e, em pequeno, o lugar */
+.st-stage {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+.st-stage-pos {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.st-dash {
+  color: var(--text-3);
+}
+
+/* Barra de pontos relativa ao 1.º */
+.st-bar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 9999px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+.st-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--border-card-strong);
+}
+.st-row.is-hi .st-bar > span {
+  background: var(--run);
+}
+
+/* Etiqueta "Tu" / "A teu cargo" */
+.st-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  background: var(--tint-blue-bg-strong);
+  color: var(--tint-blue-fg);
+  white-space: nowrap;
+}
+
+/* "Ver todos" no fundo da tabela */
+.st-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-top: 1px solid var(--border-card);
+  background: transparent;
+  color: var(--tint-blue-fg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 0 0 14px 14px;
+}
+.st-more:hover {
+  background: var(--surface-card-hover);
+}
+
+/* Barra "A tua equipa" fixa por cima da navegação inferior (telemóvel) */
+.st-pin {
+  position: sticky;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+  z-index: 5;
+}
+.st-pin.is-hidden {
+  visibility: hidden;
+  opacity: 0;
+}
