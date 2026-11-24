@@ -105,7 +105,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
   const heading = editing ? 'Editar prova' : isAdminView ? 'Nova prova' : 'Sugerir prova'
 
   return (
-    <Sheet onClose={onClose} ariaLabel={heading}>
+    <Sheet persistent onClose={onClose} ariaLabel={heading}>
       <SheetHeader
         title={heading}
         subtitle={isAdminView ? undefined : 'Partilha uma prova em que vais participar. Cada atleta faz a sua inscrição.'}
@@ -217,8 +217,8 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
         )}
 
         {isAdminView && category !== 'individual' && (
-          <Field label="Levantamento de dorsais">
-            <input className={inputClass} value={bibInfo} onChange={(e) => setBibInfo(e.target.value)} />
+          <Field label="Levantamento de dorsais (opcional)" hint="Onde e quando se levantam os dorsais. Aparece aos atletas na página da prova.">
+            <input className={inputClass} value={bibInfo} onChange={(e) => setBibInfo(e.target.value)} placeholder="Ex.: quinta-feira, 19h, na sede" />
           </Field>
         )}
 
@@ -228,6 +228,9 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
 
         <Button type="submit" block>
           {editing ? 'Guardar alterações' : isAdminView ? 'Publicar prova' : 'Sugerir à equipa'}
+        </Button>
+        <Button type="button" variant="ghost" block onClick={onClose}>
+          Cancelar
         </Button>
       </form>
     </Sheet>

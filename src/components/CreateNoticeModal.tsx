@@ -39,7 +39,7 @@ export const CreateNoticeModal: React.FC<{ relatedRaceId?: string; onClose: () =
   }
 
   return (
-    <Sheet onClose={onClose} ariaLabel="Novo comunicado">
+    <Sheet persistent onClose={onClose} ariaLabel="Novo comunicado">
       <SheetHeader title="Novo comunicado" subtitle="Visível para toda a equipa na página inicial e em Comunicados." onClose={onClose} />
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         <Field label="Título *">
@@ -72,6 +72,9 @@ export const CreateNoticeModal: React.FC<{ relatedRaceId?: string; onClose: () =
         <Toggle checked={pinned} onChange={setPinned} label="Fixar no topo" />
         <Button type="submit" block>
           Publicar
+        </Button>
+        <Button type="button" variant="ghost" block onClick={onClose}>
+          Cancelar
         </Button>
       </form>
     </Sheet>
