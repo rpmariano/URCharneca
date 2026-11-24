@@ -202,20 +202,24 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
                       <div className="t-small t-strong text-[var(--text-1)] truncate">
                         {person.name} {person.isYouth && '(Jovem)'}
                       </div>
-                      <div className="text-[11px] text-[var(--text-3)] truncate">
+                      <div className="t-small text-[var(--text-3)] truncate">
                         {person.escalao} · {person.seasons.join(', ') || 'Troféu'}
                       </div>
                     </div>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
                       value={dorsalInputs[person.id] ?? ''}
                       onChange={(e) => setDorsalInputs((prev) => ({ ...prev, [person.id]: e.target.value }))}
                       placeholder="Dorsal"
-                      className="w-20 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-2 py-1 t-small text-[var(--text-1)]"
+                      className="w-24 min-h-11 lg:min-h-9 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
                       aria-label={`Dorsal de ${person.name}`}
                     />
                     <Button
                       size="sm"
+                      className="min-w-11"
+                      aria-label={`Guardar dorsal de ${person.name}`}
                       disabled={!(dorsalInputs[person.id] || '').trim()}
                       onClick={() => assignTrofeuDorsal(person.id, person.isYouth, dorsalInputs[person.id] || '')}
                     >
