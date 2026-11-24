@@ -54,14 +54,14 @@ export const Intro: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-label="Introdução à app"
-      className="fixed inset-0 z-[120] flex justify-center bg-[var(--bg-body-desktop)] fade-in"
+      className="fixed inset-0 z-[120] flex justify-center sm:items-center sm:p-6 bg-[var(--bg-body-desktop)] fade-in"
       onKeyDown={(e) => {
         if (e.key === 'Escape') dismiss()
         if (e.key === 'ArrowRight') next()
         if (e.key === 'ArrowLeft' && index > 0) goTo(index - 1)
       }}
     >
-      <div className="w-full max-w-[480px] h-full bg-[var(--bg-app)] flex flex-col relative overflow-hidden">
+      <div className="w-full max-w-[480px] h-full sm:max-w-[520px] sm:h-[min(860px,100%)] sm:rounded-[28px] sm:border sm:border-[var(--border-card)] sm:shadow-[var(--shadow-float)] bg-[var(--bg-app)] flex flex-col relative overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-4 shrink-0">
           <span className="t-small t-strong text-[var(--text-3)]" aria-live="polite">
             {index + 1} de {slides.length}

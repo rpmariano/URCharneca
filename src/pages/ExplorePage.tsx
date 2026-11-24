@@ -21,6 +21,7 @@ import type { ActivityKind, Race, TeamEvent } from '../types'
 import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { useDesktopAdmin } from '../layout/useDesktopAdmin'
+import { BP, useMediaQuery } from '../layout/useMediaQuery'
 import { openCreateRace } from '../utils/appEvents'
 import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
@@ -95,6 +96,9 @@ const parseCategory = (param: string | null): Category => {
   return (KINDS as string[]).includes(param || '') ? (param as ActivityKind) : 'all'
 }
 
+/** Grelha de cartões (container query): 1 coluna em mobile, 2 em tablet (>= 520 px úteis), 3 em desktop (>= 740 px úteis). */
+const CARD_GRID = 'grid grid-cols-1 gap-8 @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6 @min-[740px]:grid-cols-3'
+
 const kindsOf = (c: Category): ActivityKind[] => (c === 'all' ? KINDS : c === 'provas' ? RACE_KINDS : [c])
 
 /**
@@ -123,6 +127,10 @@ export const ExplorePage: React.FC = () => {
 
   const category = parseCategory(params.get('tipo'))
   const desktopAdmin = useDesktopAdmin() // no desktop, as categorias estão na barra lateral
+  // Ecrã largo: calendário sempre visível numa coluna lateral fixa (com a barra lateral do admin só a partir de 1440 px)
+  const sideCalendar = useMediaQuery(desktopAdmin ? BP['2xl'] : BP.xl)
+  // Tablet/desktop: o calendário abre com um botão na barra de pesquisa (o botão flutuante é só para mobile)
+  const notMobile = useMediaQuery(BP.sm)
   const isRaceCategory = category === 'provas' || RACE_KINDS.includes(category as ActivityKind)
   const setCategory = (next: Category) => {
     const p = new URLSearchParams(params)
@@ -236,7 +244,14 @@ export const ExplorePage: React.FC = () => {
   }
 
   const dateFilterActive = range !== 'upcoming' || Boolean(selectedDay)
-  const showHighlights = category === 'all' && !query.trim() && !dateFilterActive && !calendarOpen
+  // Com o calendário na coluna lateral os Destaques continuam visíveis (só um dia escolhido os troca pela lista)
+  const calendarShown = sideCalendar || calendarOpen
+  const showHighlights = category === 'all' && !query.trim() && !dateFilterActive && (sideCalendar || !calendarOpen)
+  const toggleCalendar = () => {
+    setCalendarOpen((v) => !v)
+    if (calendarOpen) setSelectedDay(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // ----- Dados dos Destaques -----
   const upcomingRaces = useMemo(
@@ -357,6 +372,21 @@ export const ExplorePage: React.FC = () => {
               <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--run)] border-2 border-[var(--bg-app)]" aria-hidden="true" />
             )}
           </button>
+          {notMobile && !sideCalendar && (
+            <button
+              type="button"
+              aria-expanded={calendarOpen}
+              onClick={toggleCalendar}
+              className={`h-11 px-4 rounded-full border t-small t-strong inline-flex items-center gap-2 shrink-0 pressable ${
+                calendarOpen
+                  ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent'
+                  : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" aria-hidden="true" />
+              Calendário
+            </button>
+          )}
           {isAdminView && (
             <IconButton label="Criar" onClick={() => setCreateOpen(true)} className="!bg-[var(--run)] !text-[var(--on-accent)] !border-transparent">
               <Plus className="w-5 h-5" aria-hidden="true" />
@@ -400,10 +430,11 @@ export const ExplorePage: React.FC = () => {
         Olá, {currentUser.nickname || currentUser.name.split(' ')[0]}
       </p>
 
-      <div className="px-5">
-        {/* Calendário (expande e colapsa com o botão flutuante) */}
-        {calendarOpen && (
-          <section className="card-raised p-4 mt-5 space-y-3 sheet-in" aria-label="Calendário">
+      <div className={`px-5 ${sideCalendar ? 'grid grid-cols-[minmax(0,1fr)_300px] gap-8 items-start' : ''}`}>
+        {/* Calendário: por cima da lista (mobile: botão flutuante; tablet: botão na barra) ou coluna lateral fixa em ecrã largo */}
+        {calendarShown && (
+          <div className={sideCalendar ? 'col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6' : undefined}>
+          <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
             <div className="flex items-center justify-between">
               <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
@@ -465,8 +496,11 @@ export const ExplorePage: React.FC = () => {
               ))}
             </div>
           </section>
+          </div>
         )}
 
+        {/* Contentor (container query): as grelhas de cartões adaptam-se à largura disponível, com ou sem barra lateral */}
+        <div className="@container min-w-0 col-start-1 row-start-1">
         {showHighlights ? (
           <div className="space-y-10 pt-6 stagger">
             {adminPending > 0 && (
@@ -531,7 +565,12 @@ export const ExplorePage: React.FC = () => {
                   onAction={() => openCreateRace()}
                 />
               ) : (
-                <div className="snap-row -mx-5 px-5" role="list" aria-label="Próximas provas">
+                // Mobile: carrossel. Em contentores >= 520 px passa a grelha (2 colunas, 4 provas; >= 740 px: 3 colunas, 3 provas)
+                <div
+                  className="snap-row -mx-5 px-5 @min-[520px]:mx-0! @min-[520px]:px-0! @min-[520px]:grid! @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6! @min-[520px]:gap-y-8! @min-[520px]:overflow-visible! @min-[520px]:[&>*:nth-child(n+5)]:hidden! @min-[740px]:grid-cols-3 @min-[740px]:[&>*:nth-child(n+4)]:hidden!"
+                  role="list"
+                  aria-label="Próximas provas"
+                >
                   {upcomingRaces.map((r) => (
                     <RaceCard key={r.id} race={r} onOpen={() => openRace(r.id)} />
                   ))}
@@ -543,7 +582,9 @@ export const ExplorePage: React.FC = () => {
             {nextEvent && (
               <section className="space-y-4">
                 <SectionTitle title="Próximo evento" action="Ver eventos" onAction={() => setCategory('event')} />
-                <EventListItem event={nextEvent} onOpen={() => openEvent(nextEvent.id)} />
+                <div className={CARD_GRID}>
+                  <EventListItem event={nextEvent} onOpen={() => openEvent(nextEvent.id)} />
+                </div>
               </section>
             )}
 
@@ -553,7 +594,7 @@ export const ExplorePage: React.FC = () => {
               {nextTrainings.length === 0 ? (
                 <p className="t-body text-[var(--text-3)]">Não há treinos marcados.</p>
               ) : (
-                <div className="space-y-6">
+                <div className="grid gap-6 @min-[520px]:grid-cols-2 @min-[520px]:gap-x-8 @min-[740px]:grid-cols-3">
                   {nextTrainings.map((t) => (
                     <EventListItem key={t.id} event={t} compact showRsvp onOpen={() => openEvent(t.id)} />
                   ))}
@@ -565,7 +606,7 @@ export const ExplorePage: React.FC = () => {
             {birthdays.length > 0 && (
               <section className="space-y-2">
                 <SectionTitle title="Aniversários" />
-                <div className="divide-soft">
+                <div className="divide-soft max-w-[720px]">
                   {birthdays.map((b) => (
                     <div key={b.id} className="flex items-center gap-4 py-3">
                       <PersonAvatar id={b.id} name={b.name} child={b.isChild} />
@@ -589,7 +630,7 @@ export const ExplorePage: React.FC = () => {
             )}
 
             {!isAdminView && (
-              <section className="card p-5 space-y-3">
+              <section className="card p-5 space-y-3 max-w-[720px]">
                 <h2 className="t-heading text-[var(--text-1)]">Conheces uma boa prova?</h2>
                 <p className="t-body text-[var(--text-3)]">Sugere-a à equipa e combinem ir juntos.</p>
                 <Button variant="secondary" onClick={() => openCreateRace()}>
@@ -635,7 +676,7 @@ export const ExplorePage: React.FC = () => {
                       {MONTHS[Number(month.slice(5)) - 1]} {month.slice(0, 4)}
                     </h2>
                   )}
-                  <div className="space-y-8">
+                  <div className={CARD_GRID}>
                     {items.map((i) => {
                       if (i.race) {
                         const id = i.race.id
@@ -650,24 +691,23 @@ export const ExplorePage: React.FC = () => {
             )}
           </div>
         )}
+        </div>
       </div>
 
-      {/* Botão flutuante do calendário (expandir / colapsar) */}
+      {/* Botão flutuante do calendário (expandir / colapsar): só em mobile */}
+      {!notMobile && (
       <div className="fixed left-1/2 -translate-x-1/2 z-20 bottom-[calc(76px+env(safe-area-inset-bottom,0px))]">
         <button
           type="button"
           aria-expanded={calendarOpen}
-          onClick={() => {
-            setCalendarOpen((v) => !v)
-            if (calendarOpen) setSelectedDay(null)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }}
+          onClick={toggleCalendar}
           className="min-h-11 px-5 rounded-full bg-[var(--text-1)] text-[var(--bg-app)] t-small t-strong flex items-center gap-2 shadow-[var(--shadow-float)] pressable"
         >
           {calendarOpen ? <X className="w-4 h-4" aria-hidden="true" /> : <CalendarDays className="w-4 h-4" aria-hidden="true" />}
           {calendarOpen ? 'Fechar calendário' : 'Calendário'}
         </button>
       </div>
+      )}
 
       {/* Filtros por data */}
       {filtersOpen && (

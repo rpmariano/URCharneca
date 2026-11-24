@@ -508,7 +508,7 @@ export const ListRow: React.FC<{
 /** Barra de ação fixa no fundo de uma página de detalhe: resumo à esquerda, botão principal à direita. */
 export const StickyActionBar: React.FC<{ children: React.ReactNode; summary?: React.ReactNode }> = ({ children, summary }) => (
   <div
-    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-30 px-5 pt-3 flex items-center justify-between gap-4 border-t border-[var(--border-card)]"
+    className="fixed-bar fixed-bar-pad pt-3 flex items-center justify-between gap-4 border-t border-[var(--border-card)]"
     style={{ background: 'var(--bg-nav)', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
   >
     <div className="min-w-0 flex-1">{summary}</div>

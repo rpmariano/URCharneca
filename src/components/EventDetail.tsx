@@ -26,11 +26,13 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
   const countdown = countdownLabel(event.date)
 
   return (
-    <div className="pb-28 w-full max-w-[480px] mx-auto">
+    // 1 coluna em mobile; a partir de 768 px: info à esquerda, quem vai e ações à direita (layout/responsive.css)
+    <div className="detail">
       <DetailBar title={event.title} onBack={onBack} onShare={() => shareLink(event.title, `evento/${event.id}`, showToast)} />
-      <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="w-full aspect-[4/3]" />
+      <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="detail-cover" />
 
-      <div className="px-5 divide-soft">
+      <div className="detail-body detail-grid">
+      <div className="divide-soft min-w-0">
         <header className="py-6 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             <KindBadge kind={kind} label={EVENT_TYPE_LABELS[event.type].short} />
@@ -61,7 +63,9 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
             <p className="t-small text-[var(--text-3)]">Marcado por {event.created_by_name}</p>
           </section>
         )}
+      </div>
 
+      <div className="divide-soft min-w-0 detail-side">
         <section className="py-6 space-y-3">
           <SectionTitle title="Quem vai" count={going.length} />
           {going.length === 0 ? (
@@ -100,18 +104,27 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
           </section>
         )}
       </div>
+      </div>
 
-      {/* Barra fixa: presença na zona do polegar */}
+      {/* Barra fixa: presença na zona do polegar. Em >= 640 px: resumo à esquerda e botões com largura limitada à direita */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-30 px-5 pt-3 border-t border-[var(--border-card)]"
+        className="fixed-bar fixed-bar-pad pt-3 border-t border-[var(--border-card)] sm:flex sm:items-center sm:justify-between sm:gap-6"
         style={{ background: 'var(--bg-nav)', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
       >
+        <div className="hidden sm:block min-w-0 flex-1">
+          <div className="t-body t-strong text-[var(--text-1)] truncate first-letter:uppercase">{formatLongDate(event.date)}</div>
+          <div className="t-small text-[var(--text-3)] truncate">
+            Às {event.time} · {going.length} {going.length === 1 ? 'confirmado' : 'confirmados'}
+          </div>
+        </div>
         {past ? (
           <p className="t-body text-[var(--text-3)] text-center min-h-11 flex items-center justify-center">
             Este {event.type === 'training' ? 'treino' : 'evento'} já se realizou.
           </p>
         ) : (
-          <RsvpButtons event={event} />
+          <div className="sm:w-[360px] sm:shrink-0">
+            <RsvpButtons event={event} />
+          </div>
         )}
       </div>
     </div>

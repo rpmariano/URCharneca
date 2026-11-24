@@ -86,7 +86,8 @@ export const RegistrationsPage: React.FC = () => {
   const list = tab === 'upcoming' ? upcoming : past
 
   return (
-    <div className="px-5 pb-28 space-y-5">
+    // page-read: em ecrãs maiores o conteúdo fica numa coluna de leitura de 720 px (layout/responsive.css)
+    <div className="page-read px-5 pb-28 space-y-5">
       <PageHeader title="Inscrições" />
       <Segmented
         value={tab}

@@ -71,9 +71,19 @@ const ActivityCard: React.FC<{
 
   const wide = variant === 'wide'
   return (
-    <div className={`${wide ? 'w-[78%] max-w-[320px]' : 'w-full'} ${dimmed ? 'opacity-60' : ''}`} role={wide ? 'listitem' : undefined}>
+    <div
+      // No carrossel (mobile) o cartão tem 78% da largura; quando o carrossel passa a grelha (container query) ocupa a célula
+      className={`${wide ? 'w-[78%] max-w-[320px] @min-[520px]:w-full @min-[520px]:max-w-none' : 'w-full min-w-0'} ${dimmed ? 'opacity-60' : ''}`}
+      role={wide ? 'listitem' : undefined}
+    >
       <button type="button" onClick={onOpen} aria-label={ariaLabel} className="w-full text-left pressable block">
-        <ActivityCover kind={kind} seed={seed} imageUrl={imageUrl} className={`w-full rounded-2xl ${wide ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
+        {/* Capa: 4:3 no carrossel, 16:10 na lista; em grelha (>= 520 px úteis) fica mais baixa, 16:9 */}
+        <ActivityCover
+          kind={kind}
+          seed={seed}
+          imageUrl={imageUrl}
+          className={`w-full rounded-2xl ${wide ? 'aspect-[4/3]' : 'aspect-[16/10]'} @min-[520px]:aspect-[16/9]`}
+        >
           <span className="absolute top-3 left-3 flex flex-wrap gap-1.5 pr-3">
             <KindBadge kind={kind} label={kindLabel} solid />
             {extraBadge}

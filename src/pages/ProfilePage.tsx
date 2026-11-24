@@ -81,9 +81,12 @@ export const ProfilePage: React.FC = () => {
   const { id: _id, dependents: _deps, ...profileValue } = currentUser
 
   return (
-    <div className="px-5 pb-28 space-y-8">
+    // page-read: coluna de leitura (720 px); a partir de 1024 px, duas colunas (atleta | conta e definições)
+    <div className="page-read px-5 pb-28 space-y-8">
       <PageHeader title="Perfil" />
 
+      <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-10 lg:items-start lg:max-w-[var(--wide-max)]">
+      <div className="space-y-8 min-w-0">
       {/* Cartão do atleta */}
       <section className="card-raised p-6 flex items-center gap-5">
         <PhotoAvatarButton
@@ -255,7 +258,9 @@ export const ProfilePage: React.FC = () => {
           </div>
         </section>
       )}
+      </div>
 
+      <div className="space-y-8 min-w-0">
       {/* Conta */}
       <section className="space-y-1">
         <SectionTitle title="Conta" />
@@ -349,6 +354,8 @@ export const ProfilePage: React.FC = () => {
           </div>
         </section>
       )}
+      </div>
+      </div>
 
       {/* Folhas */}
       {sheet === 'data' && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Share } from 'lucide-react'
 
 /** Emblema do clube (pequeno, com anel dourado). Decorativo: o título da barra diz onde estamos. */
@@ -54,8 +54,25 @@ export const AppHeader: React.FC<{
   children?: React.ReactNode
 }> = ({ title, action, leading, titleAs = 'h1', className = '', children }) => {
   const Title = titleAs
+  const ref = useRef<HTMLElement>(null)
+  // Publica a altura do cabeçalho em --app-header-h (colunas laterais fixas usam-na para ficar por baixo dele)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const root = document.documentElement
+    const ro = new ResizeObserver(() => root.style.setProperty('--app-header-h', `${Math.round(el.offsetHeight)}px`))
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      root.style.removeProperty('--app-header-h')
+    }
+  }, [])
   return (
-    <header className={`app-header sticky top-0 z-30 ${SHADOW} ${className}`} style={BAR_STYLE}>
+    <header
+      ref={ref}
+      className={`app-header sticky top-0 z-30 ${children ? 'app-header-tall' : ''} ${SHADOW} ${className}`}
+      style={BAR_STYLE}
+    >
       <div className="flex items-center gap-3 px-5 min-h-14">
         {leading ?? <HeaderEmblem />}
         <Title className="t-heading flex-1 min-w-0 truncate text-[var(--hdr-fg)]" style={NOWRAP}>{title}</Title>
@@ -80,7 +97,9 @@ export const DetailBar: React.FC<{
   useEffect(() => {
     if (!overlay) return
     const onScroll = () => {
-      const cover = Math.min(window.innerWidth, 480) * 0.75
+      // A capa tem 4:3 no telemóvel e altura limitada em ecrãs maiores: mede-se a capa real
+      const el = document.querySelector<HTMLElement>('.detail-cover')
+      const cover = el ? el.offsetHeight : Math.min(window.innerWidth, 480) * 0.75
       setScrolled(window.scrollY > cover - 72)
     }
     onScroll()
