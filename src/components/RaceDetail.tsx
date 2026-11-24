@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Baby,
   Bus,
@@ -34,6 +34,7 @@ import {
 } from '../utils/formatters'
 import type { VehicleAllocation } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
+import { markRaceSeen } from '../utils/openRaces'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { ActivityCover } from './ActivityCover'
 import { DetailBar } from './AppHeader'
@@ -125,6 +126,10 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     deleteRace,
     showToast,
   } = useApp()
+  // Abrir a prova tira-lhe o sinal de "nova" na navegação
+  useEffect(() => {
+    markRaceSeen(currentUser.id, race.id)
+  }, [currentUser.id, race.id])
   const desktop = useDesktopShell()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [vehiclesSheetOpen, setVehiclesSheetOpen] = useState(false)

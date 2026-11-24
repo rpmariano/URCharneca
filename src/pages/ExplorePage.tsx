@@ -20,6 +20,7 @@ import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
+import { useOpenRaces } from '../utils/openRaces'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
 import { openCreateRace } from '../utils/appEvents'
@@ -126,6 +127,7 @@ export const ExplorePage: React.FC = () => {
   const today = todayISO()
 
   const category = parseCategory(params.get('tipo'))
+  const { open: openRaces, fresh: freshRaces } = useOpenRaces()
   const desktop = useDesktopShell() // no computador, as categorias estão na barra lateral
   // Computador largo (>= 1280 px, já com a barra lateral): calendário sempre visível numa coluna lateral fixa
   const wideDesktop = useMediaQuery(BP.xl)
@@ -554,6 +556,33 @@ export const ExplorePage: React.FC = () => {
                 <p className="t-body text-[var(--text-3)]">Ainda não há comunicados.</p>
               )}
             </section>
+
+            {/* Provas com inscrições abertas (do clube e da comunidade), mesmo que sejam daqui a meses */}
+            {openRaces.length > 0 && (
+              <section className="space-y-4" aria-label="Inscrições abertas">
+                <SectionTitle
+                  title="Inscrições abertas"
+                  count={freshRaces.length > 0 ? freshRaces.length : undefined}
+                  action="Ver todas"
+                  onAction={() => setCategory('provas')}
+                />
+                <p className="t-small text-[var(--text-3)] -mt-2">Provas novas para te inscreveres, mesmo daqui a uns meses.</p>
+                <div
+                  className="snap-row -mx-5 px-5 @min-[520px]:mx-0! @min-[520px]:px-0! @min-[520px]:grid! @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6! @min-[520px]:gap-y-8! @min-[520px]:overflow-visible! @min-[520px]:[&>*:nth-child(n+5)]:hidden! @min-[740px]:grid-cols-3 @min-[740px]:[&>*:nth-child(n+4)]:hidden!"
+                  role="list"
+                  aria-label="Provas com inscrições abertas"
+                >
+                  {openRaces.slice(0, 6).map((r) => (
+                    <div key={r.id} role="listitem" className="relative shrink-0 w-[78%] max-w-[320px] @min-[520px]:w-full @min-[520px]:max-w-none [&>*]:w-full! [&>*]:max-w-none!">
+                      {freshRaces.some((f) => f.id === r.id) && (
+                        <span className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-[#b91c1c] text-white t-small t-strong shadow-[var(--shadow-card)]">Nova</span>
+                      )}
+                      <RaceCard race={r} onOpen={() => openRace(r.id)} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Próximas provas — carrossel de 5 */}
             <section className="space-y-4">
