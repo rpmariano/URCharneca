@@ -8,6 +8,14 @@ export type RegistrationStatus =
   | 'self_enrolled'      // Inscrito individualmente ("Também vou!")
   | 'cancelled'          // Cancelado / desistiu
 
+/** Rótulo e tom de cada estado de uma inscrição: os mesmos em todos os ecrãs. */
+export const REG_STATUS_LABELS: Record<RegistrationStatus, { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
+  interested: { label: 'Pedido enviado', tone: 'warn' },
+  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
+  self_enrolled: { label: 'Por conta própria', tone: 'info' },
+  cancelled: { label: 'Cancelado', tone: 'neutral' },
+}
+
 export type TransportMode =
   | 'van_roundtrip'      // Carrinha da Charneca (Ida e Volta)
   | 'van_return_only'    // Carrinha da Charneca (Só Regresso)
@@ -415,32 +423,32 @@ export const CATEGORIA_LABELS: Record<RaceCategory, { label: string; badge: stri
 
 export const TRANSPORT_LABELS: Record<TransportMode, { label: string; short: string; usesVanSeat: boolean }> = {
   van_roundtrip: {
-    label: 'Carrinha da Charneca (Ida e Volta)',
+    label: 'Carrinha, ida e volta',
     short: 'Carrinha (Ida/Volta)',
     usesVanSeat: true,
   },
   van_return_only: {
-    label: 'Carrinha da Charneca (Só Regresso)',
+    label: 'Carrinha, só regresso',
     short: 'Carrinha (Só Regresso)',
     usesVanSeat: true,
   },
   meeting_point: {
-    label: 'Ponto de Encontro (ex: Comboio / Partida)',
+    label: 'Ponto de encontro',
     short: 'Ponto de Encontro',
     usesVanSeat: false,
   },
   carpool_offer: {
-    label: 'Levo Carro e dou Boleia',
+    label: 'Levo carro e dou boleia',
     short: 'Dou Boleia',
     usesVanSeat: false,
   },
   carpool_need: {
-    label: 'Preciso de Boleia de Colega',
+    label: 'Preciso de boleia',
     short: 'Precisa Boleia',
     usesVanSeat: false,
   },
   own_transport: {
-    label: 'Vou direto por meios próprios',
+    label: 'Vou por meios próprios',
     short: 'Meios Próprios',
     usesVanSeat: false,
   },

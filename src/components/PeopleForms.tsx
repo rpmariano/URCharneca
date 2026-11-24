@@ -131,7 +131,7 @@ export const AthleteForm: React.FC<{
           />
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Field label="Data de nascimento">
           <input
             type="date"
@@ -314,7 +314,7 @@ export const ChildForm: React.FC<{
           ]}
         />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Field label="Data de nascimento *">
           <input
             type="date"

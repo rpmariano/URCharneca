@@ -4,6 +4,7 @@ import { CircleUserRound, Megaphone, Search, ShieldCheck, Ticket } from 'lucide-
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useOpenRaces } from '../utils/openRaces'
+import { plural } from '../utils/formatters'
 
 /**
  * Navegação inferior: Explorar · Inscrições · Comunicados · Perfil (+ Gerir para administradores).
@@ -13,7 +14,7 @@ export const BottomNav: React.FC = () => {
   const { fresh } = useOpenRaces()
 
   const items: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; badge?: number; badgeLabel?: string }> = [
-    { to: '/', label: 'Explorar', icon: Search, end: true, badge: fresh.length, badgeLabel: 'provas novas' },
+    { to: '/', label: 'Explorar', icon: Search, end: true, badge: fresh.length, badgeLabel: plural(fresh.length, 'prova nova', 'provas novas') },
     { to: '/inscricoes', label: 'Inscrições', icon: Ticket },
     { to: '/comunicados', label: 'Comunicados', icon: Megaphone, badge: unreadNotificationsCount },
     ...(isAdminView ? [{ to: '/admin', label: 'Gerir', icon: ShieldCheck }] : []),

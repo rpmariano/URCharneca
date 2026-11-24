@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Baby,
   Bus,
@@ -23,7 +23,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import type { Race, RaceRegistration, RaceVehicle, TransportMode, YouthAthlete } from '../types'
-import { BIB_STATUS_LABELS, CATEGORIA_LABELS, TRANSPORT_LABELS } from '../types'
+import { BIB_STATUS_LABELS, CATEGORIA_LABELS, REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import {
   computeVanAllocation,
   formatLongDate,
@@ -45,13 +45,6 @@ import { ContextualHint } from './OnboardingCards'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { PersonAvatar } from './PersonAvatar'
 import { Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
-
-const STATUS_TAG: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
-  interested: { label: 'Aguarda o clube', tone: 'warn' },
-  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
-  self_enrolled: { label: 'Vai', tone: 'info' },
-  cancelled: { label: 'Cancelado', tone: 'neutral' },
-}
 
 /** O que cada opção de transporte significa, mostrado por baixo do seletor. */
 const TRANSPORT_HELP: Record<TransportMode, string> = {
@@ -438,7 +431,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                         {vehName ? ` (${vehName})` : ''}
                       </div>
                     </div>
-                    <Tag tone={STATUS_TAG[r.status].tone}>{STATUS_TAG[r.status].label}</Tag>
+                    <Tag tone={REG_STATUS_LABELS[r.status].tone}>{REG_STATUS_LABELS[r.status].label}</Tag>
                   </div>
                 )
               })}
@@ -748,6 +741,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                       name={child.name}
                       personId={child.id}
                       child
+                      gender={child.gender}
                       trofeuDorsal={
                         race.category === 'trofeu_cascais'
                           ? child.dorsais_trofeu?.['2026/2027'] || child.dorsal_trofeu
@@ -809,22 +803,23 @@ const VehicleSelectField: React.FC<{
   vehicles: VehicleAllocation[]
   value: string
   onChange: (val: string) => void
-}> = ({ vehicles, value, onChange }) => (
-  <Field label="Veículo">
-    <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Qualquer veículo com vaga</option>
-      {vehicles.map((va) => (
-        <option key={va.vehicle.id} value={va.vehicle.id}>
-          {va.vehicle.name}
-          {va.vehicle.driver_name ? ` (Condutor: ${va.vehicle.driver_name})` : ''}
-          {va.availableSeats > 0
-            ? ` — ${va.availableSeats} ${va.availableSeats === 1 ? 'lugar vago' : 'lugares vagos'}`
-            : ' — Lotado'}
-        </option>
-      ))}
-    </select>
-  </Field>
-)
+}> = ({ vehicles, value, onChange }) => {
+  // O condutor fica na dica: dentro da opção o texto era cortado no telemóvel
+  const driver = vehicles.find((va) => va.vehicle.id === value)?.vehicle.driver_name
+  return (
+    <Field label="Veículo" hint={driver ? `Condutor: ${driver}` : undefined}>
+      <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Qualquer com vaga</option>
+        {vehicles.map((va) => (
+          <option key={va.vehicle.id} value={va.vehicle.id}>
+            {va.vehicle.name}
+            {va.availableSeats > 0 ? ` · ${va.availableSeats} ${va.availableSeats === 1 ? 'vago' : 'vagos'}` : ' · Lotado'}
+          </option>
+        ))}
+      </select>
+    </Field>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Linha de inscrição (adulto ou criança)
@@ -834,6 +829,7 @@ const RegistrationRow: React.FC<{
   name: string
   personId?: string
   child?: boolean
+  gender?: 'M' | 'F'
   isSelf?: boolean
   trofeuDorsal?: string
   existing?: RaceRegistration
@@ -848,6 +844,7 @@ const RegistrationRow: React.FC<{
   name,
   personId,
   child,
+  gender,
   isSelf,
   trofeuDorsal,
   existing,
@@ -865,14 +862,42 @@ const RegistrationRow: React.FC<{
   const [vehicleId, setVehicleId] = useState(existing?.vehicle_id || '')
   const [seats, setSeats] = useState(existing?.carpool_seats || 3)
 
+  const { isAdminView } = useApp()
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Depois de uma ação o botão usado desaparece: o foco passa para o cartão da pessoa (e não para o <body>)
+  const [actions, setActions] = useState(0)
+  useEffect(() => {
+    if (actions > 0) cardRef.current?.focus()
+  }, [actions])
+  const done = () => setActions((n) => n + 1)
+
   const isIndividual = race.category === 'individual'
+  const firstName = name.split(' ')[0]
+  // Os atletas pedem a inscrição (fica pendente); o administrador inscreve logo
+  const submitLabel = existing
+    ? 'Guardar'
+    : isIndividual
+    ? 'Vou participar'
+    : isAdminView
+    ? child && !isSelf
+      ? `Inscrever ${firstName}`
+      : 'Inscrever-me'
+    : child && !isSelf
+    ? `Pedir inscrição ${gender === 'F' ? 'da' : gender === 'M' ? 'do' : 'de'} ${firstName}`
+    : 'Pedir inscrição'
   const usesVanSeat = Boolean(TRANSPORT_LABELS[transport]?.usesVanSeat)
   const existingVehicleName = existing?.vehicle_id
     ? vehicleAllocations.find((va) => va.vehicle.id === existing.vehicle_id)?.vehicle.name
     : undefined
 
   return (
-    <div className="card p-4 space-y-4">
+    <div
+      ref={cardRef}
+      tabIndex={-1}
+      role="group"
+      aria-label={`Inscrição de ${name}: ${existing ? REG_STATUS_LABELS[existing.status].label : 'por fazer'}`}
+      className="card p-4 space-y-4"
+    >
       <div className="flex items-center gap-3">
         <PersonAvatar id={personId} name={name} child={child} />
         <div className="min-w-0 flex-1">
@@ -890,7 +915,7 @@ const RegistrationRow: React.FC<{
         </div>
         {existing && (
           <span className="pop-in">
-            <Tag tone={STATUS_TAG[existing.status].tone}>{STATUS_TAG[existing.status].label}</Tag>
+            <Tag tone={REG_STATUS_LABELS[existing.status].tone}>{REG_STATUS_LABELS[existing.status].label}</Tag>
           </span>
         )}
       </div>
@@ -937,17 +962,24 @@ const RegistrationRow: React.FC<{
                   usesVanSeat ? vehicleId || undefined : undefined
                 )
                 setEditing(false)
+                done()
               }}
             >
-              {existing ? 'Guardar' : isIndividual ? 'Vou participar' : child && !isSelf ? `Inscrever ${name.split(' ')[0]}` : 'Pedir inscrição'}
+              {submitLabel}
             </Button>
             {existing && (
-              <Button variant="ghost" onClick={() => setEditing(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setEditing(false)
+                  done()
+                }}
+              >
                 Cancelar
               </Button>
             )}
           </div>
-          {!existing && !isIndividual && (
+          {!existing && !isIndividual && !isAdminView && (
             <p className="t-small text-[var(--text-3)]">O pedido fica pendente até o clube confirmar a inscrição.</p>
           )}
         </div>
@@ -955,7 +987,15 @@ const RegistrationRow: React.FC<{
         existing &&
         !locked && (
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditing(true)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setEditing(true)
+                done()
+              }}
+            >
               Alterar
             </Button>
             {onCancel && (
@@ -967,7 +1007,10 @@ const RegistrationRow: React.FC<{
                     existing.status === 'enrolled_by_admin'
                       ? `O clube já confirmou a inscrição de ${name}. Cancelar mesmo? O clube é avisado.`
                       : `Cancelar a inscrição de ${name}?`
-                  if (window.confirm(sure)) onCancel()
+                  if (window.confirm(sure)) {
+                    onCancel()
+                    done()
+                  }
                 }}
               >
                 Cancelar inscrição
@@ -1028,22 +1071,22 @@ const RosterRow: React.FC<{
                 : ''}
             </div>
           </div>
-          <Tag tone={STATUS_TAG[reg.status].tone}>{STATUS_TAG[reg.status].label}</Tag>
+          <Tag tone={REG_STATUS_LABELS[reg.status].tone}>{REG_STATUS_LABELS[reg.status].label}</Tag>
         </button>
       </div>
       {open && editable && (
         <div className="pb-4 pt-1 space-y-3">
           {admin && (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
                 <Field label="Estado">
                   <select
                     className={inputClass}
                     value={reg.status}
                     onChange={(e) => onPatch({ status: e.target.value as RaceRegistration['status'] })}
                   >
-                    <option value="interested">Aguarda o clube</option>
-                    <option value="enrolled_by_admin">Inscrito</option>
+                    <option value="interested">{REG_STATUS_LABELS.interested.label}</option>
+                    <option value="enrolled_by_admin">{REG_STATUS_LABELS.enrolled_by_admin.label}</option>
                   </select>
                 </Field>
                 <Field label="Dorsal">
@@ -1176,7 +1219,7 @@ const AdminEnroll: React.FC<{ race: Race; raceRegs: RaceRegistration[]; vehicles
           )}
         </select>
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Field label="Distância">
           <select className={inputClass} value={distance} onChange={(e) => setDistance(e.target.value)}>
             {distances.map((d) => (

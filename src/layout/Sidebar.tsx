@@ -4,6 +4,7 @@ import { CircleUserRound, Flag, Keyboard, Megaphone, Search, ShieldCheck, Sparkl
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useOpenRaces } from '../utils/openRaces'
+import { plural } from '../utils/formatters'
 import { KIND_COLOR, KIND_ICON } from '../components/ui'
 
 export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; key: string; adminOnly?: boolean }> = [
@@ -61,7 +62,7 @@ export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
                 <span aria-hidden="true" className="desk-badge">
                   {fresh.length}
                 </span>
-                <span className="sr-only">{fresh.length} provas novas</span>
+                <span className="sr-only">{fresh.length} {plural(fresh.length, 'prova nova', 'provas novas')}</span>
               </>
             )}
             {item.to === '/comunicados' && unreadNotificationsCount > 0 && (

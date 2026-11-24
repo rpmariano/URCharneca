@@ -1,5 +1,5 @@
+import { plural } from '../utils/formatters'
 import {
-  TROFEU_SITE_URL,
   buildTrofeuRaces2026_2027,
   getTrofeuEscalao2026,
   mapTrofeuEscalaoToApp,
@@ -85,26 +85,11 @@ export interface TrofeuSyncOutput {
   seasons: TrofeuSeasonData[]
   newNotifications: Omit<AppNotification, 'id' | 'created_at' | 'read_by'>[]
   log: TrofeuSyncLog
-  liveReachable: boolean
-}
-
-/** Tenta verificar disponibilidade online do portal do Troféu (resiliente a CORS em browser) */
-async function probeTrofeuWebsite(): Promise<{ reachable: boolean; htmlSnippet?: string }> {
-  try {
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), 3000)
-    const res = await fetch(TROFEU_SITE_URL, { method: 'GET', signal: ctrl.signal })
-    clearTimeout(timer)
-    if (!res.ok) return { reachable: false }
-    const html = await res.text()
-    return { reachable: true, htmlSnippet: html.slice(0, 5000) }
-  } catch {
-    return { reachable: false }
-  }
 }
 
 /**
- * Executa a sincronização completa com o Troféu de Atletismo de Cascais:
+ * Executa a sincronização completa com o Troféu de Atletismo de Cascais (o browser não lê o site oficial,
+ * que não permite pedidos de outra origem: as classificações chegam pela Edge Function, ver mais abaixo):
  * 1. Garante todas as 13 provas da época aberta 2026/2027 na agenda.
  * 2. Verifica documentação (Croquis, Regulamentos, Resultados) nas provas futuras (ciclo bissemanal).
  * 3. Identifica atletas da URC por ID de Dorsal / Nome nas classificações e auto-cria atletas em falta.
@@ -114,7 +99,6 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
   const now = new Date()
   const nowISO = now.toISOString()
   const nextCheckISO = computeNextBiweeklyCheck(now)
-  const probe = await probeTrofeuWebsite()
 
   const officialRaces = buildTrofeuRaces2026_2027(nowISO)
   const nextRaces = [...input.currentRaces]
@@ -392,7 +376,7 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
     const sample = [...createdAdultsNames, ...createdYouthNames].slice(0, 6).join(', ')
     const extra = totalNewAthletes > 6 ? ` e mais ${totalNewAthletes - 6}` : ''
     newNotifications.push({
-      title: `⚠️ ${totalNewAthletes} novos atletas detetados no Troféu de Cascais`,
+      title: `⚠️ ${totalNewAthletes} ${plural(totalNewAthletes, 'novo atleta detetado', 'novos atletas detetados')} no Troféu de Cascais`,
       message: `Foram encontrados na classificação oficial da U.R. Charneca atletas que ainda não existiam na app (${sample}${extra}). Os perfis foram pré-criados automaticamente — os administradores devem confirmar os dados e atribuir o ID de Dorsal de cada atleta.`,
       type: 'athlete_detected',
       created_by_name: 'Sincronização Troféu Cascais',
@@ -401,10 +385,10 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
   }
 
   const summaryParts: string[] = []
-  if (racesCreated > 0) summaryParts.push(`${racesCreated} provas criadas`)
-  if (racesUpdated > 0) summaryParts.push(`${racesUpdated} provas atualizadas`)
-  if (newDocumentsFound > 0) summaryParts.push(`${newDocumentsFound} novos documentos`)
-  if (totalNewAthletes > 0) summaryParts.push(`${totalNewAthletes} atletas auto-criados`)
+  if (racesCreated > 0) summaryParts.push(`${racesCreated} ${plural(racesCreated, 'prova criada', 'provas criadas')}`)
+  if (racesUpdated > 0) summaryParts.push(`${racesUpdated} ${plural(racesUpdated, 'prova atualizada', 'provas atualizadas')}`)
+  if (newDocumentsFound > 0) summaryParts.push(`${newDocumentsFound} ${plural(newDocumentsFound, 'novo documento', 'novos documentos')}`)
+  if (totalNewAthletes > 0) summaryParts.push(`${totalNewAthletes} ${plural(totalNewAthletes, 'atleta auto-criado', 'atletas auto-criados')}`)
   if (summaryParts.length === 0) summaryParts.push('Calendário, documentos e classificações verificados sem novidades')
 
   const log: TrofeuSyncLog = {
@@ -425,7 +409,6 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
     seasons: nextSeasons,
     newNotifications,
     log,
-    liveReachable: probe.reachable,
   }
 }
 

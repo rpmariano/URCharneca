@@ -311,6 +311,7 @@ export const ProfilePage: React.FC = () => {
       <section className="space-y-3">
         <SectionTitle title="Aparência" />
         <Segmented
+          label="Aparência"
           value={themeMode === 'dark' ? 'dark' : 'balanced'}
           onChange={(v) => setThemeMode(v)}
           options={[

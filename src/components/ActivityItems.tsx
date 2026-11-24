@@ -1,8 +1,8 @@
 import React from 'react'
-import { Baby, Check, CircleHelp, X } from 'lucide-react'
+import { Baby, Check, CircleHelp, Hourglass, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
-import { EVENT_TYPE_LABELS } from '../types'
+import { EVENT_TYPE_LABELS, REG_STATUS_LABELS } from '../types'
 import { computeVanAllocation, formatShortDate, getDaysFromReference } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { ActivityCover } from './ActivityCover'
@@ -47,11 +47,13 @@ const ActivityCard: React.FC<{
   meta?: React.ReactNode
   status?: React.ReactNode
   extraBadge?: React.ReactNode
+  /** Selo pequeno no canto superior direito da capa; não se sobrepõe às etiquetas da esquerda. */
+  cornerBadge?: React.ReactNode
   dimmed?: boolean
   onOpen?: () => void
   footer?: React.ReactNode
   ariaLabel: string
-}> = ({ variant, kind, kindLabel, seed, imageUrl, title, when, where, meta, status, extraBadge, dimmed, onOpen, footer, ariaLabel }) => {
+}> = ({ variant, kind, kindLabel, seed, imageUrl, title, when, where, meta, status, extraBadge, cornerBadge, dimmed, onOpen, footer, ariaLabel }) => {
   if (variant === 'row') {
     return (
       <div className={dimmed ? 'opacity-60' : ''}>
@@ -84,9 +86,12 @@ const ActivityCard: React.FC<{
           imageUrl={imageUrl}
           className={`w-full rounded-2xl ${wide ? 'aspect-[4/3]' : 'aspect-[16/10]'} @min-[520px]:aspect-[16/9]`}
         >
-          <span className="absolute top-3 left-3 flex flex-wrap gap-1.5 pr-3">
-            <KindBadge kind={kind} label={kindLabel} solid />
-            {extraBadge}
+          <span className="absolute top-3 inset-x-3 flex items-start gap-1.5">
+            <span className="flex-1 min-w-0 flex flex-wrap gap-1.5">
+              <KindBadge kind={kind} label={kindLabel} solid />
+              {extraBadge}
+            </span>
+            {cornerBadge && <span className="shrink-0">{cornerBadge}</span>}
           </span>
           {status && <span className="absolute bottom-3 left-3">{status}</span>}
         </ActivityCover>
@@ -102,12 +107,15 @@ const ActivityCard: React.FC<{
   )
 }
 
-const StatusPill: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center gap-1 t-small t-strong px-2.5 py-1 rounded-full bg-[var(--text-1)] text-[var(--bg-app)]">
-    <Check className="w-3.5 h-3.5" aria-hidden="true" />
-    {children}
-  </span>
-)
+const StatusPill: React.FC<{ children: React.ReactNode; pending?: boolean }> = ({ children, pending }) => {
+  const Icon = pending ? Hourglass : Check
+  return (
+    <span className="inline-flex items-center gap-1 t-small t-strong px-2.5 py-1 rounded-full bg-[var(--text-1)] text-[var(--bg-app)]">
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      {children}
+    </span>
+  )
+}
 
 const useRaceCardData = (race: Race) => {
   const { registrations, isAdminView } = useApp()
@@ -116,6 +124,9 @@ const useRaceCardData = (race: Race) => {
   const van = computeVanAllocation(race, regs)
   const pending = regs.filter((r) => r.status === 'interested').length
   const countdown = countdownLabel(race.date)
+  // Com várias inscrições mostra-se o número; com uma, o mesmo estado que na página da prova
+  const myState = mine.length === 1 ? REG_STATUS_LABELS[mine[0].status] : undefined
+  const myLabel = myState?.label ?? (mine.length > 1 ? `${mine.length} inscrições` : '')
   const metaParts = [
     regs.length === 0
       ? mine.length > 0
@@ -128,6 +139,7 @@ const useRaceCardData = (race: Race) => {
   ].filter(Boolean)
 
   return {
+    myTag: myLabel ? <Tag tone={myState?.tone ?? 'neutral'}>{myLabel}</Tag> : undefined,
     when: `${formatShortDate(race.date)} · ${race.start_time}${countdown ? ` · ${countdown}` : ''}`,
     meta: (
       <>
@@ -135,7 +147,7 @@ const useRaceCardData = (race: Race) => {
         {metaParts[1] ? ` · ${metaParts[1]}` : ''}
       </>
     ),
-    status: mine.length > 0 ? <StatusPill>{mine.length > 1 ? `${mine.length} inscrições` : 'Inscrito'}</StatusPill> : undefined,
+    status: myLabel ? <StatusPill pending={mine.some((r) => r.status === 'interested')}>{myLabel}</StatusPill> : undefined,
     extraBadge: (
       <>
         {race.open_to_children && (
@@ -153,7 +165,7 @@ const useRaceCardData = (race: Race) => {
 
 /** Cartão de prova para listas: capa, título, data, local, inscritos e carrinha. Requer AppProvider. */
 export const RaceListItem: React.FC<{ race: Race; onOpen: () => void; compact?: boolean }> = ({ race, onOpen, compact }) => {
-  const d = useRaceCardData(race)
+  const { myTag, ...d } = useRaceCardData(race)
   return (
     <ActivityCard
       variant={compact ? 'row' : 'full'}
@@ -164,14 +176,14 @@ export const RaceListItem: React.FC<{ race: Race; onOpen: () => void; compact?: 
       where={race.location}
       onOpen={onOpen}
       {...d}
-      status={compact ? (d.status ? <Tag tone="ok">Inscrito</Tag> : undefined) : d.status}
+      status={compact ? myTag : d.status}
     />
   )
 }
 
-/** Cartão de prova para carrossel horizontal (Destaques). Requer AppProvider. */
-export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, onOpen }) => {
-  const d = useRaceCardData(race)
+/** Cartão de prova para carrossel horizontal (Destaques). `isNew` junta o selo "Nova" no canto. Requer AppProvider. */
+export const RaceCard: React.FC<{ race: Race; onOpen?: () => void; isNew?: boolean }> = ({ race, onOpen, isNew }) => {
+  const { myTag: _myTag, ...d } = useRaceCardData(race)
   return (
     <ActivityCard
       variant="wide"
@@ -182,6 +194,12 @@ export const RaceCard: React.FC<{ race: Race; onOpen?: () => void }> = ({ race, 
       where={race.location}
       onOpen={onOpen}
       {...d}
+      ariaLabel={isNew ? `Nova: ${d.ariaLabel}` : d.ariaLabel}
+      cornerBadge={
+        isNew ? (
+          <span className="block px-2.5 py-1 rounded-full bg-[#b91c1c] text-white t-small t-strong shadow-[var(--shadow-card)]">Nova</span>
+        ) : undefined
+      }
     />
   )
 }
@@ -199,7 +217,7 @@ export const EventListItem: React.FC<{ event: TeamEvent; onOpen: () => void; sho
   const mine = event.attendees.find((a) => a.athlete_id === currentUser.id)?.status
   const past = event.date < todayISO()
   const countdown = countdownLabel(event.date)
-  const mineLabel = mine === 'going' ? 'Vais' : mine === 'maybe' ? 'Talvez' : ''
+  const mineLabel = mine === 'going' ? 'Vou' : mine === 'maybe' ? 'Talvez' : ''
 
   return (
     <ActivityCard

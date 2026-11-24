@@ -3,10 +3,10 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { AlertTriangle, Check, ClipboardCheck, Download, LogIn, Pencil, Plus, RefreshCw, Search, ShieldCheck, Ticket, Trophy, UserPlus, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { AthleteProfile, RaceRegistration, TransportMode, YouthAthlete } from '../types'
-import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, TRANSPORT_LABELS } from '../types'
+import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import type { RegistrationBulkAction } from '../context/AppContext'
-import { calculateAge, formatShortDate } from '../utils/formatters'
-import { todayISO } from '../utils/dates'
+import { calculateAge, countSeasonStages, formatShortDate, plural } from '../utils/formatters'
+import { seasonOf, todayISO } from '../utils/dates'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { DataTable, type Column } from '../layout/DataTable'
 import { CsvExportDialog, type CsvField } from '../components/CsvExportDialog'
@@ -76,6 +76,7 @@ export const AdminPage: React.FC = () => {
       />
       <div className={desktop ? 'max-w-[640px]' : undefined}>
       <Segmented<Tab>
+        label="Secção de gestão"
         value={tab}
         onChange={setTab}
         options={[
@@ -108,6 +109,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
     isSyncingTrofeu,
     pendingDorsalAthletesCount,
     trofeuSyncLogs,
+    trofeuSeasons,
     syncTrofeuCascais,
     assignTrofeuDorsal,
     confirmAllPendingForRace,
@@ -140,7 +142,8 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
     return [...adults, ...kids]
   }, [profiles, youthAthletes])
 
-  const trofeuStageCount = races.filter((r) => r.category === 'trofeu_cascais').length
+  const openSeason = trofeuSeasons.find((s) => s.status === 'open')?.season ?? seasonOf(today)
+  const trofeuStageCount = countSeasonStages(races, openSeason)
   const lastLog = trofeuSyncLogs[0]
 
   return (
@@ -166,12 +169,12 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
                 <span className="t-body t-strong text-[var(--text-1)]">
-                  {trofeuStageCount} etapas sincronizadas (2026/2027)
+                  {trofeuStageCount} {plural(trofeuStageCount, 'etapa sincronizada', 'etapas sincronizadas')} ({openSeason})
                 </span>
               </div>
               <p className="t-small text-[var(--text-3)] mt-1">
                 {lastLog
-                  ? `Última sync: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')} — ${lastLog.summary}`
+                  ? `Última sincronização: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')} — ${lastLog.summary}`
                   : 'Ligação automática ao site trofeuatletismocascais.pt ativa (procura de documentos 2x/semana).'}
               </p>
             </div>
@@ -191,31 +194,40 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-[var(--tint-amber-fg)] shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="t-small text-[var(--text-1)]">
-                  <strong>{pendingDorsalAthletesCount} atletas</strong> detetados no Troféu aguardam ID de Dorsal (preencher para identificar automaticamente nas provas):
+                  <strong>
+                    {pendingDorsalAthletesCount} {plural(pendingDorsalAthletesCount, 'atleta', 'atletas')}
+                  </strong>{' '}
+                  {plural(pendingDorsalAthletesCount, 'detetado', 'detetados')} no Troféu {plural(pendingDorsalAthletesCount, 'aguarda', 'aguardam')} ID de Dorsal
+                  (preencher para identificar automaticamente nas provas):
                 </div>
               </div>
 
               <div className="space-y-2">
                 {pendingDorsalPeople.slice(0, 5).map((person) => (
-                  <div key={person.id} className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="t-small t-strong text-[var(--text-1)] truncate">
+                  // Telemóvel: nome numa linha e o campo por baixo, a toda a largura
+                  <div key={person.id} className="flex flex-wrap lg:flex-nowrap items-center gap-2">
+                    <div className="min-w-0 basis-full lg:basis-0 flex-1">
+                      <div className="t-small t-strong text-[var(--text-1)] lg:truncate">
                         {person.name} {person.isYouth && '(Jovem)'}
                       </div>
-                      <div className="text-[11px] text-[var(--text-3)] truncate">
+                      <div className="t-small text-[var(--text-3)] lg:truncate">
                         {person.escalao} · {person.seasons.join(', ') || 'Troféu'}
                       </div>
                     </div>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
                       value={dorsalInputs[person.id] ?? ''}
                       onChange={(e) => setDorsalInputs((prev) => ({ ...prev, [person.id]: e.target.value }))}
                       placeholder="Dorsal"
-                      className="w-20 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-2 py-1 t-small text-[var(--text-1)]"
+                      className="min-w-0 flex-1 lg:flex-none lg:w-24 min-h-11 lg:min-h-9 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
                       aria-label={`Dorsal de ${person.name}`}
                     />
                     <Button
                       size="sm"
+                      className="min-w-11"
+                      aria-label={`Guardar dorsal de ${person.name}`}
                       disabled={!(dorsalInputs[person.id] || '').trim()}
                       onClick={() => assignTrofeuDorsal(person.id, person.isYouth, dorsalInputs[person.id] || '')}
                     >
@@ -472,6 +484,7 @@ const AthletesTab: React.FC = () => {
                       </p>
                     ) : (
                       <Segmented<'blocked' | 'authorized'>
+                        label={`Login de ${p.name}`}
                         value={p.login_authorized ? 'authorized' : 'blocked'}
                         onChange={(mode) => {
                           const emailVal = (draftEmails[p.id] ?? p.login_email ?? p.email ?? '').trim()
@@ -905,6 +918,7 @@ const ChildrenTab: React.FC = () => {
                       </div>
                     </Field>
                     <Segmented<'adults' | 'self'>
+                      label={`Modo de acesso de ${c.name}`}
                       value={c.can_self_manage ? 'self' : 'adults'}
                       onChange={(mode) => {
                         const emailVal = (draftEmails[c.id] ?? c.login_email ?? c.email ?? '').trim()
@@ -1175,13 +1189,6 @@ const ChildrenTab: React.FC = () => {
 
 // ---------------------------------------------------------------------------
 /** Inscrições e dorsais em tabela (só desktop): filtros, seleção múltipla e ações em bloco por prova. */
-const STATUS_LABEL: Record<RaceRegistration['status'], { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }> = {
-  interested: { label: 'Aguarda o clube', tone: 'warn' },
-  enrolled_by_admin: { label: 'Inscrito', tone: 'ok' },
-  self_enrolled: { label: 'Vai', tone: 'info' },
-  cancelled: { label: 'Cancelado', tone: 'neutral' },
-}
-
 const RegistrationsTable: React.FC = () => {
   const { races, registrations, applyToRegistrations } = useApp()
   const navigate = useNavigate()
@@ -1250,7 +1257,7 @@ const RegistrationsTable: React.FC = () => {
     },
     { id: 'date', header: 'Data', sortValue: (r) => raceById.get(r.race_id)?.date ?? '', render: (r) => formatShortDate(raceById.get(r.race_id)?.date ?? '') },
     { id: 'distance', header: 'Distância', className: 'col-opt', sortValue: (r) => r.distance, render: (r) => r.distance },
-    { id: 'status', header: 'Estado', sortValue: (r) => STATUS_LABEL[r.status].label, render: (r) => <Tag tone={STATUS_LABEL[r.status].tone}>{STATUS_LABEL[r.status].label}</Tag> },
+    { id: 'status', header: 'Estado', sortValue: (r) => REG_STATUS_LABELS[r.status].label, render: (r) => <Tag tone={REG_STATUS_LABELS[r.status].tone}>{REG_STATUS_LABELS[r.status].label}</Tag> },
     {
       id: 'bib',
       header: 'Dorsal',
@@ -1377,6 +1384,7 @@ const AgendaTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <Segmented
+        label="Quando"
         value={when}
         onChange={setWhen}
         options={[

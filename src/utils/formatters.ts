@@ -1,9 +1,18 @@
 import type { AthleteProfile, Race, RaceRegistration, RaceVehicle } from '../types'
 import { TRANSPORT_LABELS } from '../types'
-import { todayISO } from './dates'
+import { seasonOf, todayISO } from './dates'
 
 const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+export function plural(n: number, one: string, many: string): string {
+  return n === 1 ? one : many
+}
+
+/** Etapas do Troféu de uma época na agenda: o histórico (`trofeu-hist-*`) e as outras épocas não contam. */
+export function countSeasonStages(races: Race[], season: string): number {
+  return races.filter((r) => r.category === 'trofeu_cascais' && !r.id.startsWith('trofeu-hist-') && seasonOf(r.date) === season).length
+}
 
 export function calculateAge(birthDate: string): number {
   if (!birthDate) return 0

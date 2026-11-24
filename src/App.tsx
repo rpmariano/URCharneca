@@ -22,8 +22,9 @@ const CreateEventModal = lazy(() => import('./components/CreateEventModal').then
 const CreateNoticeModal = lazy(() => import('./components/CreateNoticeModal').then((m) => ({ default: m.CreateNoticeModal })))
 
 const PageFallback: React.FC = () => (
-  <div className="py-20 flex justify-center">
-    <div className="w-7 h-7 rounded-full border-2 border-[var(--run)] border-t-transparent animate-spin" aria-label="A carregar" />
+  <div className="py-20 flex justify-center" role="status">
+    <div className="w-7 h-7 rounded-full border-2 border-[var(--run)] border-t-transparent animate-spin" aria-hidden="true" />
+    <span className="sr-only">A carregar…</span>
   </div>
 )
 
@@ -99,9 +100,20 @@ const AppShell: React.FC = () => {
       ) : (
         <>
           <ScrollToTop />
+          {/* Primeira paragem de Tab: passa à frente da barra lateral */}
+          <a
+            href="#conteudo"
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById('conteudo')?.focus()
+            }}
+            className="sr-only focus:not-sr-only focus:fixed! focus:top-2 focus:left-2 focus:z-[120] focus:px-4! focus:py-3! focus:rounded-xl focus:bg-[var(--text-1)] focus:text-[var(--bg-app)] focus:shadow-[var(--shadow-float)] t-small t-strong"
+          >
+            Saltar para o conteúdo
+          </a>
           {/* Sem z-index de propósito: os modais usam <Sheet> (portal para document.body) */}
           {desktop && <Sidebar onHelp={() => setHelpOpen(true)} />}
-          <main id="conteudo" className={`flex-1 w-full relative${desktop ? ' desk-main' : ''}`}>
+          <main id="conteudo" tabIndex={-1} className={`flex-1 w-full relative outline-none${desktop ? ' desk-main' : ''}`}>
             <div className={desktop && !isDetail ? 'desk-content' : undefined}>
             <Suspense fallback={<PageFallback />}>
               <Routes>
@@ -132,7 +144,7 @@ const AppShell: React.FC = () => {
       )}
 
       <div
-        className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
+        className="toast-region fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
         role="status"
         aria-live="polite"
       >

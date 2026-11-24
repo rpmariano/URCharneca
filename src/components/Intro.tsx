@@ -328,7 +328,7 @@ const Kids: React.FC<SlideProps> = ({ active }) => {
 }
 
 const FOLLOW_STEPS = [
-  { label: 'Pedido enviado', state: 'Aguarda o clube', text: 'Pedes a inscrição e ficas a aguardar o clube.' },
+  { label: 'Pedes a inscrição', state: 'Pedido enviado', text: 'Pedes a inscrição e ficas a aguardar o clube.' },
   { label: 'Inscrição feita', state: 'Inscrito', text: 'O clube inscreve-te e avisa nos Comunicados.' },
   { label: 'Dorsal entregue', state: 'Dorsal entregue', text: 'O dorsal chega ao clube e é-te entregue. Está tudo pronto.' },
 ]
@@ -411,7 +411,7 @@ const Manage: React.FC<SlideProps> = () => {
                 <input type="checkbox" checked={chosen.has(i)} onChange={() => toggle(i)} className="w-5 h-5 accent-[var(--run)]" aria-label={`Escolher ${p}`} />
                 <Avatar name={p} size={32} />
                 <span className="t-small text-[var(--text-1)] flex-1 truncate">{p}</span>
-                {done.has(i) ? <Tag tone="ok">Inscrito</Tag> : <Tag tone="warn">Aguarda o clube</Tag>}
+                {done.has(i) ? <Tag tone="ok">Inscrito</Tag> : <Tag tone="warn">Pedido enviado</Tag>}
               </label>
             ))}
           </div>

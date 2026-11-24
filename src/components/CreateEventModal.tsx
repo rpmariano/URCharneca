@@ -104,7 +104,7 @@ export const CreateEventModal: React.FC<Props> = ({ event, defaultType = 'traini
               className={inputClass}
               value={workoutPlan}
               onChange={(e) => setWorkoutPlan(e.target.value)}
-              placeholder="Ex: Aquecimento 2 km + 5x 1000 m + retorno"
+              placeholder="Ex: 2 km + 5x 1000 m + retorno"
             />
           </Field>
         )}

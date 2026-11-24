@@ -38,7 +38,7 @@
   --surface-card-hover: #f6f8fb;
   --surface-raised: #f2f4f8;
   --border-card: #e2e6ec;
-  --border-card-strong: #b4bcc9;
+  --border-card-strong: #828c9f; /* limites de campos e controlos: >= 3:1 sobre branco, --bg-app e --surface-raised */
 
   /* Texto (>= 4.5:1 sobre branco e sobre surface-raised) */
   --text-1: #101c36;
@@ -366,6 +366,43 @@ p {
 .scroll-row::-webkit-scrollbar { display: none; }
 
 /* =========================================================================
+   Telemóvel: ferramentas do cabeçalho (AppHeader `collapsible`) e botão flutuante
+   recolhem ao descer. Só mudam com transform/opacity: o conteúdo não salta.
+   ========================================================================= */
+.app-header-tools {
+  pointer-events: auto;
+  background: var(--bg-app);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.app-header-tools.is-retracted {
+  transform: translateY(-100%);
+  box-shadow: none;
+  pointer-events: none;
+}
+/* Paisagem com pouca altura: o cabeçalho já não é fixo (layout/responsive.css), não há nada a recolher */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header-tools.is-retracted {
+    transform: none;
+    pointer-events: auto;
+  }
+}
+.fab {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.fab.is-retracted {
+  transform: translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Com uma folha ou diálogo aberto, os avisos passam para o topo para não taparem os campos */
+body:has([aria-modal="true"]) .toast-region {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+
+/* =========================================================================
    Formulários
    ========================================================================= */
 input[type="text"],
@@ -380,6 +417,16 @@ select,
 textarea {
   font-family: inherit;
   color: var(--text-1);
+}
+
+/* iOS: um campo com menos de 16 px faz zoom automático ao receber foco. Só abaixo de 1024 px (a app de
+   telemóvel); o resto da escala tipográfica não muda. `!important` vence as classes t-body / t-small. */
+@media (max-width: 1023.98px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 input:focus,

@@ -116,7 +116,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
       />
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         {isAdminView && (
-          <Field label="Tipo de prova">
+          <Field label="Tipo de prova" hint={CATEGORIA_LABELS[category].desc}>
             <Segmented<RaceCategory>
               value={category}
               onChange={(c) => {
@@ -129,7 +129,6 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
                 { value: 'individual', label: 'Comunidade' },
               ]}
             />
-            <span className="block text-xs text-[var(--text-3)] mt-1.5">{CATEGORIA_LABELS[category].desc}</span>
           </Field>
         )}
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Ticket } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind } from '../types'
-import { TRANSPORT_LABELS } from '../types'
+import { REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import { formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { ActivityCover } from '../components/ActivityCover'
@@ -24,7 +24,7 @@ interface Entry {
   who?: string
   /** quem está inscrito: o próprio ('me') ou o id da criança */
   person: string
-  tag: { label: string; tone: 'ok' | 'warn' | 'info' }
+  tag: { label: string; tone: 'ok' | 'warn' | 'info' | 'neutral' }
   to: string
 }
 
@@ -62,12 +62,7 @@ export const RegistrationsPage: React.FC = () => {
         detail: `${r.distance} · ${TRANSPORT_LABELS[r.transport_mode].short}`,
         who: r.is_dependent ? r.athlete_name : undefined,
         person: r.is_dependent ? r.dependent_id || r.athlete_id : 'me',
-        tag:
-          r.status === 'interested'
-            ? { label: 'Aguarda o clube', tone: 'warn' }
-            : r.status === 'self_enrolled'
-            ? { label: 'Vais', tone: 'info' }
-            : { label: 'Inscrito', tone: 'ok' },
+        tag: REG_STATUS_LABELS[r.status],
         to: `/prova/${race.id}`,
       })
     }
@@ -84,7 +79,7 @@ export const RegistrationsPage: React.FC = () => {
         title: e.title,
         detail: e.location,
         person: 'me',
-        tag: mine.status === 'going' ? { label: 'Vais', tone: 'ok' } : { label: 'Talvez', tone: 'warn' },
+        tag: mine.status === 'going' ? { label: 'Vou', tone: 'ok' } : { label: 'Talvez', tone: 'warn' },
         to: `/evento/${e.id}`,
       })
     }
@@ -145,7 +140,7 @@ export const RegistrationsPage: React.FC = () => {
               <ActivityCover kind={e.kind} seed={e.seed} imageUrl={e.imageUrl} className="w-[72px] h-[72px] rounded-xl shrink-0" />
               <span className="min-w-0 flex-1">
                 <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{e.title}</span>
-                <span className="block t-small text-[var(--text-3)] truncate">
+                <span className="block t-small text-[var(--text-3)]">
                   {formatShortDate(e.date)} · {e.time}
                   {countdown ? ` · ${countdown}` : ''}
                 </span>
@@ -153,8 +148,10 @@ export const RegistrationsPage: React.FC = () => {
                   {e.who ? `${e.who.split(' ')[0]} · ` : ''}
                   {e.detail}
                 </span>
+                <span className="block pt-1.5">
+                  <Tag tone={e.tag.tone}>{e.tag.label}</Tag>
+                </span>
               </span>
-              <Tag tone={e.tag.tone}>{e.tag.label}</Tag>
             </button>
           )
         })}
@@ -207,6 +204,7 @@ export const RegistrationsPage: React.FC = () => {
       ) : (
         <>
           <Segmented
+            label="Quando"
             value={tab}
             onChange={setTab}
             options={[

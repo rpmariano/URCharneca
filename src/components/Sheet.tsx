@@ -158,9 +158,10 @@ export const Sheet: React.FC<SheetProps> = ({
           ...panelStyle,
         }}
       >
+        {/* Nos formulários (persistent) não há pega: sugeria que se fechava a arrastar */}
         {isBottom && (
           <div className="flex justify-center pt-2 pb-0.5 shrink-0 lg:hidden" aria-hidden="true">
-            <span className="w-10 h-1 rounded-full bg-[var(--border-card-strong)]" />
+            <span className={`w-10 h-1 rounded-full ${persistent ? '' : 'bg-[var(--border-card-strong)]'}`} />
           </div>
         )}
         {children}
