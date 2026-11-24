@@ -1,6 +1,7 @@
 import React from 'react'
 import { CalendarDays, ClipboardList, MapPin, Pencil, Shirt, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useDesktopShell } from '../layout/useDesktopShell'
 import type { TeamEvent } from '../types'
 import { EVENT_TYPE_LABELS } from '../types'
 import { formatLongDate } from '../utils/formatters'
@@ -25,14 +26,25 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
   const past = event.date < todayISO()
   const countdown = countdownLabel(event.date)
 
-  return (
-    // 1 coluna em mobile; a partir de 768 px: info à esquerda, quem vai e ações à direita (layout/responsive.css)
-    <div className="detail">
-      <DetailBar title={event.title} onBack={onBack} onShare={() => shareLink(event.title, `evento/${event.id}`, showToast)} />
-      <ActivityCover kind={kind} seed={event.id} imageUrl={event.image_url} alt="" className="detail-cover" />
+  const desktop = useDesktopShell()
+  const bar = <DetailBar title={event.title} onBack={onBack} onShare={() => shareLink(event.title, `evento/${event.id}`, showToast)} overlay={!desktop} />
 
-      <div className="detail-body detail-grid">
-      <div className="divide-soft min-w-0">
+  return (
+    <>
+    {desktop && bar}
+    {/* Telemóvel: 1 coluna. Computador: duas colunas, info à esquerda e quem vai à direita (como o detalhe de prova) */}
+    <div className={desktop ? 'desk-detail' : 'detail'}>
+      {!desktop && bar}
+      <ActivityCover
+        kind={kind}
+        seed={event.id}
+        imageUrl={event.image_url}
+        alt=""
+        className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'detail-cover'}
+      />
+
+      <div className={desktop ? 'desk-detail-grid' : 'detail-body'}>
+      <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ''}`}>
         <header className="py-6 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             <KindBadge kind={kind} label={EVENT_TYPE_LABELS[event.type].short} />
@@ -65,7 +77,7 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
         )}
       </div>
 
-      <div className="divide-soft min-w-0 detail-side">
+      <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ' detail-side'}`}>
         <section className="py-6 space-y-3">
           <SectionTitle title="Quem vai" count={going.length} />
           {going.length === 0 ? (
@@ -106,12 +118,12 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
       </div>
       </div>
 
-      {/* Barra fixa: presença na zona do polegar. Em >= 640 px: resumo à esquerda e botões com largura limitada à direita */}
+      {/* Barra fixa: presença na zona do polegar. No computador: resumo à esquerda e botões com largura limitada à direita */}
       <div
-        className="fixed-bar fixed-bar-pad pt-3 border-t border-[var(--border-card)] sm:flex sm:items-center sm:justify-between sm:gap-6"
+        className="fixed-bar fixed-bar-pad pt-3 border-t border-[var(--border-card)] lg:flex lg:items-center lg:justify-between lg:gap-6"
         style={{ background: 'var(--bg-nav)', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="hidden sm:block min-w-0 flex-1">
+        <div className="hidden lg:block min-w-0 flex-1">
           <div className="t-body t-strong text-[var(--text-1)] truncate first-letter:uppercase">{formatLongDate(event.date)}</div>
           <div className="t-small text-[var(--text-3)] truncate">
             Às {event.time} · {going.length} {going.length === 1 ? 'confirmado' : 'confirmados'}
@@ -122,11 +134,12 @@ export const EventDetail: React.FC<{ event: TeamEvent; onBack: () => void }> = (
             Este {event.type === 'training' ? 'treino' : 'evento'} já se realizou.
           </p>
         ) : (
-          <div className="sm:w-[360px] sm:shrink-0">
+          <div className="lg:w-[360px] lg:shrink-0">
             <RsvpButtons event={event} />
           </div>
         )}
       </div>
     </div>
+    </>
   )
 }

@@ -124,8 +124,8 @@ export const Sheet: React.FC<SheetProps> = ({
   return createPortal(
     <div
       className={`fixed inset-0 z-[100] flex justify-center fade-in ${
-        // Em >= 640 px o bottom-sheet passa a diálogo centrado (com margem à volta)
-        isBottom ? 'items-end sm:items-center sm:p-6' : 'items-center p-4'
+        // Em >= 1024 px (computador) o bottom-sheet passa a diálogo centrado (com margem à volta)
+        isBottom ? 'items-end lg:items-center lg:p-6' : 'items-center p-4'
       }`}
       style={{ background: 'var(--bg-scrim)' }}
       onClick={(e) => {
@@ -140,7 +140,7 @@ export const Sheet: React.FC<SheetProps> = ({
         onClick={(e) => e.stopPropagation()}
         className={`relative w-full shadow-2xl ${
           isBottom
-            ? 'max-w-[480px] max-h-[90dvh] rounded-t-[24px] sm:max-w-[560px] sm:max-h-[min(85dvh,880px)] sm:rounded-[24px] flex flex-col overflow-hidden sheet-in'
+            ? 'max-w-[480px] max-h-[90dvh] rounded-t-[24px] lg:max-w-[560px] lg:max-h-[min(85dvh,880px)] lg:rounded-[24px] flex flex-col overflow-hidden sheet-in'
             : 'max-w-md max-h-[85dvh] rounded-3xl pop-in'
         } ${panelClassName}`}
         style={{
@@ -151,7 +151,7 @@ export const Sheet: React.FC<SheetProps> = ({
         }}
       >
         {isBottom && (
-          <div className="flex justify-center pt-2 pb-0.5 shrink-0 sm:hidden" aria-hidden="true">
+          <div className="flex justify-center pt-2 pb-0.5 shrink-0 lg:hidden" aria-hidden="true">
             <span className="w-10 h-1 rounded-full bg-[var(--border-card-strong)]" />
           </div>
         )}

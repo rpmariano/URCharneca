@@ -120,7 +120,7 @@ export const TrofeuPage: React.FC = () => {
   }
 
   return (
-    // page-read com coluna de 960 px: as listas de atletas e provas passam a 2 colunas a partir de 640 px
+    // page-read com coluna de 960 px: as listas de atletas e provas passam a 2 colunas no computador
     <div className="page-read px-5 pb-28 space-y-5" style={{ '--read-max': '960px' } as React.CSSProperties}>
       <AppHeader
         className="-mx-5"
@@ -154,7 +154,7 @@ export const TrofeuPage: React.FC = () => {
 
       {/* Época */}
       <section className="space-y-2" aria-label="Época">
-        <div className="scroll-row gap-2 sm:flex-wrap">
+        <div className="scroll-row gap-2 lg:flex-wrap">
           {visibleSeasons.map((s) => (
             <Chip
               key={s.season}
@@ -339,7 +339,7 @@ export const TrofeuPage: React.FC = () => {
               {displayedAthletes.length === 0 ? (
                 <EmptyState icon={Users} title="Nada encontrado" text="Experimenta outro escalão ou outra pesquisa." />
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 sm:items-start">
+                <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
                   {displayedAthletes.map((a) => {
                     const need = minStagesForPrize(a.total_season_stages)
                     const meets = a.stages_participated >= need
@@ -439,7 +439,7 @@ export const TrofeuPage: React.FC = () => {
           {seasonRaces.length === 0 ? (
             <EmptyState icon={Trophy} title="Sem provas nesta época" text="O calendário desta época não está disponível." />
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 sm:items-start">
+            <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
               {seasonRaces.map((r, index) => {
                 const isPast = r.date < today
                 const docs = r.documents || []
