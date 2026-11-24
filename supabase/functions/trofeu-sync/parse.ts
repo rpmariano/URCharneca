@@ -104,7 +104,7 @@ export function decodeEntities(s: string): string {
 /** Remove etiquetas, decodifica entidades e normaliza espaços (incl. nbsp). */
 export function cellText(html: string): string {
   return decodeEntities(html.replace(/<[^>]*>/g, ' '))
-    .replace(/[ \s]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
