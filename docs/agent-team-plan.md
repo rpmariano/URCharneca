@@ -43,10 +43,10 @@ Passar a app de `localStorage` para Supabase (base de dados, utilizadores reais 
 - **Crianças:** perfis dependentes de um responsável, sem conta própria.
 - **Dados reais:** o admin preenche-os na app depois de o Supabase estar montado. O repositório mantém só dados anonimizados.
 - **Plano Supabase:** começa gratuito e passa a pago. Até lá: pausa por inatividade (um pedido agendado semanal evita-o), limites pequenos de armazenamento, sem cópias de segurança diárias (exportar à mão antes de cada migração). O pago acrescenta cópias, sem pausa e mais capacidade; nada no código muda.
-- **Desktop:** só para o admin. O atleta continua em layout de telemóvel (centrado em ecrãs largos). Fase 4 reduz-se à área de gestão: barra lateral, tabelas de inscrições, dorsais e atletas.
+- **Desktop:** a interface é para telemóvel e para browser de computador (>= 1024 px), atleta e admin; não há tratamento de tablet (abaixo de 1024 px a app é a de telemóvel). No computador todos têm barra lateral, cabeçalho fixo e conteúdo largo; Gerir, tabelas de gestão e exportação CSV ficam só para o admin.
 
 ## Ajustes às fases por causa destas decisões
 - Fase 2: ativar o fornecedor Google no Supabase Auth (precisa de um cliente OAuth no Google Cloud, feito por ti) e email e palavra-passe; convite por função de servidor (Edge Function) com a chave de serviço guardada só no Supabase, nunca no repositório. Recuperação de palavra-passe incluída.
 - Fase 3: ecrã de admin para criar atletas e crianças e enviar convites; importação passa a ser manual pelo admin, não de localStorage.
-- Fase 4: menor, só área admin.
+- Fase 4: shell de computador para todos (ver decisão Desktop); tabelas de gestão só para o admin.
 - Fase 6: guia de passagem ao plano pago.

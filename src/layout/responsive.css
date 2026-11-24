@@ -39,11 +39,9 @@
      isso estas regras só têm efeito no shell de computador. */
   .page-read > :where(:not(.app-header)) {
     max-width: var(--read-max);
-    margin-inline: auto;
   }
   .page-wide > :where(:not(.app-header)) {
     max-width: var(--wide-max);
-    margin-inline: auto;
   }
 
   /* Detalhe de prova/evento em telemóvel (no computador usa-se .desk-detail, em desktop.css) */
@@ -64,6 +62,13 @@
   .detail-side {
     border-top: 1px solid var(--border-card);
   }
+}
+
+/* Centrar a coluna de leitura. Fora de @layer para vencer o reset `p { margin: 0 }` do index.css
+   (senão os parágrafos ficavam encostados à esquerda). */
+.page-read > :where(:not(.app-header)),
+.page-wide > :where(:not(.app-header)) {
+  margin-inline: auto;
 }
 
 /* Telemóvel em paisagem (pouca altura): o cabeçalho alto (pesquisa + categorias) deixa de ser fixo

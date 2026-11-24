@@ -9,6 +9,7 @@ import { todayISO } from '../utils/dates'
 import { ActivityCover } from '../components/ActivityCover'
 import { countdownLabel } from '../components/ActivityItems'
 import { useDesktopShell } from '../layout/useDesktopShell'
+import { BP, useMediaQuery } from '../layout/useMediaQuery'
 import { EmptyState, PageHeader, SectionTitle, Segmented, Tag, kindOfEvent } from '../components/ui'
 
 interface Entry {
@@ -32,6 +33,7 @@ export const RegistrationsPage: React.FC = () => {
   const today = todayISO()
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
   const desktop = useDesktopShell()
+  const sideBySide = useMediaQuery(BP.xl) && desktop
 
   const entries = useMemo<Entry[]>(() => {
     const childIds = new Set(youthAthletes.filter((c) => c.associated_adult_ids.includes(currentUser.id)).map((c) => c.id))
@@ -132,10 +134,10 @@ export const RegistrationsPage: React.FC = () => {
     )
 
   return (
-    // Telemóvel: separadores Próximas/Passadas. Computador: as duas listas lado a lado (page-wide)
-    <div className={`${desktop ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-5`}>
+    // Separadores Próximas/Passadas; em computador largo (>= 1280 px) as duas listas lado a lado (page-wide)
+    <div className={`${sideBySide ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-5`}>
       <PageHeader title="Inscrições" />
-      {desktop ? (
+      {sideBySide ? (
         <div className="grid grid-cols-2 gap-x-8 xl:gap-x-12 items-start pt-2">
           <section className="space-y-3 min-w-0" aria-label="Próximas">
             <SectionTitle title="Próximas" count={upcoming.length} />

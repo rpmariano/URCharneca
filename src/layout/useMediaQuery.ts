@@ -17,10 +17,8 @@ export const useMediaQuery = (query: string): boolean => {
   )
 }
 
-/** Larguras mínimas dos breakpoints (iguais às do Tailwind em index.css). */
+/** Larguras mínimas dos breakpoints de computador (iguais às do Tailwind em index.css). Não há breakpoints de tablet. */
 export const BP = {
-  sm: '(min-width: 640px)',
-  md: '(min-width: 768px)',
   lg: '(min-width: 1024px)',
   xl: '(min-width: 1280px)',
   '2xl': '(min-width: 1440px)',
