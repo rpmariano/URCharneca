@@ -5,8 +5,8 @@ import { useApp } from '../context/AppContext'
 import type { AthleteProfile, RaceRegistration, TransportMode, YouthAthlete } from '../types'
 import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, TRANSPORT_LABELS } from '../types'
 import type { RegistrationBulkAction } from '../context/AppContext'
-import { calculateAge, formatShortDate } from '../utils/formatters'
-import { todayISO } from '../utils/dates'
+import { calculateAge, countSeasonStages, formatShortDate, plural } from '../utils/formatters'
+import { seasonOf, todayISO } from '../utils/dates'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { DataTable, type Column } from '../layout/DataTable'
 import { CsvExportDialog, type CsvField } from '../components/CsvExportDialog'
@@ -108,6 +108,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
     isSyncingTrofeu,
     pendingDorsalAthletesCount,
     trofeuSyncLogs,
+    trofeuSeasons,
     syncTrofeuCascais,
     assignTrofeuDorsal,
     confirmAllPendingForRace,
@@ -140,7 +141,8 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
     return [...adults, ...kids]
   }, [profiles, youthAthletes])
 
-  const trofeuStageCount = races.filter((r) => r.category === 'trofeu_cascais').length
+  const openSeason = trofeuSeasons.find((s) => s.status === 'open')?.season ?? seasonOf(today)
+  const trofeuStageCount = countSeasonStages(races, openSeason)
   const lastLog = trofeuSyncLogs[0]
 
   return (
@@ -166,12 +168,12 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
                 <span className="t-body t-strong text-[var(--text-1)]">
-                  {trofeuStageCount} etapas sincronizadas (2026/2027)
+                  {trofeuStageCount} {plural(trofeuStageCount, 'etapa sincronizada', 'etapas sincronizadas')} ({openSeason})
                 </span>
               </div>
               <p className="t-small text-[var(--text-3)] mt-1">
                 {lastLog
-                  ? `Última sync: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')} — ${lastLog.summary}`
+                  ? `Última sincronização: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')} — ${lastLog.summary}`
                   : 'Ligação automática ao site trofeuatletismocascais.pt ativa (procura de documentos 2x/semana).'}
               </p>
             </div>
@@ -191,7 +193,11 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-[var(--tint-amber-fg)] shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="t-small text-[var(--text-1)]">
-                  <strong>{pendingDorsalAthletesCount} atletas</strong> detetados no Troféu aguardam ID de Dorsal (preencher para identificar automaticamente nas provas):
+                  <strong>
+                    {pendingDorsalAthletesCount} {plural(pendingDorsalAthletesCount, 'atleta', 'atletas')}
+                  </strong>{' '}
+                  {plural(pendingDorsalAthletesCount, 'detetado', 'detetados')} no Troféu {plural(pendingDorsalAthletesCount, 'aguarda', 'aguardam')} ID de Dorsal
+                  (preencher para identificar automaticamente nas provas):
                 </div>
               </div>
 

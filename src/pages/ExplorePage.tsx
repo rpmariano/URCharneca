@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
-import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays } from '../utils/formatters'
+import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays, plural } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { useOpenRaces } from '../utils/openRaces'
 import { useDesktopShell } from '../layout/useDesktopShell'
@@ -340,7 +340,7 @@ export const ExplorePage: React.FC = () => {
         </span>
         {isAdminView && pendingDorsalAthletesCount > 0 && (
           <span className="block t-small text-[var(--tint-amber-fg)] t-strong mt-0.5">
-            {pendingDorsalAthletesCount} atletas aguardam nº de dorsal
+            {pendingDorsalAthletesCount} {plural(pendingDorsalAthletesCount, 'atleta aguarda', 'atletas aguardam')} nº de dorsal
           </span>
         )}
       </span>

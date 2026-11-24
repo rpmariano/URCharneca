@@ -1,3 +1,4 @@
+import { plural } from '../utils/formatters'
 import {
   TROFEU_SITE_URL,
   buildTrofeuRaces2026_2027,
@@ -392,7 +393,7 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
     const sample = [...createdAdultsNames, ...createdYouthNames].slice(0, 6).join(', ')
     const extra = totalNewAthletes > 6 ? ` e mais ${totalNewAthletes - 6}` : ''
     newNotifications.push({
-      title: `⚠️ ${totalNewAthletes} novos atletas detetados no Troféu de Cascais`,
+      title: `⚠️ ${totalNewAthletes} ${plural(totalNewAthletes, 'novo atleta detetado', 'novos atletas detetados')} no Troféu de Cascais`,
       message: `Foram encontrados na classificação oficial da U.R. Charneca atletas que ainda não existiam na app (${sample}${extra}). Os perfis foram pré-criados automaticamente — os administradores devem confirmar os dados e atribuir o ID de Dorsal de cada atleta.`,
       type: 'athlete_detected',
       created_by_name: 'Sincronização Troféu Cascais',
@@ -401,10 +402,10 @@ export async function runTrofeuSync(input: TrofeuSyncInput): Promise<TrofeuSyncO
   }
 
   const summaryParts: string[] = []
-  if (racesCreated > 0) summaryParts.push(`${racesCreated} provas criadas`)
-  if (racesUpdated > 0) summaryParts.push(`${racesUpdated} provas atualizadas`)
-  if (newDocumentsFound > 0) summaryParts.push(`${newDocumentsFound} novos documentos`)
-  if (totalNewAthletes > 0) summaryParts.push(`${totalNewAthletes} atletas auto-criados`)
+  if (racesCreated > 0) summaryParts.push(`${racesCreated} ${plural(racesCreated, 'prova criada', 'provas criadas')}`)
+  if (racesUpdated > 0) summaryParts.push(`${racesUpdated} ${plural(racesUpdated, 'prova atualizada', 'provas atualizadas')}`)
+  if (newDocumentsFound > 0) summaryParts.push(`${newDocumentsFound} ${plural(newDocumentsFound, 'novo documento', 'novos documentos')}`)
+  if (totalNewAthletes > 0) summaryParts.push(`${totalNewAthletes} ${plural(totalNewAthletes, 'atleta auto-criado', 'atletas auto-criados')}`)
   if (summaryParts.length === 0) summaryParts.push('Calendário, documentos e classificações verificados sem novidades')
 
   const log: TrofeuSyncLog = {

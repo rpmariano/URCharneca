@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, Search, UserRound, X } from 'luci
 import type { TrofeuAthleteStanding, TrofeuClubStanding, TrofeuSeasonData } from '../types'
 import { TROFEU_ESCALOES_2026_2027 } from '../data/trofeuData'
 import { Avatar, Segmented } from './ui'
+import { plural } from '../utils/formatters'
 import { RankBadge, StandingsTable } from './StandingsTable'
 import type { StandingsColumn, StandingsGroup } from './StandingsTable'
 
@@ -486,8 +487,8 @@ export const AthleteStandingsView: React.FC<{
 
       <p className="t-small text-[var(--text-3)]" aria-live="polite">
         {filtered.length === standings.length
-          ? `${standings.length} atletas da U.R. Charneca`
-          : `${filtered.length} de ${standings.length} atletas`}
+          ? `${standings.length} ${plural(standings.length, 'atleta', 'atletas')} da U.R. Charneca`
+          : `${filtered.length} de ${standings.length} ${plural(standings.length, 'atleta', 'atletas')}`}
         {grouped && groups.length > 1 ? ` em ${groups.length} escalões` : ''}
         {isDesktop ? '. Clica no nome para ver tempos e lugares de cada prova.' : '. Toca num atleta para ver cada prova.'}
       </p>
