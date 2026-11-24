@@ -1,25 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Baby,
-  Bus,
-  CalendarDays,
-  Clock,
-  Copy,
-  Download,
-  ExternalLink,
-  FileText,
-  Hourglass,
-  MapPin,
-  Megaphone,
-  Pencil,
-  RefreshCw,
-  Route,
-  Ticket,
-  Trash2,
-  Trophy,
-  UserPlus,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Bus, Copy, Download, ExternalLink, FileText, Megaphone, Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import type { Race, RaceRegistration, RaceVehicle, TransportMode, YouthAthlete } from '../types'
@@ -36,15 +17,29 @@ import type { VehicleAllocation } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
 import { markRaceSeen } from '../utils/openRaces'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
-import { ActivityCover } from './ActivityCover'
+import { raceTitleParts, tidyText } from '../utils/display'
 import { DetailBar } from './AppHeader'
-import { countdownLabel } from './ActivityItems'
+import { ActivityPhoto, countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
 import { Sheet } from './Sheet'
 import { ContextualHint } from './OnboardingCards'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { PersonAvatar } from './PersonAvatar'
-import { Button, Chip, Field, KindBadge, SectionTitle, SheetHeader, StickyActionBar, Tag, inputClass } from './ui'
+import {
+  Button,
+  Chip,
+  DateBlock,
+  FactStrip,
+  Field,
+  HeroTag,
+  KIND_SINGULAR,
+  KindMark,
+  SectionTitle,
+  SheetHeader,
+  StickyActionBar,
+  Tag,
+  inputClass,
+} from './ui'
 
 /** O que cada opção de transporte significa, mostrado por baixo do seletor. */
 const TRANSPORT_HELP: Record<TransportMode, string> = {
@@ -66,16 +61,47 @@ const transportOptions = (race: Race): TransportMode[] => {
   return race.van_available ? ['van_roundtrip', 'van_return_only', ...base] : base
 }
 
-/** Linha de facto com ícone (data, local, encontro, ...). */
-export const FactRow: React.FC<{ icon: LucideIcon; title: React.ReactNode; detail?: React.ReactNode }> = ({ icon: Icon, title, detail }) => (
-  <div className="flex items-start gap-4 py-3">
-    <Icon className="w-6 h-6 text-[var(--text-1)] shrink-0 mt-0.5" strokeWidth={1.8} aria-hidden="true" />
-    <div className="min-w-0 flex-1">
-      <div className="t-body text-[var(--text-1)]">{title}</div>
-      {detail && <div className="t-small text-[var(--text-3)]">{detail}</div>}
-    </div>
+/** Linha de facto numa lista em grelha: rótulo à esquerda, valor e nota à direita (data, local, encontro, ...). */
+export const FactRow: React.FC<{ label: string; title: React.ReactNode; detail?: React.ReactNode }> = ({ label, title, detail }) => (
+  <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3 py-3 min-h-12 items-baseline">
+    <dt className="t-small t-strong text-[var(--text-2)]">{label}</dt>
+    <dd className="m-0 min-w-0">
+      <span className="block t-body t-strong text-[var(--text-1)]">{title}</span>
+      {detail && <span className="block t-small text-[var(--text-2)]">{detail}</span>}
+    </dd>
   </div>
 )
+
+/**
+ * Topo de um detalhe (prova ou evento): bloco azul com o bloco de data dourado, título e linha de quando,
+ * e a fotografia (se houver) por baixo. `.detail-hero` serve à barra fixa para saber quando mostrar o título.
+ */
+export const DetailHero: React.FC<{
+  date: string
+  title: string
+  when: string
+  desktop: boolean
+  extra?: React.ReactNode
+  imageUrl?: string
+}> = ({ date, title, when, desktop, extra, imageUrl }) => (
+  <section className={`detail-hero block-blue on-blue ${desktop ? 'px-10 pt-10 pb-9' : 'px-5 pt-3 pb-5'}`}>
+    <div className={`flex items-stretch ${desktop ? 'gap-7' : 'gap-4'}`}>
+      <DateBlock date={date} size={desktop ? 'xl' : 'hero'} />
+      <div className={`min-w-0 flex flex-col justify-center ${desktop ? 'gap-3 py-2' : 'gap-1.5'}`}>
+        <h1 className={`t-title text-[var(--hdr-fg)] ${desktop ? '!text-[50px] !leading-none' : ''}`}>{title}</h1>
+        <p className={`${desktop ? 'text-[17px]' : 'text-[15px]'} leading-[1.4] text-[var(--hdr-fg)] first-letter:uppercase`}>{when}</p>
+        {extra}
+      </div>
+    </div>
+    {imageUrl && (
+      <div className={desktop ? 'mt-7' : 'mt-4'}>
+        <ActivityPhoto src={imageUrl} className={`w-full ${desktop ? 'h-[220px]' : 'aspect-[16/9]'}`} />
+      </div>
+    )}
+  </section>
+)
+
+
 
 /** Partilha um link (Web Share quando existe; senão copia para a área de transferência). */
 export const shareLink = async (title: string, path: string, notify: (msg: string, type?: 'success' | 'info' | 'warning') => void) => {
@@ -124,7 +150,9 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     markRaceSeen(currentUser.id, race.id)
   }, [currentUser.id, race.id])
   const desktop = useDesktopShell()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  // "Inscrever-me" na prova em destaque (Explorar) abre a página já com a folha de inscrição
+  const location = useLocation()
+  const [sheetOpen, setSheetOpen] = useState(() => Boolean((location.state as { register?: boolean } | null)?.register))
   const [vehiclesSheetOpen, setVehiclesSheetOpen] = useState(false)
   const [vanAvailDraft, setVanAvailDraft] = useState(race.van_available)
   const [vanDepDraft, setVanDepDraft] = useState(race.van_departure_time || '08:00')
@@ -262,89 +290,102 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const ctaLabel = myRegs.length > 0 ? (registrationOpen ? 'Gerir inscrição' : 'Ver inscrição') : isIndividual ? 'Vou participar' : 'Inscrever'
 
   const shareRace = () => shareLink(race.title, `prova/${race.id}`, showToast)
-  const bar = <DetailBar title={race.title} onBack={onBack} onShare={shareRace} overlay={!desktop} />
+  const { stage, name: raceName } = raceTitleParts(race)
+  const bar = <DetailBar title={raceName} onBack={onBack} onShare={shareRace} />
+  const regState = isPast
+    ? 'Realizada'
+    : !registrationOpen
+    ? 'Fechadas'
+    : race.registration_deadline && !isIndividual
+    ? `Até ${formatShortDate(race.registration_deadline).split(', ')[1]}`
+    : 'Abertas'
 
   return (
     <>
-    {desktop && bar}
+    {bar}
     {/* Telemóvel: 1 coluna (.detail). Computador (>= 1024 px): duas colunas (.desk-detail, layout/desktop.css) */}
     <div className={desktop ? 'desk-detail' : 'detail'}>
-      {!desktop && bar}
-      <ActivityCover
-        kind={race.category}
-        seed={race.id}
+      <DetailHero
+        date={race.date}
+        title={raceName}
+        when={`${formatLongDate(race.date)}, ${race.start_time}${countdown ? `. ${countdown}` : ''}`}
+        desktop={desktop}
         imageUrl={race.image_url}
-        alt=""
-        className={desktop ? 'w-full h-[200px] rounded-2xl overflow-hidden' : 'detail-cover'}
+        extra={
+          (stage || race.open_to_children || isPast) && (
+            <span className="flex flex-wrap gap-1.5 pt-1">
+              {stage && <HeroTag>Etapa {stage} do Troféu</HeroTag>}
+              {race.open_to_children && <HeroTag>Aberta a crianças</HeroTag>}
+              {isPast && <HeroTag>Realizada</HeroTag>}
+            </span>
+          )
+        }
+      />
+      <FactStrip
+        className={desktop ? 'px-10' : ''}
+        items={[
+          ...(race.distances.length > 0 ? [{ label: race.distances.length > 1 ? 'Distâncias' : 'Distância', value: race.distances.join(' · ') }] : []),
+          { label: 'Local', value: tidyText(race.location) },
+          { label: 'Inscrições', value: regState, accent: regState === 'Abertas' || regState.startsWith('Até') },
+        ]}
       />
 
-      <div className={desktop ? 'desk-detail-grid' : 'detail-body detail-grid'}>
-       <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ''}`}>
-        {/* Título */}
-        <header className="py-6 space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <KindBadge kind={race.category} />
-            {race.open_to_children && (
-              <Tag tone="warn">
-                <Baby className="w-3.5 h-3.5" aria-hidden="true" /> Aberta a crianças
-              </Tag>
-            )}
-            {isPast && <Tag>Realizada</Tag>}
-          </div>
-          <h1 className="t-title text-[var(--text-1)]">{race.title}</h1>
-          <p className="t-body text-[var(--text-3)]">
-            {race.location}
-            {countdown && <span className="text-[var(--text-1)] t-strong"> · {countdown}</span>}
-          </p>
-        </header>
-
+      <div className={desktop ? 'desk-detail-grid pt-4' : 'detail-body detail-grid'}>
+       <div className="desk-detail-col min-w-0">
         {/* Factos */}
-        <section className="py-3" aria-label="Informação da prova">
-          <FactRow icon={CalendarDays} title={<span className="first-letter:uppercase inline-block">{formatLongDate(race.date)}</span>} detail={`Partida às ${race.start_time}`} />
-          <FactRow icon={MapPin} title={race.location} />
-          {race.meeting_point && (
-            <FactRow icon={Clock} title={`Encontro${race.meeting_time ? ` às ${race.meeting_time}` : ''}`} detail={race.meeting_point} />
-          )}
-          {race.distances.length > 0 && (
-            <FactRow
-              icon={Route}
-              title={race.distances.join(' · ')}
-              detail={race.open_to_children && race.children_distances?.length ? `Crianças: ${race.children_distances.join(' · ')}` : undefined}
-            />
-          )}
-          {race.registration_deadline && (
-            <FactRow
-              icon={Hourglass}
-              title={deadlinePassed ? 'Inscrições fechadas' : `Inscrições até ${formatShortDate(race.registration_deadline)}`}
-              detail={deadlinePassed ? `O prazo terminou a ${formatShortDate(race.registration_deadline)}` : undefined}
-            />
-          )}
-          {race.bib_pickup_info && <FactRow icon={Ticket} title="Dorsais" detail={race.bib_pickup_info} />}
+        <section className="pt-6 pb-2">
+          <SectionTitle title="Informação" />
+          <dl className="rule-list m-0">
+            <FactRow label="Tipo" title={<span className="inline-flex items-center gap-2"><KindMark kind={race.category} />{KIND_SINGULAR[race.category]}</span>} detail={CATEGORIA_LABELS[race.category].desc} />
+            <FactRow label="Partida" title={<span className="first-letter:uppercase inline-block">{formatLongDate(race.date)}</span>} detail={`Às ${race.start_time}`} />
+            <FactRow label="Local" title={tidyText(race.location)} />
+            {race.meeting_point && (
+              <FactRow label="Encontro" title={race.meeting_time ? `Às ${race.meeting_time}` : 'Hora a definir'} detail={tidyText(race.meeting_point)} />
+            )}
+            {race.distances.length > 0 && (
+              <FactRow
+                label="Distâncias"
+                title={race.distances.join(' · ')}
+                detail={race.open_to_children && race.children_distances?.length ? `Crianças: ${race.children_distances.join(' · ')}` : undefined}
+              />
+            )}
+            {race.registration_deadline && (
+              <FactRow
+                label="Prazo"
+                title={deadlinePassed ? 'Inscrições fechadas' : `Inscrições até ${formatShortDate(race.registration_deadline)}`}
+                detail={deadlinePassed ? `O prazo terminou a ${formatShortDate(race.registration_deadline)}` : undefined}
+              />
+            )}
+            {race.bib_pickup_info && <FactRow label="Dorsais" title={tidyText(race.bib_pickup_info)} />}
+          </dl>
         </section>
 
         {/* Sobre */}
-        <section className="py-6 space-y-3">
-          <h2 className="t-heading text-[var(--text-1)]">Sobre a prova</h2>
-          {race.description && <p className="t-body text-[var(--text-2)] whitespace-pre-line">{race.description}</p>}
-          <p className="t-small text-[var(--text-3)]">{CATEGORIA_LABELS[race.category].desc}</p>
-          {isIndividual && <p className="t-small text-[var(--text-3)]">Proposta por {race.created_by_name}</p>}
-          {race.external_url && (
-            <a
-              href={race.external_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 min-h-11 t-body t-strong text-[var(--text-1)] underline underline-offset-2"
-            >
-              Site oficial da prova <ExternalLink className="w-4 h-4" aria-hidden="true" />
-            </a>
-          )}
-        </section>
+        {(race.description || isIndividual || race.external_url) && (
+          <section className="py-6 space-y-3">
+            <SectionTitle title="Sobre a prova" />
+            <div className="rule-top pt-3 space-y-3">
+              {race.description && <p className="t-body text-[var(--text-1)] whitespace-pre-line">{tidyText(race.description)}</p>}
+              {isIndividual && <p className="t-small text-[var(--text-2)]">Proposta por {race.created_by_name}</p>}
+              {race.external_url && (
+                <a
+                  href={race.external_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 min-h-11 t-body t-strong text-[var(--link)] underline underline-offset-4"
+                >
+                  Site oficial da prova <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Documentação oficial & Croqui (Troféu de Cascais) */}
         {(race.category === 'trofeu_cascais' || Boolean(race.documents?.length)) && (
           <section className="py-6 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="t-heading text-[var(--text-1)]">Documentação oficial & Croqui</h2>
+            <div className="flex items-end justify-between gap-2 pb-2">
+              <h2 className="t-heading text-[var(--text-1)]">Documentos e croqui</h2>
               {race.documents?.some((d) => d.type === 'croqui') ? (
                 <Tag tone="ok">Croqui disponível</Tag>
               ) : (
@@ -353,42 +394,42 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
             </div>
 
             {race.documents && race.documents.length > 0 ? (
-              <div className="space-y-2">
+              <div className="rule-list">
                 {race.documents.map((doc) => (
                   <a
                     key={doc.id}
                     href={doc.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="card p-3.5 flex items-center justify-between gap-3 pressable"
+                    className="row-link min-h-14 py-2.5 flex items-center justify-between gap-3"
                   >
                     <span className="flex items-center gap-3 min-w-0">
-                      <FileText className="w-5 h-5 text-[var(--run)] shrink-0" aria-hidden="true" />
+                      <FileText className="w-5 h-5 text-[var(--link)] shrink-0" aria-hidden="true" />
                       <span className="min-w-0">
-                        <span className="block t-body text-[var(--text-1)] truncate">{doc.title}</span>
-                        <span className="block t-small text-[var(--text-3)]">
+                        <span className="block t-body t-strong text-[var(--text-1)] truncate">{tidyText(doc.title)}</span>
+                        <span className="block t-small text-[var(--text-2)]">
                           Detetado a {new Date(doc.detected_at).toLocaleDateString('pt-PT')}
                         </span>
                       </span>
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
-                      {doc.is_new && <Tag tone="ok">Novo</Tag>}
-                      <ExternalLink className="w-4 h-4 text-[var(--text-3)]" aria-hidden="true" />
+                      {doc.is_new && <Tag tone="danger">Novo</Tag>}
+                      <ExternalLink className="w-4 h-4 text-[var(--text-1)]" aria-hidden="true" />
                     </span>
                   </a>
                 ))}
               </div>
             ) : (
-              <p className="t-small text-[var(--text-3)]">
+              <p className="rule-top pt-3 t-small text-[var(--text-2)]">
                 Ainda não foi publicada documentação adicional para esta etapa.
               </p>
             )}
 
-            <div className="rounded-xl bg-[var(--surface-raised)] p-3.5 space-y-2">
-              <div className="t-small text-[var(--text-2)]">
+            <div className="bg-[var(--surface-raised)] p-3.5 space-y-2">
+              <div className="t-small text-[var(--text-1)]">
                 {isPast
-                  ? 'Prova concluída — arquivo documental sincronizado.'
-                  : 'Verificação automática 2x/semana ativa até à data da prova (procura croquis e regulamentos).'}
+                  ? 'Prova concluída. Arquivo documental sincronizado.'
+                  : 'Verificação automática 2 vezes por semana até à data da prova (procura croquis e regulamentos).'}
               </div>
               <div className="flex flex-wrap gap-2">
                 {!isPast && (
@@ -414,19 +455,19 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
 
         {/* A minha inscrição (resumo) */}
         {myRegs.length > 0 && (
-          <section className="py-6 space-y-3">
-            <h2 className="t-heading text-[var(--text-1)]">{isIndividual ? 'A minha presença' : 'A minha inscrição'}</h2>
-            <div className="space-y-3">
+          <section className="py-6">
+            <SectionTitle title={isIndividual ? 'A minha presença' : 'A minha inscrição'} />
+            <div className="rule-list">
               {myRegs.map((r) => {
                 const vehName = r.vehicle_id
                   ? van.vehicles.find((v) => v.vehicle.id === r.vehicle_id)?.vehicle.name
                   : undefined
                 return (
-                  <div key={r.id} className="flex items-center gap-4">
+                  <div key={r.id} className="flex items-center gap-4 min-h-16 py-2.5">
                     <PersonAvatar id={r.dependent_id || r.athlete_id} name={r.athlete_name} child={r.is_dependent} />
                     <div className="min-w-0 flex-1">
-                      <div className="t-body text-[var(--text-1)] truncate">{r.athlete_name}</div>
-                      <div className="t-small text-[var(--text-3)] truncate">
+                      <div className="t-body t-strong text-[var(--text-1)] truncate">{r.athlete_name}</div>
+                      <div className="t-small text-[var(--text-2)] truncate">
                         {r.distance} · {TRANSPORT_LABELS[r.transport_mode].short}
                         {vehName ? ` (${vehName})` : ''}
                       </div>
@@ -436,68 +477,67 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                 )
               })}
             </div>
-            {STATUS_HELP[myRegs[0].status] && <p className="t-small text-[var(--text-3)]">{STATUS_HELP[myRegs[0].status]}</p>}
+            {STATUS_HELP[myRegs[0].status] && <p className="t-small text-[var(--text-2)] pt-3">{STATUS_HELP[myRegs[0].status]}</p>}
           </section>
         )}
 
        </div>
-       <div className={`desk-detail-col divide-soft min-w-0${desktop ? ' pt-2' : ' detail-side'}`}>
+       <div className={`desk-detail-col min-w-0${desktop ? '' : ' detail-side'}`}>
         {/* Carrinhas e veículos do clube */}
         {(race.van_available || (isAdminView && !isIndividual)) && (
           <section className="py-6 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="t-heading text-[var(--text-1)]">Carrinhas e veículos</h2>
+            <div className="flex items-end justify-between gap-3 pb-2">
+              <h2 className="t-heading text-[var(--text-1)]">Carrinhas</h2>
               {race.van_available && (
-                <div className="flex items-center gap-2">
-                  <span className="t-body t-strong t-num text-[var(--text-1)]">
-                    {van.confirmedPassengers.length}/{van.capacity}
-                  </span>
-                  <Tag tone={van.availableSeats > 0 ? 'ok' : 'warn'}>
-                    {van.availableSeats > 0
-                      ? `${van.availableSeats} ${van.availableSeats === 1 ? 'vago' : 'vagos'}`
-                      : 'Lotado'}
-                  </Tag>
-                </div>
+                <span className="t-small t-strong text-[var(--link)] text-right">
+                  {van.availableSeats > 0
+                    ? `${van.availableSeats} ${van.availableSeats === 1 ? 'vaga' : 'vagas'} de transporte`
+                    : 'Carrinhas cheias'}
+                  <span className="sr-only">, {van.confirmedPassengers.length} de {van.capacity} lugares ocupados</span>
+                </span>
               )}
             </div>
 
             {!race.van_available ? (
-              <div className="card p-4 space-y-2.5">
-                <p className="t-small text-[var(--text-3)]">
+              <div className="rule-top pt-3 space-y-2.5">
+                <p className="t-small text-[var(--text-2)]">
                   Sem carrinha definida para esta prova. Podes ativar e indicar os veículos, lugares e condutores diretamente aqui.
                 </p>
                 <Button size="sm" variant="secondary" onClick={openVehiclesSheet}>
-                  <Bus className="w-4 h-4" aria-hidden="true" /> Definir carrinha / veículos
+                  <Bus className="w-4 h-4" aria-hidden="true" /> Definir carrinhas e veículos
                 </Button>
               </div>
             ) : (
               <div className="space-y-3">
-                <FactRow
-                  icon={Bus}
-                  title={`Saída ${race.van_departure_time ? `às ${race.van_departure_time}` : 'a definir'}`}
-                  detail={race.van_departure_location}
-                />
-
-                <div className="space-y-2.5">
+                <div className="rule-list">
+                  <dl className="m-0">
+                    <FactRow
+                      label="Saída"
+                      title={race.van_departure_time ? `Às ${race.van_departure_time}` : 'Hora a definir'}
+                      detail={tidyText(race.van_departure_location)}
+                    />
+                  </dl>
                   {van.vehicles.map((va) => (
-                    <div key={va.vehicle.id} className="card p-3.5 space-y-2">
+                    <div key={va.vehicle.id} className="py-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="t-body t-strong text-[var(--text-1)] truncate">{va.vehicle.name}</div>
-                          <div className="t-small text-[var(--text-3)]">
-                            Condutor: <span className="text-[var(--text-2)]">{va.vehicle.driver_name || 'A definir'}</span>
+                          <div className="t-small text-[var(--text-2)]">
+                            Condutor: <span className="text-[var(--text-1)]">{va.vehicle.driver_name || 'a definir'}</span>
                           </div>
                         </div>
-                        <Tag tone={va.availableSeats > 0 ? 'ok' : 'warn'}>
-                          {va.availableSeats > 0
-                            ? `${va.availableSeats} ${va.availableSeats === 1 ? 'vago' : 'vagos'}`
-                            : 'Lotado'}{' '}
-                          · {va.occupiedSeats}/{va.vehicle.seats}
-                        </Tag>
+                        <span className="flex items-center gap-2 shrink-0">
+                          <span className="num-wide text-[22px] text-[var(--text-1)]">
+                            {va.occupiedSeats}/{va.vehicle.seats}
+                          </span>
+                          <Tag tone={va.availableSeats > 0 ? 'ok' : 'warn'}>
+                            {va.availableSeats > 0 ? `${va.availableSeats} ${va.availableSeats === 1 ? 'vago' : 'vagos'}` : 'Lotado'}
+                          </Tag>
+                        </span>
                       </div>
 
                       <div
-                        className="h-2 rounded-full bg-[var(--surface-raised)] overflow-hidden"
+                        className="h-2 bg-[var(--surface-raised)] overflow-hidden"
                         role="progressbar"
                         aria-label={`Ocupação de ${va.vehicle.name}`}
                         aria-valuemin={0}
@@ -505,12 +545,12 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                         aria-valuenow={va.occupiedSeats}
                       >
                         <div
-                          className="h-full rounded-full bg-[var(--run)]"
+                          className="h-full bg-[var(--run)]"
                           style={{ width: `${Math.min(100, (va.occupiedSeats / Math.max(1, va.vehicle.seats)) * 100)}%` }}
                         />
                       </div>
 
-                      <p className="t-small text-[var(--text-2)]">
+                      <p className="t-small text-[var(--text-1)]">
                         {va.passengers.length > 0
                           ? va.passengers
                               .map((p) => `${p.athlete_name}${p.transport_mode === 'van_return_only' ? ' (só volta)' : ''}`)
@@ -522,7 +562,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                 </div>
 
                 {van.waitlistPassengers.length > 0 && (
-                  <p className="t-small text-[var(--tint-amber-fg)]">
+                  <p className="t-small t-strong block-gold px-3 py-2">
                     Lista de espera: {van.waitlistPassengers.map((p) => p.athlete_name).join(', ')}
                   </p>
                 )}
@@ -538,23 +578,24 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         )}
 
         {(van.carpoolOffers.length > 0 || van.carpoolNeeds.length > 0) && (
-          <section className="py-6 space-y-2">
-            <h2 className="t-heading text-[var(--text-1)]">Boleias entre colegas</h2>
-            {van.carpoolOffers.length > 0 && (
-              <p className="t-body text-[var(--text-2)]">
-                Oferecem boleia: {van.carpoolOffers.map((r) => `${r.athlete_name}${r.carpool_seats ? ` (${r.carpool_seats})` : ''}`).join(', ')}
-              </p>
-            )}
-            {van.carpoolNeeds.length > 0 && (
-              <p className="t-body text-[var(--text-2)]">Precisam de boleia: {van.carpoolNeeds.map((r) => r.athlete_name).join(', ')}</p>
-            )}
+          <section className="py-6">
+            <SectionTitle title="Boleias entre colegas" />
+            <dl className="rule-list m-0">
+              {van.carpoolOffers.length > 0 && (
+                <FactRow
+                  label="Oferecem"
+                  title={van.carpoolOffers.map((r) => `${r.athlete_name}${r.carpool_seats ? ` (${r.carpool_seats})` : ''}`).join(', ')}
+                />
+              )}
+              {van.carpoolNeeds.length > 0 && <FactRow label="Precisam" title={van.carpoolNeeds.map((r) => r.athlete_name).join(', ')} />}
+            </dl>
           </section>
         )}
 
         {/* Inscritos */}
         <section className="py-6 space-y-4">
           <SectionTitle title="Quem vai" count={raceRegs.length} />
-          {raceRegs.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda ninguém se inscreveu. Sê o primeiro.</p>}
+          {raceRegs.length === 0 && <p className="rule-top pt-3 t-body text-[var(--text-2)]">Ainda ninguém se inscreveu. Sê o primeiro.</p>}
           {canManage && raceRegs.length > 0 && (
             <ContextualHint id="admin-select">
               Escolhe inscrições com a caixa à esquerda para confirmar ou marcar dorsais só de algumas. "Pendentes" e "Todos" escolhem de uma vez.
@@ -574,11 +615,12 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
             </div>
           )}
           {byDistance.map(([dist, list]) => (
-            <div key={dist} className="space-y-1">
-              <h3 className="t-small t-strong text-[var(--text-3)]">
-                {dist} · {list.length}
+            <div key={dist}>
+              <h3 className="flex items-baseline justify-between gap-3 pb-1.5 t-body t-strong text-[var(--text-1)]">
+                <span>{dist}</span>
+                <span className="num-wide text-[20px] text-[var(--link)]">{list.length}</span>
               </h3>
-              <div className="divide-soft">
+              <div className="rule-list">
                 {list.map((r) => (
                   <RosterRow
                     key={r.id}
@@ -611,7 +653,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                   Dorsal entregue ({eligibleDelivered})
                 </Button>
               </div>
-              <p className="t-small text-[var(--text-3)]">Os números entre parênteses são as escolhidas a que a ação se aplica.</p>
+              <p className="t-small text-[var(--text-2)]">Os números entre parênteses são as escolhidas a que a ação se aplica.</p>
             </div>
           )}
         </section>
@@ -664,7 +706,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
             <div className="t-body t-strong text-[var(--text-1)] truncate">
               {formatShortDate(race.date)} · {race.start_time}
             </div>
-            <div className="t-small text-[var(--text-3)] truncate">
+            <div className="t-small text-[var(--text-2)] truncate">
               {isPast
                 ? 'Prova realizada'
                 : !registrationOpen
@@ -678,20 +720,20 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           </>
         }
       >
-        <Button disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
+        <Button size="lg" className="min-w-[44%]" disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
           {ctaLabel}
         </Button>
       </StickyActionBar>
 
       {sheetOpen && (
         <Sheet persistent onClose={() => setSheetOpen(false)} ariaLabel={isIndividual ? 'A minha presença' : 'Inscrição'}>
-          <SheetHeader title={isIndividual ? 'A minha presença' : 'Inscrição'} subtitle={race.title} onClose={() => setSheetOpen(false)} />
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <SheetHeader title={isIndividual ? 'A minha presença' : 'Inscrição'} subtitle={raceName} onClose={() => setSheetOpen(false)} />
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
             {!registrationOpen && !myReg && (
-              <p className="t-body text-[var(--text-3)]">{isPast ? 'Esta prova já se realizou.' : 'As inscrições estão fechadas.'}</p>
+              <p className="t-body text-[var(--text-2)]">{isPast ? 'Esta prova já se realizou.' : 'As inscrições estão fechadas.'}</p>
             )}
             {currentUser.is_minor_account && !race.open_to_children && !myReg && (
-              <p className="t-body text-[var(--text-3)]">Esta prova não está aberta a escalões jovens.</p>
+              <p className="t-body text-[var(--text-2)]">Esta prova não está aberta a escalões jovens.</p>
             )}
             {(registrationOpen || myReg) && (!currentUser.is_minor_account || race.open_to_children || Boolean(myReg)) && (
               <RegistrationRow
@@ -758,7 +800,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                   )
                 })
               ) : (
-                <p className="t-small text-[var(--text-3)]">Esta prova não está aberta a crianças.</p>
+                <p className="t-small text-[var(--text-2)]">Esta prova não está aberta a crianças.</p>
               ))}
           </div>
         </Sheet>
@@ -768,7 +810,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         <Sheet onClose={() => setVehiclesSheetOpen(false)} ariaLabel="Gerir carrinhas e condutores">
           <SheetHeader
             title="Carrinhas e veículos"
-            subtitle={race.title}
+            subtitle={raceName}
             onClose={() => setVehiclesSheetOpen(false)}
           />
           <form onSubmit={saveVehiclesConfig} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -863,6 +905,7 @@ const RegistrationRow: React.FC<{
   const [seats, setSeats] = useState(existing?.carpool_seats || 3)
 
   const { isAdminView } = useApp()
+  const radioName = useId()
   const cardRef = useRef<HTMLDivElement>(null)
   // Depois de uma ação o botão usado desaparece: o foco passa para o cartão da pessoa (e não para o <body>)
   const [actions, setActions] = useState(0)
@@ -896,32 +939,36 @@ const RegistrationRow: React.FC<{
       tabIndex={-1}
       role="group"
       aria-label={`Inscrição de ${name}: ${existing ? REG_STATUS_LABELS[existing.status].label : 'por fazer'}`}
-      className="card p-4 space-y-4"
+      className="card-raised p-4 space-y-4"
     >
       <div className="flex items-center gap-3">
         <PersonAvatar id={personId} name={name} child={child} />
         <div className="min-w-0 flex-1">
-          <div className="t-body t-strong text-[var(--text-1)] truncate">{name}</div>
-          <div className="t-small text-[var(--text-3)] truncate">
+          <div className="t-item text-[var(--text-1)] truncate">{name}</div>
+          <div className="t-small text-[var(--text-2)] truncate">
             {existing && !editing
               ? `${existing.distance} · ${TRANSPORT_LABELS[existing.transport_mode].short}${existingVehicleName ? ` (${existingVehicleName})` : ''}`
               : child && !isSelf
               ? 'Criança a meu cargo'
               : 'Eu'}
           </div>
-          {trofeuDorsal && (
-            <div className="t-small text-[var(--run)]">Dorsal Troféu 26/27 #{trofeuDorsal}</div>
-          )}
         </div>
-        {existing && (
-          <span className="pop-in">
-            <Tag tone={REG_STATUS_LABELS[existing.status].tone}>{REG_STATUS_LABELS[existing.status].label}</Tag>
+        {trofeuDorsal && (
+          <span className="flex flex-col items-end shrink-0">
+            <span className="t-label text-[var(--text-2)]" aria-hidden="true">Dorsal 26/27</span>
+            <span className="num text-[34px] text-[var(--link)]" aria-hidden="true">{trofeuDorsal}</span>
+            <span className="sr-only">Dorsal do Troféu 2026/27: {trofeuDorsal}</span>
           </span>
         )}
       </div>
+      {existing && (
+        <div>
+          <Tag tone={REG_STATUS_LABELS[existing.status].tone}>{REG_STATUS_LABELS[existing.status].label}</Tag>
+        </div>
+      )}
 
       {editing && !locked ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {distances.length > 1 && (
             <Field label="Distância">
               <select className={inputClass} value={distance} onChange={(e) => setDistance(e.target.value)}>
@@ -933,16 +980,37 @@ const RegistrationRow: React.FC<{
               </select>
             </Field>
           )}
-          <Field label="Transporte">
-            <select className={inputClass} value={transport} onChange={(e) => setTransport(e.target.value as TransportMode)}>
+          <fieldset className="m-0 p-0 border-0 min-w-0">
+            <legend className="p-0 w-full">
+              <span className="flex items-baseline justify-between gap-3 pb-2">
+                <span className="t-heading text-[var(--text-1)]">Como vais?</span>
+                {race.van_available && vehicleAllocations.length > 0 && (
+                  <span className="t-small t-strong text-[var(--link)] text-right">
+                    {(() => {
+                      const free = vehicleAllocations.reduce((s, va) => s + Math.max(0, va.availableSeats), 0)
+                      return free > 0 ? `${free} ${free === 1 ? 'vaga' : 'vagas'} de transporte` : 'Carrinhas cheias'
+                    })()}
+                  </span>
+                )}
+              </span>
+            </legend>
+            <div className="rule-list">
               {transportOptions(race).map((t) => (
-                <option key={t} value={t}>
-                  {TRANSPORT_LABELS[t].label}
-                </option>
+                <label key={t} className="grid grid-cols-[24px_minmax(0,1fr)] gap-3 items-center min-h-12 py-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name={radioName}
+                    value={t}
+                    checked={transport === t}
+                    onChange={() => setTransport(t)}
+                    className="w-[22px] h-[22px] m-0"
+                  />
+                  <span className="text-[16px] t-strong text-[var(--text-1)] leading-tight">{TRANSPORT_LABELS[t].label}</span>
+                </label>
               ))}
-            </select>
-          </Field>
-          <p className="t-small text-[var(--text-3)] -mt-1">{TRANSPORT_HELP[transport]}</p>
+            </div>
+            <p className="t-small text-[var(--text-1)] pt-2.5">{TRANSPORT_HELP[transport]}</p>
+          </fieldset>
           {race.van_available && usesVanSeat && vehicleAllocations.length > 0 && (
             <VehicleSelectField vehicles={vehicleAllocations} value={vehicleId} onChange={setVehicleId} />
           )}
@@ -1040,10 +1108,10 @@ const RosterRow: React.FC<{
   const [bib, setBib] = useState(reg.bib_number || '')
   const editable = admin || canRemove
   return (
-    <div className="py-1">
+    <div>
       <div className="flex items-center">
         {selectable && (
-          <label className="w-11 h-14 flex items-center justify-center shrink-0 cursor-pointer -ml-2">
+          <label className="w-11 h-14 flex items-center justify-center shrink-0 cursor-pointer -ml-2.5">
             <input
               type="checkbox"
               checked={Boolean(checked)}
@@ -1055,14 +1123,14 @@ const RosterRow: React.FC<{
         )}
         <button
           type="button"
-          className="flex-1 min-w-0 min-h-14 flex items-center gap-4 text-left cursor-pointer disabled:cursor-default"
+          className="flex-1 min-w-0 min-h-14 py-2 flex items-center gap-3 text-left cursor-pointer disabled:cursor-default row-link"
           disabled={!editable}
           aria-expanded={editable ? open : undefined}
           onClick={() => setOpen((v) => !v)}
         >
-          <PersonAvatar id={reg.dependent_id || reg.athlete_id} name={reg.athlete_name} child={reg.is_dependent} />
+          <PersonAvatar id={reg.dependent_id || reg.athlete_id} name={reg.athlete_name} child={reg.is_dependent} size={36} />
           <div className="min-w-0 flex-1">
-            <div className="t-body text-[var(--text-1)] truncate">{reg.athlete_name}</div>
+            <div className="t-body t-strong text-[var(--text-1)] truncate">{reg.athlete_name}</div>
             <div className="t-small text-[var(--text-3)] truncate">
               {reg.is_dependent && reg.parent_name ? `Resp. ${reg.parent_name} · ` : ''}
               {TRANSPORT_LABELS[reg.transport_mode].short}
@@ -1095,7 +1163,7 @@ const RosterRow: React.FC<{
                     value={reg.bib_status}
                     onChange={(e) => onPatch({ bib_status: e.target.value as RaceRegistration['bib_status'] })}
                   >
-                    <option value="pending">—</option>
+                    <option value="pending">Sem dorsal</option>
                     <option value="at_club">{BIB_STATUS_LABELS.at_club.short}</option>
                     <option value="delivered">{BIB_STATUS_LABELS.delivered.short}</option>
                   </select>
@@ -1197,7 +1265,7 @@ const AdminEnroll: React.FC<{ race: Race; raceRegs: RaceRegistration[]; vehicles
   }
 
   return (
-    <div className="card p-4 space-y-3">
+    <div className="card-raised p-4 space-y-3">
       <Field label="Atleta">
         <select className={inputClass} value={who} onChange={(e) => setWho(e.target.value)}>
           <option value="">Escolher…</option>

@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CheckCheck, ChevronRight, Inbox, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { CheckCheck, ChevronRight, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { formatShortDate } from '../utils/formatters'
 import { openCreateNotice } from '../utils/appEvents'
 import { PersonAvatar } from '../components/PersonAvatar'
-import { Button, EmptyState, PageHeader, Segmented } from '../components/ui'
+import { Button, DateBlock, EmptyState, PageHeader, Segmented, Tag } from '../components/ui'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
+import { raceDisplayTitle, tidyText } from '../utils/display'
 
 /** Comunicados da equipa (/comunicados), em lista tipo caixa de entrada. Só administradores publicam. */
 export const NotificationsPage: React.FC = () => {
@@ -49,7 +50,7 @@ export const NotificationsPage: React.FC = () => {
       <>
         {related && (
           <Button size="sm" variant="secondary" onClick={() => navigate(`/prova/${related.id}`)} className="max-w-full">
-            <span className="truncate">{related.title}</span> <ChevronRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{raceDisplayTitle(related)}</span> <ChevronRight className="w-4 h-4 shrink-0" aria-hidden="true" />
           </Button>
         )}
         {isAdminView && (
@@ -87,20 +88,19 @@ export const NotificationsPage: React.FC = () => {
 
       {list.length === 0 ? (
         <EmptyState
-          icon={Inbox}
           title={filter === 'unread' ? 'Está tudo lido' : 'Sem comunicados'}
           text={filter === 'unread' ? 'Não tens comunicados por ler.' : 'Os avisos da equipa vão aparecer aqui.'}
           action={filter === 'unread' ? 'Ver todos' : undefined}
           onAction={() => setFilter('all')}
         />
       ) : (
-        <div className="divide-soft">
+        <div className="rule-list">
           {list.map((n) => {
             const isUnread = !n.read_by.includes(currentUser.id)
             const isOpen = expanded === n.id
             const actions = !wide && isOpen ? actionsFor(n) : null
             return (
-              <article key={n.id} id={`notice-${n.id}`} className="py-1">
+              <article key={n.id} id={`notice-${n.id}`}>
                 <button
                   type="button"
                   aria-expanded={wide ? undefined : isOpen}
@@ -110,27 +110,27 @@ export const NotificationsPage: React.FC = () => {
                     setExpanded(isOpen && !wide ? null : n.id)
                     markNotificationRead(n.id)
                   }}
-                  className={`w-full py-3 flex items-start gap-4 text-left cursor-pointer ${
-                    wide ? 'px-3 -mx-3 rounded-xl hover:bg-[var(--surface-card-hover)]' : ''
-                  } ${wide && isOpen ? 'bg-[var(--tint-blue-bg)] shadow-[inset_3px_0_0_var(--run)]' : ''}`}
+                  className={`row-link w-full py-3 grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3.5 items-start text-left cursor-pointer ${
+                    wide ? 'px-3 -mx-3' : ''
+                  } ${wide && isOpen ? '!bg-[var(--run)] [--text-1:#ffffff] [--text-2:#ffffff] [--text-3:#dfe8f3] [--link:#ffffff] [--focus:#ffffff]' : ''}`}
                 >
-                  <PersonAvatar name={n.created_by_name} size={48} />
+                  <DateBlock date={n.created_at.slice(0, 10)} color={wide && isOpen ? '#ffffff' : isUnread ? undefined : 'var(--text-1)'} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5 t-small text-[var(--text-3)]">
-                      {n.pinned && <Pin className="w-3.5 h-3.5 text-[var(--gold-ink)] shrink-0" aria-label="Fixado" />}
+                      {n.pinned && <span className="shrink-0 t-strong text-[var(--text-1)]">Fixado ·</span>}
                       <span className="truncate">{n.created_by_name}</span>
-                      <span className="shrink-0">· {formatShortDate(n.created_at.slice(0, 10))}</span>
+                      <span className="sr-only">, {formatShortDate(n.created_at.slice(0, 10))}</span>
                     </span>
-                    <span className={`block t-body text-[var(--text-1)] ${isUnread ? 't-strong' : ''}`}>{n.title}</span>
+                    <span className={`block text-[16px] leading-snug text-[var(--text-1)] ${isUnread ? 'font-bold' : 'font-semibold'}`}>{tidyText(n.title)}</span>
                     <span
-                      className={`t-small text-[var(--text-3)] whitespace-pre-line ${isOpen && !wide ? 'block pt-1' : 'line-clamp-2'}`}
+                      className={`t-small text-[var(--text-2)] whitespace-pre-line ${isOpen && !wide ? 'block pt-1' : 'line-clamp-2'}`}
                     >
-                      {n.message}
+                      {tidyText(n.message)}
                     </span>
                   </span>
-                  {isUnread && <span className="w-2.5 h-2.5 rounded-full bg-[var(--run)] shrink-0 mt-2" aria-label="Por ler" role="img" />}
+                  {isUnread ? <span className="w-2.5 h-2.5 bg-[var(--alert)] shrink-0 mt-2" aria-label="Por ler" role="img" /> : <span aria-hidden="true" />}
                 </button>
-                {actions && <div className="flex flex-wrap gap-2 pb-4 pl-16">{actions}</div>}
+                {actions && <div className="flex flex-wrap gap-2 pb-4 pl-[66px]">{actions}</div>}
               </article>
             )
           })}
@@ -146,7 +146,7 @@ export const NotificationsPage: React.FC = () => {
         title="Comunicados"
         action={
           isAdminView ? (
-            <Button size="sm" onClick={() => openCreateNotice()}>
+            <Button size="sm" variant="inverse" onClick={() => openCreateNotice()}>
               <Plus className="w-4 h-4" aria-hidden="true" /> Novo
             </Button>
           ) : undefined
@@ -165,24 +165,21 @@ export const NotificationsPage: React.FC = () => {
             {selected ? (
               <>
                 <div className="flex items-center gap-3">
-                  <PersonAvatar name={selected.created_by_name} size={48} />
+                  <PersonAvatar name={selected.created_by_name} size={44} />
                   <div className="min-w-0 t-small text-[var(--text-3)]">
                     <div className="flex items-center gap-1.5">
-                      {selected.pinned && <Pin className="w-3.5 h-3.5 text-[var(--gold-ink)] shrink-0" aria-label="Fixado" />}
+                      {selected.pinned && <Tag tone="warn">Fixado</Tag>}
                       <span className="truncate t-strong text-[var(--text-2)]">{selected.created_by_name}</span>
                     </div>
                     <div>{formatShortDate(selected.created_at.slice(0, 10))}</div>
                   </div>
                 </div>
-                <h2 className="t-heading text-[var(--text-1)]">{selected.title}</h2>
-                <p className="t-body text-[var(--text-2)] whitespace-pre-line max-w-[65ch]">{selected.message}</p>
+                <h2 className="t-title text-[var(--text-1)]">{tidyText(selected.title)}</h2>
+                <p className="t-body text-[var(--text-1)] whitespace-pre-line max-w-[65ch]">{tidyText(selected.message)}</p>
                 {actionsFor(selected) && <div className="flex flex-wrap gap-2 pt-2">{actionsFor(selected)}</div>}
               </>
             ) : (
-              <div className="py-10 text-center flex flex-col items-center gap-3">
-                <Inbox className="w-8 h-8 text-[var(--text-3)]" aria-hidden="true" />
-                <p className="t-body text-[var(--text-3)] max-w-[32ch]">Escolhe um comunicado na lista para o ler aqui.</p>
-              </div>
+              <p className="t-body text-[var(--text-2)] py-6">Escolhe um comunicado na lista para o ler aqui.</p>
             )}
           </article>
         </div>

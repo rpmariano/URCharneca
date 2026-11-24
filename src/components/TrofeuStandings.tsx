@@ -89,13 +89,13 @@ export const ClubStandingsView: React.FC<{ season: TrofeuSeasonData; isDesktop: 
       title: stageTitle(season, code),
       align: 'right',
       render: (c) =>
-        c.points_per_stage[code] !== undefined ? <span className="t-num">{c.points_per_stage[code]}</span> : <span className="st-dash" aria-label="sem pontos">—</span>,
+        c.points_per_stage[code] !== undefined ? <span className="t-num">{c.points_per_stage[code]}</span> : <span className="st-dash" aria-label="sem pontos">–</span>,
     })),
     {
       id: 'total',
       header: 'Pontos',
       align: 'right',
-      render: (c) => <span className="t-num t-strong">{c.total}</span>,
+      render: (c) => <span className="st-pts">{c.total}</span>,
     },
   ]
 
@@ -138,7 +138,7 @@ export const ClubStandingsView: React.FC<{ season: TrofeuSeasonData; isDesktop: 
               e.preventDefault()
               document.getElementById('trofeu-urc-row')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
             }}
-            className="flex items-center gap-3 min-h-12 px-4 py-2 rounded-2xl bg-[var(--run)] text-[var(--on-accent)] shadow-[var(--shadow-float)]"
+            className="block-gold flex items-center gap-3 min-h-14 px-4 py-2 [--focus:#0d1726]"
           >
             <span className="t-small flex-1 min-w-0">
               <span className="block t-strong t-num">
@@ -146,7 +146,7 @@ export const ClubStandingsView: React.FC<{ season: TrofeuSeasonData; isDesktop: 
               </span>
               {urc && above && <span className="block">a {pts(above.total - urc.total)} do {above.pos}.º</span>}
             </span>
-            <span className="t-small t-strong underline underline-offset-2 shrink-0">Ver na tabela</span>
+            <span className="t-small t-strong underline underline-offset-4 decoration-2 shrink-0">Ver na tabela</span>
           </a>
         </div>
       )}
@@ -272,7 +272,7 @@ export const AthleteStandingsView: React.FC<{
     const missing = Math.max(0, need - a.stages_participated)
     if (missing === 0) {
       return (
-        <span className="inline-flex items-center gap-1 t-small t-strong text-[var(--tint-emerald-fg)]">
+        <span className="inline-flex items-center gap-1 t-small t-strong text-[var(--link)]">
           <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
           {compact ? 'mín. ok' : 'Cumpre o mínimo'}
         </span>
@@ -325,7 +325,7 @@ export const AthleteStandingsView: React.FC<{
       render: (a) => {
         const r = a.stage_results?.[code]
         const p = r?.points ?? a.points_per_stage[code]
-        if (p === undefined) return <span className="st-dash" aria-label="não participou">—</span>
+        if (p === undefined) return <span className="st-dash" aria-label="não participou">–</span>
         return (
           <span className="st-stage">
             <span className="t-num">{p}</span>
@@ -340,7 +340,7 @@ export const AthleteStandingsView: React.FC<{
       title: 'Pontos',
       align: 'right',
       sortKey: isDesktop ? 'total' : undefined,
-      render: (a) => <span className="t-num t-strong">{a.total}</span>,
+      render: (a) => <span className="st-pts">{a.total}</span>,
     },
     {
       id: 'provas',
@@ -376,7 +376,7 @@ export const AthleteStandingsView: React.FC<{
         {results.length > 0 ? (
           <ul className="grid gap-1.5 lg:grid-cols-3" aria-label={`Resultados por prova de ${a.name}`}>
             {results.map(([code, r]) => (
-              <li key={code} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card)] t-small t-num">
+              <li key={code} className="flex items-center gap-3 px-3 py-2 bg-[var(--bg-app)] border border-[var(--rule)] t-small t-num">
                 <span className="t-strong text-[var(--text-1)] w-9 shrink-0" title={stageTitle(season, code)}>
                   {code}
                 </span>
@@ -393,7 +393,7 @@ export const AthleteStandingsView: React.FC<{
             {Object.entries(a.points_per_stage)
               .sort(([x], [y]) => stageNumber(x) - stageNumber(y))
               .map(([code, p]) => (
-                <li key={code} className="px-2.5 py-1 rounded-md bg-[var(--surface-card)] border border-[var(--border-card)] t-small t-num text-[var(--text-2)]">
+                <li key={code} className="px-2.5 py-1 bg-[var(--bg-app)] border border-[var(--rule)] t-small t-num text-[var(--text-2)]">
                   <strong className="text-[var(--text-1)]">{code}</strong> {pts(p)}
                 </li>
               ))}
@@ -432,7 +432,7 @@ export const AthleteStandingsView: React.FC<{
           <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
             type="search"
-            className="w-full rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] pl-11 pr-11 min-h-12 lg:min-h-11 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
+            className="w-full bg-[var(--surface-card)] border-2 border-[var(--border-card-strong)] pl-11 pr-11 min-h-12 lg:min-h-11 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Procurar atleta"
@@ -443,7 +443,7 @@ export const AthleteStandingsView: React.FC<{
               type="button"
               onClick={() => setQ('')}
               aria-label="Limpar pesquisa"
-              className="absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-[var(--text-2)] cursor-pointer"
+              className="absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-[var(--text-1)] cursor-pointer"
             >
               <X className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -455,7 +455,7 @@ export const AthleteStandingsView: React.FC<{
             <select
               value={escalao}
               onChange={(e) => setEscalao(e.target.value)}
-              className="w-full min-w-0 rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
+              className="w-full min-w-0 bg-[var(--surface-card)] border-2 border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
             >
               <option value="all">Escalão: todos</option>
               {escalaoOptions.map((e) => (
@@ -473,14 +473,14 @@ export const AthleteStandingsView: React.FC<{
                 const [key, dir] = e.target.value.split(':') as [SortKey, 'asc' | 'desc']
                 setSort({ key, dir })
               }}
-              className="w-full min-w-0 rounded-xl bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
+              className="w-full min-w-0 bg-[var(--surface-card)] border-2 border-[var(--border-card-strong)] px-3 min-h-12 lg:min-h-11 t-small text-[var(--text-1)]"
             >
               <option value="pos:asc">Por lugar</option>
               <option value="total:desc">Mais pontos</option>
-              <option value="name:asc">Nome (A–Z)</option>
+              <option value="name:asc">Nome (A a Z)</option>
               {sort.key === 'pos' && sort.dir === 'desc' && <option value="pos:desc">Lugar (inv.)</option>}
               {sort.key === 'total' && sort.dir === 'asc' && <option value="total:asc">Menos pts</option>}
-              {sort.key === 'name' && sort.dir === 'desc' && <option value="name:desc">Nome (Z–A)</option>}
+              {sort.key === 'name' && sort.dir === 'desc' && <option value="name:desc">Nome (Z a A)</option>}
             </select>
           </label>
         </div>
@@ -515,7 +515,7 @@ export const AthleteStandingsView: React.FC<{
           mineOnly ? (
             <>
               Sem resultados entre os teus.{' '}
-              <button type="button" className="underline underline-offset-2 text-[var(--tint-blue-fg)] t-strong min-h-11" onClick={() => setMineChoice('all')}>
+              <button type="button" className="underline underline-offset-4 text-[var(--link)] t-strong min-h-11" onClick={() => setMineChoice('all')}>
                 Ver todos
               </button>
             </>

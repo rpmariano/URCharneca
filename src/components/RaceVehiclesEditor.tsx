@@ -66,7 +66,7 @@ export const RaceVehiclesEditor: React.FC<Props> = ({
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border-card)] p-3.5 space-y-3.5">
+    <div className=" border border-[var(--border-card)] p-3.5 space-y-3.5">
       <Toggle
         checked={vanAvailable}
         onChange={handleToggle}
@@ -123,7 +123,7 @@ export const RaceVehiclesEditor: React.FC<Props> = ({
               return (
                 <div
                   key={veh.id}
-                  className="rounded-xl bg-[var(--surface-raised)] border border-[var(--border-card)] p-3 space-y-2.5"
+                  className=" bg-[var(--surface-raised)] border border-[var(--border-card)] p-3 space-y-2.5"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="t-small t-strong text-[var(--text-2)]">Veículo {idx + 1}</span>

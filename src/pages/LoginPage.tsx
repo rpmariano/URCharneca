@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { LogIn, ShieldCheck } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { Button, Field, inputClass } from '../components/ui'
 
@@ -66,35 +66,37 @@ export const LoginPage: React.FC = () => {
   const submitLabel = recoveryMode ? 'Guardar palavra-passe' : mode === 'signup' ? 'Criar conta' : mode === 'reset' ? 'Enviar ligação' : 'Entrar'
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-5 py-10 bg-[var(--bg-app)] text-[var(--text-1)]">
-      <div className="w-full max-w-[420px] space-y-6">
-        <div className="space-y-2 text-center">
+    <div className="min-h-dvh flex flex-col bg-[var(--bg-app)] text-[var(--text-1)]">
+      {/* Bloco azul: emblema, clube e o título do passo */}
+      <header className="block-blue on-blue px-5 pt-8 pb-7 space-y-6" style={{ paddingTop: 'max(32px, env(safe-area-inset-top, 0px))' }}>
+        <div className="flex items-center gap-3">
           <img
             src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
             alt="Emblema da União Recreativa da Charneca"
-            width={88}
-            height={88}
-            className="mx-auto rounded-2xl object-cover border-[3px] border-[var(--gold)] shadow-[var(--shadow-float)]"
-            style={{ width: 88, height: 88 }}
+            width={56}
+            height={56}
+            className="object-cover shrink-0"
+            style={{ width: 56, height: 56 }}
           />
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface-raised)] t-small t-strong text-[var(--run)]">
-            <ShieldCheck className="w-4 h-4" aria-hidden="true" /> U.R. Charneca · Armada Azul
+          <div>
+            <div className="font-display [font-stretch:75%] font-extrabold text-[24px] leading-none">U.R. Charneca</div>
+            <div className="t-small text-[var(--hdr-fg-2)] mt-1">Atletismo · Armada Azul</div>
           </div>
-          <h1 className="t-title text-[var(--text-1)]">{title}</h1>
-          <p className="t-small text-[var(--text-3)]">{intro}</p>
         </div>
+        <div className="space-y-2">
+          <h1 className="t-display !text-[38px] text-[var(--hdr-fg)]">{title}</h1>
+          <p className="text-[15px] leading-[1.45] text-[var(--hdr-fg)]">{intro}</p>
+        </div>
+      </header>
 
-        <div className="card-raised p-6 space-y-5">
+      <div className="flex-1 px-5 pt-6 pb-10 space-y-6">
+        <div className="space-y-5">
           {!recoveryMode && mode !== 'reset' && (
             <>
               <Button type="button" variant="secondary" block disabled={submitting} onClick={() => void run(loginWithGoogle)}>
                 <GoogleIcon /> Continuar com Google
               </Button>
-              <div className="flex items-center gap-3 t-small text-[var(--text-3)]">
-                <span className="h-px flex-1 bg-[var(--border-card)]" />
-                <span>ou com email e palavra-passe</span>
-                <span className="h-px flex-1 bg-[var(--border-card)]" />
-              </div>
+              <p className="rule-top pt-4 t-small t-strong text-[var(--text-1)]">Ou com email e palavra-passe</p>
             </>
           )}
 
@@ -155,23 +157,23 @@ export const LoginPage: React.FC = () => {
             {message && (
               <div
                 role="status"
-                className={`rounded-xl px-3.5 py-2.5 t-small ${
+                className={` px-3.5 py-2.5 t-small ${
                   message.ok
-                    ? 'bg-[var(--tint-emerald-bg)] text-[var(--tint-emerald-fg)]'
-                    : 'bg-[var(--surface-raised)] border border-[var(--danger)] text-[var(--danger)]'
+                    ? 'bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] t-strong'
+                    : 'bg-[var(--tint-rose-bg)] text-[var(--tint-rose-fg)] t-strong'
                 }`}
               >
                 {message.text}
               </div>
             )}
 
-            <Button type="submit" block disabled={submitting}>
+            <Button type="submit" size="lg" block disabled={submitting}>
               <LogIn className="w-4 h-4" aria-hidden="true" /> {submitLabel}
             </Button>
           </form>
 
           {!recoveryMode && (
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <div className="rule-top pt-2 flex flex-wrap gap-x-2 gap-y-1 -ml-4">
               {mode !== 'signin' && (
                 <Button type="button" variant="ghost" size="sm" onClick={() => { setMode('signin'); setConfirm(''); setMessage(null) }}>
                   Já tenho conta
@@ -191,7 +193,7 @@ export const LoginPage: React.FC = () => {
           )}
         </div>
 
-        <p className="t-small text-center text-[var(--text-3)]">
+        <p className="t-small text-[var(--text-2)]">
           Não consegues entrar? Pede ao administrador para confirmar que o teu email está associado e autorizado na tua ficha.
         </p>
       </div>

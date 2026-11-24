@@ -109,7 +109,7 @@ export function CsvExportDialog<T>({ title, rows, filename, tableFields, extraFi
           {chosen.length === 0 ? (
             <p className="t-small text-[var(--text-3)]">Escolhe pelo menos uma coluna.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-[var(--border-card)]">
+            <div className="overflow-x-auto border border-[var(--border-card)]">
               <table className="w-full t-small">
                 <caption className="sr-only">Primeiras linhas do ficheiro CSV</caption>
                 <thead>

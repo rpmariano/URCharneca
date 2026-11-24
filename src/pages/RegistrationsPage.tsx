@@ -1,16 +1,15 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Ticket } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind } from '../types'
 import { REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
-import { formatShortDate } from '../utils/formatters'
 import { todayISO } from '../utils/dates'
-import { ActivityCover } from '../components/ActivityCover'
-import { countdownLabel } from '../components/ActivityItems'
+import { raceDisplayTitle, tidyText } from '../utils/display'
+import { ActivityRow, countdownLabel } from '../components/ActivityItems'
 import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
-import { Chip, EmptyState, PageHeader, SectionTitle, Segmented, Tag, inputClass, kindOfEvent } from '../components/ui'
+import { AppHeader, HeaderSegmented } from '../components/AppHeader'
+import { EmptyState, KindMark, SectionTitle, Tag, kindOfEvent } from '../components/ui'
 
 interface Entry {
   key: string
@@ -33,7 +32,6 @@ export const RegistrationsPage: React.FC = () => {
   const { currentUser, youthAthletes, races, events, registrations } = useApp()
   const navigate = useNavigate()
   const today = todayISO()
-  const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
   const desktop = useDesktopShell()
   const sideBySide = useMediaQuery(BP.xl) && desktop
   const [person, setPerson] = useState<string>('all')
@@ -58,7 +56,7 @@ export const RegistrationsPage: React.FC = () => {
         kind: race.category,
         seed: race.id,
         imageUrl: race.image_url,
-        title: race.title,
+        title: raceDisplayTitle(race),
         detail: `${r.distance} · ${TRANSPORT_LABELS[r.transport_mode].short}`,
         who: r.is_dependent ? r.athlete_name : undefined,
         person: r.is_dependent ? r.dependent_id || r.athlete_id : 'me',
@@ -76,8 +74,8 @@ export const RegistrationsPage: React.FC = () => {
         kind: kindOfEvent(e),
         seed: e.id,
         imageUrl: e.image_url,
-        title: e.title,
-        detail: e.location,
+        title: tidyText(e.title),
+        detail: tidyText(e.location),
         person: 'me',
         tag: mine.status === 'going' ? { label: 'Vou', tone: 'ok' } : { label: 'Talvez', tone: 'warn' },
         to: `/evento/${e.id}`,
@@ -103,13 +101,11 @@ export const RegistrationsPage: React.FC = () => {
   const upcoming = filtered.filter((e) => e.date >= today)
   const past = filtered.filter((e) => e.date < today).reverse()
   const filtering = person !== 'all' || q !== ''
-  const list = tab === 'upcoming' ? upcoming : past
 
-  /** Lista de uma das duas vistas (próximas ou passadas) */
+  /** Lista de uma das duas secções (próximas ou passadas): linhas em grelha com o bloco de data */
   const renderList = (which: 'upcoming' | 'past', items: Entry[]) =>
     items.length === 0 ? (
       <EmptyState
-        icon={Ticket}
         title={filtering ? 'Nada encontrado' : which === 'upcoming' ? 'Ainda sem inscrições' : 'Sem atividades passadas'}
         text={
           filtering
@@ -127,92 +123,83 @@ export const RegistrationsPage: React.FC = () => {
         }}
       />
     ) : (
-      <div className="divide-soft">
+      <div className="rule-list">
         {items.map((e) => {
           const countdown = countdownLabel(e.date)
+          const who = e.who ? e.who.split(' ')[0] : 'Eu'
           return (
-            <button
+            <ActivityRow
               key={e.key}
-              type="button"
-              onClick={() => navigate(e.to)}
-              className={`w-full py-4 flex items-center gap-4 text-left pressable ${which === 'past' ? 'opacity-70' : ''}`}
-            >
-              <ActivityCover kind={e.kind} seed={e.seed} imageUrl={e.imageUrl} className="w-[72px] h-[72px] rounded-xl shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{e.title}</span>
-                <span className="block t-small text-[var(--text-3)]">
-                  {formatShortDate(e.date)} · {e.time}
-                  {countdown ? ` · ${countdown}` : ''}
-                </span>
-                <span className="block t-small text-[var(--text-3)] truncate">
-                  {e.who ? `${e.who.split(' ')[0]} · ` : ''}
+              date={e.date}
+              past={which === 'past'}
+              title={e.title}
+              lines={[
+                <>
+                  <span className="t-strong text-[var(--text-1)]">{who}</span>
+                  {` · ${e.time}${countdown ? ` · ${countdown}` : ''}`}
+                </>,
+                <span className="inline-flex items-center gap-2">
+                  <KindMark kind={e.kind} />
                   {e.detail}
-                </span>
-                <span className="block pt-1.5">
-                  <Tag tone={e.tag.tone}>{e.tag.label}</Tag>
-                </span>
-              </span>
-            </button>
+                </span>,
+              ]}
+              tags={<Tag tone={which === 'past' ? 'neutral' : e.tag.tone}>{e.tag.label}</Tag>}
+              imageUrl={e.imageUrl}
+              onOpen={() => navigate(e.to)}
+              ariaLabel={[e.title, e.date.split('-').reverse().join('/'), who, e.tag.label].join(', ')}
+            />
           )
         })}
       </div>
     )
 
-  return (
-    // Separadores Próximas/Passadas; em computador largo (>= 1280 px) as duas listas lado a lado (page-wide)
-    <div className={`${sideBySide ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-5`}>
-      <PageHeader title="Inscrições" />
+  const personOptions = [{ value: 'all', label: 'Todos' }, ...people.map(([id, label]) => ({ value: id, label }))]
 
-      {entries.length > 0 && (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="w-5 h-5 text-[var(--text-3)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-            <input
-              type="search"
-              className={`${inputClass} pl-11`}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Procurar nas minhas inscrições"
-              aria-label="Procurar nas minhas inscrições"
-            />
+  return (
+    // Próximas e Passadas uma a seguir à outra; em computador largo (>= 1280 px) lado a lado (page-wide)
+    <div className={`${sideBySide ? 'page-wide' : 'page-read'} px-5 pb-28 space-y-7`}>
+      <AppHeader title="Minhas inscrições" className="-mx-5">
+        {entries.length > 0 && (
+          <div className="px-5 pb-5 pt-1 space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:space-y-0 lg:items-end">
+            <label className="flex flex-col gap-1.5 min-w-0">
+              <span className="t-small t-strong text-[var(--hdr-fg)]">Pesquisar</span>
+              <input
+                type="search"
+                className="w-full h-12 px-3.5 border-2 border-[#ffffff] bg-[#ffffff] t-body placeholder:text-[#4d5a70]"
+                style={{ color: '#0d1726', outlineColor: '#ffffff' }}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Nome da prova, pessoa ou local"
+              />
+            </label>
+            {people.length > 1 && (
+              <HeaderSegmented label="Filtrar por pessoa" value={person} onChange={setPerson} options={personOptions} />
+            )}
           </div>
-          {people.length > 1 && (
-            <div className="scroll-row gap-2" role="group" aria-label="Filtrar por pessoa">
-              <Chip active={person === 'all'} onClick={() => setPerson('all')}>
-                Todos
-              </Chip>
-              {people.map(([id, label]) => (
-                <Chip key={id} active={person === id} onClick={() => setPerson(id)}>
-                  {label}
-                </Chip>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </AppHeader>
+
       {sideBySide ? (
-        <div className="grid grid-cols-2 gap-x-8 xl:gap-x-12 items-start pt-2">
-          <section className="space-y-3 min-w-0" aria-label="Próximas">
-            <SectionTitle title="Próximas" count={upcoming.length} />
+        <div className="grid grid-cols-2 gap-x-10 items-start">
+          <section className="min-w-0" aria-labelledby="insc-prox">
+            <div id="insc-prox"><SectionTitle title="Próximas" count={upcoming.length} /></div>
             {renderList('upcoming', upcoming)}
           </section>
-          <section className="space-y-3 min-w-0" aria-label="Passadas">
-            <SectionTitle title="Passadas" count={past.length} />
+          <section className="min-w-0" aria-labelledby="insc-pass">
+            <div id="insc-pass"><SectionTitle title="Passadas" count={past.length} /></div>
             {renderList('past', past)}
           </section>
         </div>
       ) : (
         <>
-          <Segmented
-            label="Quando"
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: 'upcoming', label: `Próximas (${upcoming.length})` },
-              { value: 'past', label: `Passadas (${past.length})` },
-            ]}
-          />
-          {renderList(tab, list)}
+          <section aria-labelledby="insc-prox">
+            <div id="insc-prox"><SectionTitle title="Próximas" count={upcoming.length} /></div>
+            {renderList('upcoming', upcoming)}
+          </section>
+          <section aria-labelledby="insc-pass">
+            <div id="insc-pass"><SectionTitle title="Passadas" count={past.length} /></div>
+            {renderList('past', past)}
+          </section>
         </>
       )}
     </div>
