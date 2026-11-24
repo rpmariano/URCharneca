@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { CalendarHeart, CircleUserRound, Dumbbell, Flag, Keyboard, Megaphone, Search, ShieldCheck, Sparkles, Ticket } from 'lucide-react'
+import { CircleUserRound, Flag, Keyboard, Megaphone, Search, ShieldCheck, Sparkles, Ticket } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { KIND_COLOR, KIND_ICON } from '../components/ui'
 
 export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: boolean; key: string; adminOnly?: boolean }> = [
   { to: '/', label: 'Explorar', icon: Search, end: true, key: 'e' },
@@ -13,14 +14,14 @@ export const SIDEBAR_ITEMS: Array<{ to: string; label: string; icon: LucideIcon;
 ]
 
 /** Submenu de Explorar (categorias). `tipo` é o valor de `?tipo=` na página Explorar. */
-const EXPLORE_SUB: Array<{ tipo: string; label: string; icon: LucideIcon; level: 1 | 2 }> = [
+const EXPLORE_SUB: Array<{ tipo: string; label: string; icon: LucideIcon; color?: string; level: 1 | 2 }> = [
   { tipo: '', label: 'Destaques', icon: Sparkles, level: 1 },
   { tipo: 'provas', label: 'Provas', icon: Flag, level: 1 },
-  { tipo: 'trofeu_cascais', label: 'Troféu', icon: Flag, level: 2 },
-  { tipo: 'equipa', label: 'Clube', icon: Flag, level: 2 },
-  { tipo: 'individual', label: 'Comunidade', icon: Flag, level: 2 },
-  { tipo: 'training', label: 'Treinos', icon: Dumbbell, level: 1 },
-  { tipo: 'event', label: 'Eventos', icon: CalendarHeart, level: 1 },
+  { tipo: 'trofeu_cascais', label: 'Troféu', icon: KIND_ICON.trofeu_cascais, color: KIND_COLOR.trofeu_cascais, level: 2 },
+  { tipo: 'equipa', label: 'Clube', icon: KIND_ICON.equipa, color: KIND_COLOR.equipa, level: 2 },
+  { tipo: 'individual', label: 'Comunidade', icon: KIND_ICON.individual, color: KIND_COLOR.individual, level: 2 },
+  { tipo: 'training', label: 'Treinos', icon: KIND_ICON.training, color: KIND_COLOR.training, level: 1 },
+  { tipo: 'event', label: 'Eventos', icon: KIND_ICON.event, color: KIND_COLOR.event, level: 1 },
 ]
 const RACE_TIPOS = ['provas', 'trofeu_cascais', 'equipa', 'individual']
 
@@ -74,7 +75,7 @@ export const Sidebar: React.FC<{ onHelp: () => void }> = ({ onHelp }) => {
                       className={`desk-nav-link desk-sub-link${o.level === 2 ? ' is-level2' : ''}${active ? ' is-active' : ''}${parentOfActive ? ' is-parent' : ''}`}
                       aria-current={active ? 'page' : undefined}
                     >
-                      <o.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      <o.icon className="w-4 h-4 shrink-0" style={o.color ? { color: o.color } : undefined} aria-hidden="true" />
                       <span className="flex-1">{o.label}</span>
                     </NavLink>
                   </li>
