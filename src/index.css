@@ -396,6 +396,12 @@ p {
   pointer-events: none;
 }
 
+/* Com uma folha ou diálogo aberto, os avisos passam para o topo para não taparem os campos */
+body:has([aria-modal="true"]) .toast-region {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+
 /* =========================================================================
    Formulários
    ========================================================================= */

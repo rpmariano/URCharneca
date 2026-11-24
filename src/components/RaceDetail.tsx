@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Baby,
   Bus,
@@ -741,6 +741,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                       name={child.name}
                       personId={child.id}
                       child
+                      gender={child.gender}
                       trofeuDorsal={
                         race.category === 'trofeu_cascais'
                           ? child.dorsais_trofeu?.['2026/2027'] || child.dorsal_trofeu
@@ -827,6 +828,7 @@ const RegistrationRow: React.FC<{
   name: string
   personId?: string
   child?: boolean
+  gender?: 'M' | 'F'
   isSelf?: boolean
   trofeuDorsal?: string
   existing?: RaceRegistration
@@ -841,6 +843,7 @@ const RegistrationRow: React.FC<{
   name,
   personId,
   child,
+  gender,
   isSelf,
   trofeuDorsal,
   existing,
@@ -858,14 +861,42 @@ const RegistrationRow: React.FC<{
   const [vehicleId, setVehicleId] = useState(existing?.vehicle_id || '')
   const [seats, setSeats] = useState(existing?.carpool_seats || 3)
 
+  const { isAdminView } = useApp()
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Depois de uma ação o botão usado desaparece: o foco passa para o cartão da pessoa (e não para o <body>)
+  const [actions, setActions] = useState(0)
+  useEffect(() => {
+    if (actions > 0) cardRef.current?.focus()
+  }, [actions])
+  const done = () => setActions((n) => n + 1)
+
   const isIndividual = race.category === 'individual'
+  const firstName = name.split(' ')[0]
+  // Os atletas pedem a inscrição (fica pendente); o administrador inscreve logo
+  const submitLabel = existing
+    ? 'Guardar'
+    : isIndividual
+    ? 'Vou participar'
+    : isAdminView
+    ? child && !isSelf
+      ? `Inscrever ${firstName}`
+      : 'Inscrever-me'
+    : child && !isSelf
+    ? `Pedir inscrição ${gender === 'F' ? 'da' : gender === 'M' ? 'do' : 'de'} ${firstName}`
+    : 'Pedir inscrição'
   const usesVanSeat = Boolean(TRANSPORT_LABELS[transport]?.usesVanSeat)
   const existingVehicleName = existing?.vehicle_id
     ? vehicleAllocations.find((va) => va.vehicle.id === existing.vehicle_id)?.vehicle.name
     : undefined
 
   return (
-    <div className="card p-4 space-y-4">
+    <div
+      ref={cardRef}
+      tabIndex={-1}
+      role="group"
+      aria-label={`Inscrição de ${name}: ${existing ? REG_STATUS_LABELS[existing.status].label : 'por fazer'}`}
+      className="card p-4 space-y-4"
+    >
       <div className="flex items-center gap-3">
         <PersonAvatar id={personId} name={name} child={child} />
         <div className="min-w-0 flex-1">
@@ -930,17 +961,24 @@ const RegistrationRow: React.FC<{
                   usesVanSeat ? vehicleId || undefined : undefined
                 )
                 setEditing(false)
+                done()
               }}
             >
-              {existing ? 'Guardar' : isIndividual ? 'Vou participar' : child && !isSelf ? `Inscrever ${name.split(' ')[0]}` : 'Pedir inscrição'}
+              {submitLabel}
             </Button>
             {existing && (
-              <Button variant="ghost" onClick={() => setEditing(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setEditing(false)
+                  done()
+                }}
+              >
                 Cancelar
               </Button>
             )}
           </div>
-          {!existing && !isIndividual && (
+          {!existing && !isIndividual && !isAdminView && (
             <p className="t-small text-[var(--text-3)]">O pedido fica pendente até o clube confirmar a inscrição.</p>
           )}
         </div>
@@ -948,7 +986,15 @@ const RegistrationRow: React.FC<{
         existing &&
         !locked && (
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" className="flex-1" onClick={() => setEditing(true)}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setEditing(true)
+                done()
+              }}
+            >
               Alterar
             </Button>
             {onCancel && (
@@ -960,7 +1006,10 @@ const RegistrationRow: React.FC<{
                     existing.status === 'enrolled_by_admin'
                       ? `O clube já confirmou a inscrição de ${name}. Cancelar mesmo? O clube é avisado.`
                       : `Cancelar a inscrição de ${name}?`
-                  if (window.confirm(sure)) onCancel()
+                  if (window.confirm(sure)) {
+                    onCancel()
+                    done()
+                  }
                 }}
               >
                 Cancelar inscrição

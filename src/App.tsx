@@ -144,7 +144,7 @@ const AppShell: React.FC = () => {
       )}
 
       <div
-        className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
+        className="toast-region fixed left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-[440px] z-[110] space-y-2 pointer-events-none bottom-[calc(96px+env(safe-area-inset-bottom,0px))]"
         role="status"
         aria-live="polite"
       >
