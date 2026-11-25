@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Bus, Copy, Download, ExternalLink, FileText, Megaphone, Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
+import { Bus, Copy, Download, ExternalLink, FileDown, FileText, Megaphone,Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
@@ -18,6 +18,8 @@ import { todayISO } from '../utils/dates'
 import { markRaceSeen } from '../utils/openRaces'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { raceTitleParts, tidyText } from '../utils/display'
+import { buildBibListPdf, buildBibRows } from '../utils/bibList'
+import { saveFile } from '../utils/saveFile'
 import { DetailBar } from './AppHeader'
 import { ActivityPhoto, countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
@@ -189,8 +191,8 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const today = todayISO()
   const isPast = race.date < today
   const deadlinePassed = Boolean(race.registration_deadline && race.registration_deadline < today)
-  // Admin pode sempre inscrever; atletas apenas até ao prazo e antes da prova
-  const registrationOpen = isAdminView || (!isPast && !(race.category !== 'individual' && deadlinePassed))
+  // Depois do dia da prova ninguém inscreve, altera ou cancela (nem o admin). Antes: o admin sempre; atletas até ao prazo
+  const registrationOpen = !isPast && (isAdminView || !(race.category !== 'individual' && deadlinePassed))
   const canEditRace = isAdminView || race.created_by === currentUser.id
   const isIndividual = race.category === 'individual'
 
@@ -213,7 +215,8 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const pendingCount = raceRegs.filter((r) => r.status === 'interested').length
   const pendingBibs = raceRegs.filter((r) => r.bib_status === 'pending').length
 
-  const canManage = isAdminView && !isIndividual
+  // Gestão de inscrições (confirmar, dorsais, selecionar, lista de dorsais): só até ao dia da prova
+  const canManage = isAdminView && !isIndividual && !isPast
   const selectedRegs = raceRegs.filter((r) => selected.has(r.id))
   const toggleSelected = (id: string) =>
     setSelected((prev) => {
@@ -251,6 +254,20 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     a.download = `inscricoes-${race.id}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Lista para o responsável levantar os dorsais: só inscrições confirmadas
+  const bibRows = canManage ? buildBibRows(race, raceRegs, profiles, youthAthletes) : []
+  const handleBibListPdf = async () => {
+    const file = new File([buildBibListPdf(race, bibRows)], `dorsais-${race.date}.pdf`, { type: 'application/pdf' })
+    const result = await saveFile(file)
+    if (result === 'cancelled') return
+    const missing = bibRows.filter((r) => !r.birthDate).length
+    if (missing > 0) {
+      showToast(`Lista criada. Falta a data de nascimento de ${missing} ${missing === 1 ? 'atleta' : 'atletas'}.`, 'warning')
+    } else {
+      showToast(`Lista de dorsais criada com ${bibRows.length} ${bibRows.length === 1 ? 'atleta' : 'atletas'}.`)
+    }
   }
 
   const handleDelete = () => {
@@ -477,14 +494,14 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                 )
               })}
             </div>
-            {STATUS_HELP[myRegs[0].status] && <p className="t-small text-[var(--text-2)] pt-3">{STATUS_HELP[myRegs[0].status]}</p>}
+            {!isPast && STATUS_HELP[myRegs[0].status] && <p className="t-small text-[var(--text-2)] pt-3">{STATUS_HELP[myRegs[0].status]}</p>}
           </section>
         )}
 
        </div>
        <div className={`desk-detail-col min-w-0${desktop ? '' : ' detail-side'}`}>
         {/* Carrinhas e veículos do clube */}
-        {(race.van_available || (isAdminView && !isIndividual)) && (
+        {(race.van_available || (isAdminView && !isIndividual && !isPast)) && (
           <section className="py-6 space-y-3">
             <div className="flex items-end justify-between gap-3 pb-2">
               <h2 className="t-heading text-[var(--text-1)]">Carrinhas</h2>
@@ -567,7 +584,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                   </p>
                 )}
 
-                {isAdminView && (
+                {isAdminView && !isPast && (
                   <Button size="sm" variant="secondary" onClick={openVehiclesSheet}>
                     <Bus className="w-4 h-4" aria-hidden="true" /> Gerir veículos e condutores
                   </Button>
@@ -626,7 +643,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                     key={r.id}
                     reg={r}
                     admin={canManage}
-                    canRemove={isAdminView}
+                    canRemove={isAdminView && !isPast}
                     selectable={canManage}
                     checked={selected.has(r.id)}
                     onToggle={() => toggleSelected(r.id)}
@@ -662,14 +679,29 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
         {isAdminView && (
           <section className="py-6 space-y-4">
             <h2 className="t-heading text-[var(--text-1)]">Gestão</h2>
-            <AdminEnroll race={race} raceRegs={raceRegs} vehicles={van.vehicles} />
-            <div className="grid grid-cols-2 gap-2">
-              {!isIndividual && (
+            {isPast && (
+              <p className="t-small text-[var(--text-2)]">A prova já se realizou: as inscrições ficam como estavam e já não se alteram.</p>
+            )}
+            {!isPast && <AdminEnroll race={race} raceRegs={raceRegs} vehicles={van.vehicles} />}
+            {canManage && (
+              <div className="space-y-1.5">
+                <Button variant="secondary" block disabled={bibRows.length === 0} onClick={() => void handleBibListPdf()}>
+                  <FileDown className="w-4 h-4" aria-hidden="true" /> Lista para levantar dorsais, PDF ({bibRows.length})
+                </Button>
+                <p className="t-small text-[var(--text-2)]">
+                  Nome, data de nascimento e número de dorsal dos inscritos confirmados.
+                  {pendingCount > 0 && ` ${pendingCount} ${pendingCount === 1 ? 'pedido por confirmar fica' : 'pedidos por confirmar ficam'} de fora.`}
+                </p>
+              </div>
+            )}
+            {/* Os rótulos compridos partem em duas linhas: numa só não cabiam em meia largura no telemóvel */}
+            <div className="grid grid-cols-2 gap-2 [&>button]:!whitespace-normal [&>button]:!px-2 [&>button]:py-2 [&>button]:leading-tight [&>button]:text-center">
+              {canManage && (
                 <Button variant="secondary" size="sm" disabled={pendingCount === 0} onClick={() => confirmAllPendingForRace(race.id)}>
                   Confirmar todas as pendentes ({pendingCount})
                 </Button>
               )}
-              {!isIndividual && (
+              {canManage && (
                 <Button variant="secondary" size="sm" disabled={pendingBibs === 0} onClick={() => markAllBibsAtClubForRace(race.id, currentUser.name)}>
                   Dorsais no clube, todos ({pendingBibs})
                 </Button>
@@ -720,9 +752,12 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           </>
         }
       >
-        <Button size="lg" className="min-w-[44%] lg:min-w-0 lg:w-[332px]" disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
-          {ctaLabel}
-        </Button>
+        {/* Prova realizada: sem botão para quem não estava inscrito; quem estava só vê a inscrição */}
+        {(!isPast || myRegs.length > 0) && (
+          <Button size="lg" className="min-w-[44%] lg:min-w-0 lg:w-[332px]" disabled={!canRegisterSomeone} variant={myRegs.length > 0 ? 'secondary' : 'primary'} onClick={() => setSheetOpen(true)}>
+            {ctaLabel}
+          </Button>
+        )}
       </StickyActionBar>
 
       {sheetOpen && (
