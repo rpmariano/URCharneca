@@ -329,7 +329,9 @@ export const ExplorePage: React.FC = () => {
   )
 
   // ----- Pista: prova em destaque, etapas do Troféu e classificação -----
-  const heroRace = upcomingRaces[0]
+  // Destaque: a próxima prova com inscrições abertas (em que ainda não estou); sem nenhuma, a próxima por data
+  const heroRace = openRaces[0] ?? upcomingRaces[0]
+  const otherOpenRaces = openRaces.filter((r) => r.id !== heroRace?.id)
   const heroMine = registrations.some(
     (r) => heroRace && r.race_id === heroRace.id && r.status !== 'cancelled' && !r.is_dependent && r.athlete_id === currentUser.id
   )
@@ -582,7 +584,7 @@ export const ExplorePage: React.FC = () => {
       {/* Prova em destaque: bloco azul com a data em bloco dourado (só nos Destaques) */}
       {showHighlights && heroRace && (
         <section
-          aria-label="Próxima prova"
+          aria-label="Prova em destaque"
           className={`block-blue on-blue ${desktop ? 'px-10 pt-8 pb-9 mt-6 mx-0' : 'px-5 pt-4 pb-5'}`}
         >
           <div className={`flex items-stretch ${desktop ? 'gap-7' : 'gap-4'}`}>
@@ -687,19 +689,19 @@ export const ExplorePage: React.FC = () => {
             </section>
 
             {/* Provas com inscrições abertas (do clube e da comunidade), mesmo que sejam daqui a meses */}
-            {openRaces.length > 0 && (
+            {otherOpenRaces.length > 0 && (
               <section aria-labelledby="explore-open-h">
                 <div id="explore-open-h">
                   <SectionTitle
-                    title="Inscrições abertas"
-                    count={freshRaces.length > 0 ? freshRaces.length : undefined}
+                    title={heroOpen ? 'Mais inscrições abertas' : 'Inscrições abertas'}
+                    count={otherOpenRaces.filter((r) => freshRaces.some((f) => f.id === r.id)).length || undefined}
                     action="Ver todas"
                     onAction={() => setCategory('provas')}
                   />
                 </div>
                 <p className="t-small text-[var(--text-2)] pb-2">Provas novas para te inscreveres, mesmo daqui a uns meses.</p>
                 <div className={LIST_GRID} role="list" aria-label="Provas com inscrições abertas">
-                  {openRaces.slice(0, 4).map((r) => (
+                  {otherOpenRaces.slice(0, 4).map((r) => (
                     <div key={r.id} role="listitem">
                       <RaceListItem race={r} isNew={freshRaces.some((f) => f.id === r.id)} onOpen={() => openRace(r.id)} />
                     </div>
