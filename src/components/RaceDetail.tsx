@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Bus, Copy, Download, ExternalLink, FileText, Megaphone, Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import type { Race, RaceRegistration, RaceVehicle, TransportMode, YouthAthlete } from '../types'
@@ -14,7 +14,7 @@ import {
   getRaceVehicles,
 } from '../utils/formatters'
 import type { VehicleAllocation } from '../utils/formatters'
-import { todayISO } from '../utils/dates'
+import { seasonOf, todayISO } from '../utils/dates'
 import { markRaceSeen } from '../utils/openRaces'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { raceTitleParts, tidyText } from '../utils/display'
@@ -144,6 +144,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     updateRace,
     deleteRace,
     showToast,
+    trofeuSeasons,
   } = useApp()
   // Abrir a prova tira-lhe o sinal de "nova" na navegação
   useEffect(() => {
@@ -152,6 +153,7 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
   const desktop = useDesktopShell()
   // "Inscrever-me" na prova em destaque (Explorar) abre a página já com a folha de inscrição
   const location = useLocation()
+  const navigate = useNavigate()
   const [sheetOpen, setSheetOpen] = useState(() => Boolean((location.state as { register?: boolean } | null)?.register))
   const [vehiclesSheetOpen, setVehiclesSheetOpen] = useState(false)
   const [vanAvailDraft, setVanAvailDraft] = useState(race.van_available)
@@ -284,6 +286,33 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
       transport_mode: transport,
       vehicle_id: vehicleId,
     })
+
+  // Troféu: resultados da equipa nesta etapa (da época já sincronizada)
+  const stageCode = race.category === 'trofeu_cascais' && race.trophy_stage_number ? `P${race.trophy_stage_number}` : ''
+  const trofeuSeason = stageCode ? trofeuSeasons.find((s) => s.season === seasonOf(race.date)) : undefined
+  const teamResults = useMemo(() => {
+    if (!trofeuSeason || !stageCode) return []
+    return trofeuSeason.athlete_standings
+      .filter((a) => a.stage_results?.[stageCode] || a.points_per_stage[stageCode] !== undefined)
+      .map((a) => ({
+        name: a.name,
+        escalao: a.escalao,
+        pos: a.stage_results?.[stageCode]?.pos,
+        time: a.stage_results?.[stageCode]?.time,
+        points: a.stage_results?.[stageCode]?.points ?? a.points_per_stage[stageCode],
+      }))
+      .sort((a, b) => (a.pos ?? 999) - (b.pos ?? 999) || b.points - a.points || a.name.localeCompare(b.name, 'pt'))
+  }, [trofeuSeason, stageCode])
+  const teamStagePlace = useMemo(() => {
+    if (!trofeuSeason || !stageCode) return undefined
+    const ranked = trofeuSeason.club_standings
+      .filter((c) => c.points_per_stage[stageCode] !== undefined)
+      .sort((a, b) => b.points_per_stage[stageCode] - a.points_per_stage[stageCode])
+    const i = ranked.findIndex((c) => c.is_urc)
+    return i >= 0 ? { pos: i + 1, points: ranked[i].points_per_stage[stageCode], of: ranked.length } : undefined
+  }, [trofeuSeason, stageCode])
+  const openStageResults = () =>
+    navigate(`/trofeu/etapa/${race.trophy_stage_number}?epoca=${encodeURIComponent(seasonOf(race.date))}`)
 
   const countdown = countdownLabel(race.date)
   const canRegisterSomeone = registrationOpen || myRegs.length > 0
@@ -450,6 +479,41 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
                 )}
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Troféu: resultados da equipa nesta etapa */}
+        {isPast && stageCode && (teamResults.length > 0 || teamStagePlace) && (
+          <section className="py-6 space-y-3">
+            <SectionTitle title="Resultados da equipa" count={teamResults.length} />
+            {teamStagePlace && (
+              <p className="t-body text-[var(--text-1)]">
+                A U.R. Charneca ficou em <span className="t-strong">{teamStagePlace.pos}.º lugar</span> entre {teamStagePlace.of} clubes, com {teamStagePlace.points} pontos.
+              </p>
+            )}
+            {teamResults.length > 0 && (
+              <ol className="rule-list m-0 p-0 list-none">
+                {teamResults.slice(0, 8).map((a) => (
+                  <li key={`${a.escalao}|${a.name}`} className="grid grid-cols-[48px_minmax(0,1fr)_auto] gap-3 items-center min-h-12 py-2">
+                    <span className="num text-[26px] text-[var(--link)]">{a.pos ?? '–'}</span>
+                    <span className="min-w-0">
+                      <span className="block t-body t-strong text-[var(--text-1)] truncate">{a.name}</span>
+                      <span className="block t-small text-[var(--text-2)] truncate">
+                        {a.escalao}
+                        {a.time ? ` · ${a.time}` : ''}
+                      </span>
+                    </span>
+                    <span className="t-small t-strong text-[var(--text-1)] t-num">{a.points} pts</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <p className="t-small text-[var(--text-2)]">
+              {teamResults.length > 8 ? `Os 8 melhores lugares de ${teamResults.length}. ` : ''}O lugar é dentro do escalão.
+            </p>
+            <Button variant="secondary" block onClick={openStageResults}>
+              <Trophy className="w-4 h-4" aria-hidden="true" /> Ver classificação completa
+            </Button>
           </section>
         )}
 

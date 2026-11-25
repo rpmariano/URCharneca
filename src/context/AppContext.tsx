@@ -53,6 +53,7 @@ import {
   type DbResult,
   type HydratedSupabaseData,
 } from '../services/supabaseSyncService'
+import { clearTrofeuResultsCache } from '../services/trofeuResultsService'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { TRANSPORT_LABELS } from '../types'
 import { computeVanAllocation, formatShortDate } from '../utils/formatters'
@@ -1775,6 +1776,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const season = (trofeuSeasons.find((s) => s.status === 'open') ?? trofeuSeasons[0])?.season ?? '2026/2027'
       const outcome = await invokeTrofeuResultsSync(season)
       if (outcome.kind === 'ok') {
+        clearTrofeuResultsCache()
         const fresh = await fetchTrofeuSeasons()
         if (fresh && fresh.length > 0) setTrofeuSeasons(fresh)
         const n = outcome.data.athletes_updated

@@ -8,6 +8,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import {
   aggregateAthletes,
   birthYearFromDate,
+  buildGeneralStandings,
+  buildStageAthletes,
+  buildStageClubs,
   buildUrcStandings,
   computeClubStandings,
   crossCheckUrc,
@@ -379,6 +382,24 @@ async function handle(req: Request, cors: Record<string, string>): Promise<Respo
       .update({ athlete_standings: athleteStandings, club_standings: clubStandings, last_synced_at: nowIso })
       .eq('season', season)
     if (upErr) throw new HttpError(500, 'Não foi possível gravar as classificações na base de dados.')
+
+    // Classificações completas (todos os clubes): uma linha por etapa e a geral da época.
+    // Só se escrevem as etapas lidas agora; as já gravadas que o site deixe de mostrar mantêm-se.
+    const stageRows = withResults.map((f) => ({
+      season,
+      stage: `P${f.race.trophy_stage_number}`,
+      race_id: f.race.id,
+      competition_id: f.competitionId,
+      athletes: buildStageAthletes(f.rows),
+      clubs: buildStageClubs(f.clubs),
+      synced_at: nowIso,
+    }))
+    const { error: stErr } = await db.from('trofeu_stage_results').upsert(stageRows, { onConflict: 'season,stage' })
+    if (stErr) warnings.push('Não foi possível gravar as classificações completas de cada prova.')
+    const { error: genErr } = await db
+      .from('trofeu_general_standings')
+      .upsert({ season, athletes: buildGeneralStandings(ranked), synced_at: nowIso }, { onConflict: 'season' })
+    if (genErr) warnings.push('Não foi possível gravar a classificação geral de todos os clubes.')
   }
 
   const stagesOut = fetched.map((f) => ({

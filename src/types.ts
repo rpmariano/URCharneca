@@ -469,3 +469,45 @@ export interface DirectoryEntry {
   escalao: string
   kind: 'adult' | 'youth'
 }
+
+/** Classificações completas do Troféu (todos os clubes), lidas a pedido das tabelas trofeu_stage_results e trofeu_general_standings. */
+export interface TrofeuPublicStageAthlete {
+  pos: number
+  name: string
+  club: string
+  escalao: string
+  gender: 'M' | 'F'
+  time?: string
+  points: number
+  urc: boolean
+}
+
+export interface TrofeuPublicStageClub {
+  pos: number
+  sigla: string
+  name: string
+  athletes: number
+  points: number
+  urc: boolean
+}
+
+export interface TrofeuStageResults {
+  season: string
+  stage: string
+  race_id?: string
+  athletes: TrofeuPublicStageAthlete[]
+  clubs: TrofeuPublicStageClub[]
+  synced_at: string
+}
+
+export interface TrofeuPublicGeneralAthlete {
+  pos: number
+  name: string
+  club: string
+  escalao: string
+  gender: 'M' | 'F'
+  total: number
+  stages: number
+  pts: Record<string, number>
+  urc: boolean
+}
