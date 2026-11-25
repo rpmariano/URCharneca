@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Bus, Copy, Download, ExternalLink, FileText, Megaphone, Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
+import { Bus, Copy, Download, ExternalLink, FileDown, FileText, Megaphone,Pencil, RefreshCw, Trash2, Trophy, UserPlus } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import type { RegistrationBulkAction } from '../context/AppContext'
@@ -18,6 +18,8 @@ import { todayISO } from '../utils/dates'
 import { markRaceSeen } from '../utils/openRaces'
 import { openCreateNotice, openCreateRace } from '../utils/appEvents'
 import { raceTitleParts, tidyText } from '../utils/display'
+import { buildBibListPdf, buildBibRows } from '../utils/bibList'
+import { saveFile } from '../utils/saveFile'
 import { DetailBar } from './AppHeader'
 import { ActivityPhoto, countdownLabel } from './ActivityItems'
 import { RaceVehiclesEditor, createEmptyVehicle, normalizeRaceVehiclesInput } from './RaceVehiclesEditor'
@@ -251,6 +253,20 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
     a.download = `inscricoes-${race.id}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Lista para o responsável levantar os dorsais: só inscrições confirmadas
+  const bibRows = canManage ? buildBibRows(race, raceRegs, profiles, youthAthletes) : []
+  const handleBibListPdf = async () => {
+    const file = new File([buildBibListPdf(race, bibRows)], `dorsais-${race.date}.pdf`, { type: 'application/pdf' })
+    const result = await saveFile(file)
+    if (result === 'cancelled') return
+    const missing = bibRows.filter((r) => !r.birthDate).length
+    if (missing > 0) {
+      showToast(`Lista criada. Falta a data de nascimento de ${missing} ${missing === 1 ? 'atleta' : 'atletas'}.`, 'warning')
+    } else {
+      showToast(`Lista de dorsais criada com ${bibRows.length} ${bibRows.length === 1 ? 'atleta' : 'atletas'}.`)
+    }
   }
 
   const handleDelete = () => {
@@ -663,7 +679,19 @@ export const RaceDetail: React.FC<{ race: Race; onBack: () => void; onOpenTrofeu
           <section className="py-6 space-y-4">
             <h2 className="t-heading text-[var(--text-1)]">Gestão</h2>
             <AdminEnroll race={race} raceRegs={raceRegs} vehicles={van.vehicles} />
-            <div className="grid grid-cols-2 gap-2">
+            {!isIndividual && (
+              <div className="space-y-1.5">
+                <Button variant="secondary" block disabled={bibRows.length === 0} onClick={() => void handleBibListPdf()}>
+                  <FileDown className="w-4 h-4" aria-hidden="true" /> Lista para levantar dorsais, PDF ({bibRows.length})
+                </Button>
+                <p className="t-small text-[var(--text-2)]">
+                  Nome, data de nascimento e número de dorsal dos inscritos confirmados.
+                  {pendingCount > 0 && ` ${pendingCount} ${pendingCount === 1 ? 'pedido por confirmar fica' : 'pedidos por confirmar ficam'} de fora.`}
+                </p>
+              </div>
+            )}
+            {/* Os rótulos compridos partem em duas linhas: numa só não cabiam em meia largura no telemóvel */}
+            <div className="grid grid-cols-2 gap-2 [&>button]:!whitespace-normal [&>button]:!px-2 [&>button]:py-2 [&>button]:leading-tight [&>button]:text-center">
               {!isIndividual && (
                 <Button variant="secondary" size="sm" disabled={pendingCount === 0} onClick={() => confirmAllPendingForRace(race.id)}>
                   Confirmar todas as pendentes ({pendingCount})
