@@ -198,7 +198,7 @@ async function handle(req: Request, cors: Record<string, string>): Promise<Respo
   // 1. Autenticação: só administradores.
   const auth = req.headers.get('Authorization') ?? ''
   const jwt = /^Bearer\s+(.+)$/i.exec(auth)?.[1]
-  if (!jwt) throw new HttpError(401, 'Sem sessão: falta o cabeçalho Authorization (Bearer <jwt>).')
+  if (!jwt) throw new HttpError(401, 'Sem sessão. Inicia sessão como administrador.')
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
     auth: { persistSession: false, autoRefreshToken: false },
