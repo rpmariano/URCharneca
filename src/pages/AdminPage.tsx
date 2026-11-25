@@ -1355,8 +1355,8 @@ const RegistrationsTable: React.FC = () => {
         columns={columns}
         rowKey={(r) => r.id}
         rowLabel={(r) => `${r.athlete_name} em ${raceById.get(r.race_id)?.title ?? 'prova'}`}
-        caption={past ? 'Inscrições em provas passadas' : 'Inscrições e dorsais das próximas provas'}
-        selectable
+        caption={past ? 'Inscrições em provas passadas (só consulta)' : 'Inscrições e dorsais das próximas provas'}
+        selectable={!past}
         selected={picked}
         onSelectedChange={setPicked}
         initialSort={{ id: 'date', dir: 'asc' }}
