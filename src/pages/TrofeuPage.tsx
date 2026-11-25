@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ChevronLeft, ExternalLink, FileText, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ExternalLink, FileText, RefreshCw, Trophy } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import {
   TROFEU_COLLECTIVE_PRIZES_2026_2027,
@@ -15,8 +15,9 @@ import { seasonOf, todayISO } from '../utils/dates'
 import { raceTitleParts, tidyText } from '../utils/display'
 import { AppHeader, HeaderButton, HeaderSegmented } from '../components/AppHeader'
 import { isSupabaseConfigured } from '../lib/supabaseClient'
-import { Button, Chip, EmptyState, SectionTitle, Tag } from '../components/ui'
+import { Button, Chip, EmptyState, SectionTitle, Segmented, Tag } from '../components/ui'
 import { AthleteStandingsView, ClubStandingsView } from '../components/TrofeuStandings'
+import { GeneralStandingsPanel } from '../components/TrofeuFullResults'
 import { useDesktopShell } from '../layout/useDesktopShell'
 
 type TrofeuTab = 'clubes' | 'atletas' | 'provas' | 'regulamento'
@@ -53,6 +54,7 @@ export const TrofeuPage: React.FC = () => {
     () => trofeuSeasons.find((s) => s.status === 'open')?.season || '2026/2027'
   )
   const [tab, setTab] = useState<TrofeuTab>('clubes')
+  const [athleteScope, setAthleteScope] = useState<'equipa' | 'todos'>('equipa')
   const isDesktop = useDesktopShell()
 
   const today = todayISO()
@@ -272,7 +274,24 @@ export const TrofeuPage: React.FC = () => {
 
           {syncInfo}
 
-          {standings.length === 0 && !isSyncingTrofeuResults ? (
+          <Segmented<'equipa' | 'todos'>
+            label="Atletas a mostrar"
+            value={athleteScope}
+            onChange={setAthleteScope}
+            options={[
+              { value: 'equipa', label: 'A nossa equipa' },
+              { value: 'todos', label: 'Todos os clubes' },
+            ]}
+          />
+
+          {athleteScope === 'todos' ? (
+            <section className="space-y-3" aria-labelledby="trofeu-geral-h">
+              <div id="trofeu-geral-h">
+                <SectionTitle title="Classificação geral individual" />
+              </div>
+              <GeneralStandingsPanel key={activeSeason.season} season={activeSeason} isDesktop={isDesktop} />
+            </section>
+          ) : standings.length === 0 && !isSyncingTrofeuResults ? (
             <EmptyState title="Sem atletas nesta época" text="Quando houver classificações da U.R. Charneca, aparecem aqui." />
           ) : (
             <section className="space-y-3" aria-labelledby="trofeu-atletas-h">
@@ -360,6 +379,11 @@ export const TrofeuPage: React.FC = () => {
                         )}
 
                         <div className="flex items-center gap-2 flex-wrap">
+                          {isPast && (
+                            <Button size="sm" onClick={() => navigate(`/trofeu/etapa/${n}?epoca=${encodeURIComponent(activeSeason.season)}`)}>
+                              <Trophy className="w-4 h-4" aria-hidden="true" /> Classificação
+                            </Button>
+                          )}
                           <Button size="sm" variant="secondary" onClick={() => navigate(`/prova/${r.id}`)}>
                             Ver prova
                           </Button>

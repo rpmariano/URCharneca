@@ -164,7 +164,7 @@ type MineKind = 'self' | 'child'
 const escalaoBase = (escalao: string) => escalao.replace(/\s*\([MF]\)$/, '').trim()
 
 /** Ordem dos escalões do regulamento (Sub-12 … M80); femininos a seguir aos masculinos do mesmo escalão. */
-const escalaoRank = (escalao: string) => {
+export const escalaoRank = (escalao: string) => {
   const base = escalaoBase(escalao)
   const age = base.replace(/^[MF](?=\d)/, '')
   const i = TROFEU_ESCALOES_2026_2027.findIndex((e) => e.escalao === base || e.escalao.split(' / ').some((p) => p.replace(/^[MF]/, '') === age))

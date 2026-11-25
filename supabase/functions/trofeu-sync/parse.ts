@@ -680,3 +680,97 @@ export function crossCheckUrc(rows: ClassificationRow[], clubs: ClubRow[]): { in
   const individual = rows.filter((r) => isUrcClub(r.club)).reduce((s, r) => s + r.points, 0)
   return individual === coll.points ? null : { individual, collective: coll.points }
 }
+
+// ---------------------------------------------------------------------------
+// Classificações completas (todos os clubes) para as tabelas trofeu_stage_results
+// e trofeu_general_standings. Sem dorsal nem ano de nascimento (minimização de dados).
+// ---------------------------------------------------------------------------
+
+export interface PublicStageAthlete {
+  pos: number
+  name: string
+  club: string
+  escalao: string
+  gender: 'M' | 'F'
+  time?: string
+  points: number
+  urc: boolean
+}
+
+export interface PublicStageClub {
+  pos: number
+  sigla: string
+  name: string
+  athletes: number
+  points: number
+  urc: boolean
+}
+
+export interface PublicGeneralAthlete {
+  pos: number
+  name: string
+  club: string
+  escalao: string
+  gender: 'M' | 'F'
+  total: number
+  stages: number
+  pts: Record<string, number>
+  urc: boolean
+}
+
+const byGroupThenPos = <T extends { gender: 'M' | 'F'; escalao: string; pos: number; name: string }>(a: T, b: T) =>
+  a.gender.localeCompare(b.gender) || a.escalao.localeCompare(b.escalao, 'pt') || a.pos - b.pos || a.name.localeCompare(b.name, 'pt')
+
+/** Classificação individual completa de uma prova, por escalão/género e lugar. */
+export function buildStageAthletes(rows: ClassificationRow[]): PublicStageAthlete[] {
+  return rows
+    .map((r) => {
+      const out: PublicStageAthlete = {
+        pos: r.pos,
+        name: titleCaseName(r.name),
+        club: r.club,
+        escalao: r.escalao,
+        gender: r.gender,
+        points: r.points,
+        urc: isUrcClub(r.club),
+      }
+      if (r.time) out.time = r.time
+      return out
+    })
+    .sort(byGroupThenPos)
+}
+
+/** Classificação coletiva de uma prova. */
+export function buildStageClubs(clubs: ClubRow[]): PublicStageClub[] {
+  return [...clubs]
+    .sort((a, b) => a.pos - b.pos)
+    .map((c) => ({
+      pos: c.pos,
+      sigla: c.sigla,
+      name: c.name,
+      athletes: c.athletes,
+      points: c.points,
+      urc: isUrcClub(c.sigla) || isUrcClub(c.name),
+    }))
+}
+
+/** Classificação geral individual acumulada (todos os clubes), a partir de rankAthletes. */
+export function buildGeneralStandings(ranked: AthleteAggregate[]): PublicGeneralAthlete[] {
+  return ranked
+    .map((a) => {
+      const pts: Record<string, number> = {}
+      for (const [code, r] of Object.entries(a.results)) pts[code] = r.points
+      return {
+        pos: a.pos,
+        name: titleCaseName(a.name),
+        club: a.club,
+        escalao: a.escalao,
+        gender: a.gender,
+        total: a.total,
+        stages: a.stagesParticipated,
+        pts,
+        urc: isUrcClub(a.club),
+      }
+    })
+    .sort(byGroupThenPos)
+}

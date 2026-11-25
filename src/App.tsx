@@ -16,6 +16,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const TrofeuPage = lazy(() => import('./pages/TrofeuPage').then((m) => ({ default: m.TrofeuPage })))
+const TrofeuStagePage = lazy(() => import('./pages/TrofeuStagePage').then((m) => ({ default: m.TrofeuStagePage })))
 const RaceDetailPage = lazy(() => import('./pages/DetailPages').then((m) => ({ default: m.RaceDetailPage })))
 const EventDetailPage = lazy(() => import('./pages/DetailPages').then((m) => ({ default: m.EventDetailPage })))
 const CreateRaceModal = lazy(() => import('./components/CreateRaceModal').then((m) => ({ default: m.CreateRaceModal })))
@@ -126,6 +127,7 @@ const AppShell: React.FC = () => {
                 <Route path="/perfil" element={<ProfilePage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/trofeu" element={<TrofeuPage />} />
+                <Route path="/trofeu/etapa/:n" element={<TrofeuStagePage />} />
                 <Route path="/prova/:id" element={<RaceDetailPage />} />
                 <Route path="/evento/:id" element={<EventDetailPage />} />
                 {/* Rotas antigas */}
