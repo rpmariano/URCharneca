@@ -1,4 +1,4 @@
-﻿/* =========================================================================
+/* =========================================================================
    Layout por largura. Decisão de produto: a interface é para telemóvel e para browser de
    computador; NÃO há tratamento específico de tablet.
 
@@ -51,16 +51,9 @@
     margin-inline: auto;
     padding-bottom: 7rem;
   }
-  .detail-cover {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-  }
   .detail-body,
   .fixed-bar-pad {
     padding-inline: 20px;
-  }
-  .detail-side {
-    border-top: 1px solid var(--border-card);
   }
 }
 
@@ -76,13 +69,5 @@
 @media (max-height: 500px) and (orientation: landscape) {
   .app-header-tall {
     position: relative;
-  }
-}
-
-/* Telemóvel em paisagem: a capa do detalhe não ocupa o ecrã inteiro */
-@media (max-height: 500px) and (orientation: landscape) {
-  .detail-cover {
-    aspect-ratio: auto;
-    height: clamp(140px, 45dvh, 240px);
   }
 }

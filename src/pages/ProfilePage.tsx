@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Baby, BookOpen, Check, CircleHelp, IdCard, Link2, LogOut, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, Trophy, UsersRound } from 'lucide-react'
+import { BookOpen, Check, CircleHelp, IdCard, Link2, LogOut, Moon, Pencil, Plus, RotateCcw, ShieldCheck, Sun, Trophy, UsersRound } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { calculateAge } from '../utils/formatters'
 import { AthleteForm, ChildForm, emptyChild } from '../components/PeopleForms'
@@ -11,6 +11,7 @@ import {
   Avatar,
   Button,
   Field,
+  HeroTag,
   IconButton,
   ListRow,
   PageHeader,
@@ -88,7 +89,7 @@ export const ProfilePage: React.FC = () => {
       <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-10 lg:items-start lg:max-w-[var(--wide-max)]">
       <div className="space-y-8 min-w-0">
       {/* Cartão do atleta */}
-      <section className="card-raised p-6 flex items-center gap-5">
+      <section className="block-blue on-blue -mx-5 -mt-8 lg:mx-0 lg:mt-0 px-5 py-5 flex items-center gap-4 flex-wrap">
         <PhotoAvatarButton
           name={currentUser.name}
           value={currentUser.photo_url}
@@ -98,40 +99,40 @@ export const ProfilePage: React.FC = () => {
           onError={(m) => showToast(m, 'warning')}
         />
         <div className="min-w-0 flex-1 space-y-1.5">
-          <h2 className="t-heading text-[var(--text-1)] truncate">{currentUser.name}</h2>
-          <p className="t-small text-[var(--text-3)]">
+          <h2 className="t-title text-[var(--hdr-fg)]">{currentUser.name}</h2>
+          <p className="text-[15px] text-[var(--hdr-fg)]">
             {currentUser.escalao} · {calculateAge(currentUser.birth_date)} anos
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {currentUser.is_minor_account ? (
-              <Tag tone="ok">Conta Jovem Autónoma</Tag>
-            ) : (
-              <Tag tone={currentUser.role === 'admin' ? 'warn' : 'neutral'}>
-                {currentUser.role === 'admin' ? 'Administrador' : 'Atleta'}
-              </Tag>
-            )}
-            {currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu ? (
-              <Tag tone="ok">
-                Troféu 26/27 · Dorsal #{currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu}
-              </Tag>
-            ) : currentUser.dorsais_trofeu && Object.keys(currentUser.dorsais_trofeu).length > 0 ? (
-              <Tag tone="neutral">
-                {(() => {
-                  const [yr, num] = Object.entries(currentUser.dorsais_trofeu).sort((a, b) => b[0].localeCompare(a[0]))[0]
-                  return `Troféu ${yr} · #${num}`
-                })()}
-              </Tag>
-            ) : (
-              <Tag tone="info">Sem dorsal Troféu 26/27</Tag>
-            )}
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            <HeroTag>
+              {currentUser.is_minor_account ? 'Conta Jovem Autónoma' : currentUser.role === 'admin' ? 'Administrador' : 'Atleta'}
+            </HeroTag>
+            {!(currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu) &&
+              (currentUser.dorsais_trofeu && Object.keys(currentUser.dorsais_trofeu).length > 0 ? (
+                <HeroTag>
+                  {(() => {
+                    const [yr, num] = Object.entries(currentUser.dorsais_trofeu).sort((a, b) => b[0].localeCompare(a[0]))[0]
+                    return `Troféu ${yr} · #${num}`
+                  })()}
+                </HeroTag>
+              ) : (
+                <HeroTag>Sem dorsal Troféu 26/27</HeroTag>
+              ))}
           </div>
         </div>
+        {(currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu) && (
+          <div className="bg-[#ffffff] text-[#0d1726] px-3 pt-1.5 pb-2 flex flex-col items-center shrink-0 min-w-[96px]">
+            <span className="t-label t-strong" aria-hidden="true">Dorsal 26/27</span>
+            <span className="num text-[52px]" aria-hidden="true">{currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu}</span>
+            <span className="sr-only">Dorsal do Troféu 2026/27: {currentUser.dorsais_trofeu?.['2026/2027'] || currentUser.dorsal_trofeu}</span>
+          </div>
+        )}
       </section>
 
       {/* Classificações no Troféu de Cascais (por época) */}
       <section className="space-y-3">
         <SectionTitle
-          title="Troféu de Cascais (por época)"
+          title="Troféu por época"
           action="Ver Troféu"
           onAction={() => navigate('/trofeu')}
         />
@@ -150,8 +151,8 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
         {myTrofeuHistory.length === 0 ? (
-          <div className="card p-4 space-y-2">
-            <p className="t-small text-[var(--text-3)]">
+          <div className="rule-top pt-3 space-y-2">
+            <p className="t-small text-[var(--text-2)]">
               Ainda sem pontuação registada no Troféu de Cascais para este perfil ou crianças a cargo.
             </p>
             <Button size="sm" variant="secondary" onClick={() => navigate('/trofeu')}>
@@ -159,14 +160,17 @@ export const ProfilePage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="rule-list">
             {myTrofeuHistory.map((st) => (
               <button
                 key={st.id}
                 type="button"
                 onClick={() => navigate('/trofeu')}
-                className="w-full card p-3.5 flex items-center justify-between gap-3 text-left pressable"
+                className="row-link w-full py-3 grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3.5 items-center text-left"
               >
+                <span className={`num text-[44px] ${st.pos > 0 && st.pos <= 3 ? 'text-[var(--gold-ink)]' : 'text-[var(--text-1)]'}`} aria-hidden="true">
+                  {st.pos > 0 ? st.pos : '–'}
+                </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <Tag tone={st.season_status === 'open' ? 'ok' : 'neutral'}>
@@ -183,7 +187,7 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="t-heading t-num text-[var(--text-1)]">{st.total}</div>
+                  <div className="num-wide text-[28px] text-[var(--text-1)]">{st.total}</div>
                   <div className="t-small text-[var(--text-3)]">pts</div>
                 </div>
               </button>
@@ -196,7 +200,7 @@ export const ProfilePage: React.FC = () => {
       {currentUser.is_minor_account ? (
         <section className="space-y-2">
           <SectionTitle title="Gestão da minha conta" />
-          <div className="card p-4 space-y-1.5">
+          <div className="rule-top pt-3 space-y-1.5">
             <div className="t-body t-strong text-[var(--text-1)]">Acesso jovem autónomo ativo</div>
             <p className="t-small text-[var(--text-3)]">
               O administrador autorizou esta conta para fazeres login, gerires os teus dados e inscreveres-te nas provas.
@@ -212,11 +216,9 @@ export const ProfilePage: React.FC = () => {
           </p>
 
           {myChildren.length === 0 ? (
-            <p className="t-body text-[var(--text-3)] flex items-center gap-2 py-2">
-              <Baby className="w-5 h-5 shrink-0" aria-hidden="true" /> Ainda não tens crianças associadas.
-            </p>
+            <p className="rule-top pt-3 t-body text-[var(--text-2)]">Ainda não tens crianças associadas.</p>
           ) : (
-            <div className="divide-soft">
+            <div className="rule-list">
               {myChildren.map((child) => {
                 const others = child.associated_adult_ids
                   .filter((id) => id !== currentUser.id)
@@ -229,7 +231,7 @@ export const ProfilePage: React.FC = () => {
                       <div className="t-body t-strong text-[var(--text-1)] truncate">
                         {child.name}
                         {(child.dorsais_trofeu?.['2026/2027'] || child.dorsal_trofeu) && (
-                          <span className="ml-2 t-small font-normal text-[var(--run)]">
+                          <span className="ml-2 t-small font-bold text-[var(--link)]">
                             Troféu 26/27 #{child.dorsais_trofeu?.['2026/2027'] || child.dorsal_trofeu}
                           </span>
                         )}
@@ -264,7 +266,7 @@ export const ProfilePage: React.FC = () => {
       {/* Conta */}
       <section className="space-y-1">
         <SectionTitle title="Conta" />
-        <div className="divide-soft">
+        <div className="rule-list">
           <ListRow
             icon={IdCard}
             title="Dados pessoais"
@@ -293,7 +295,7 @@ export const ProfilePage: React.FC = () => {
           />
           {currentUser.role === 'admin' && (
             <div className="flex items-center gap-4">
-              <ShieldCheck className="w-6 h-6 text-[var(--text-1)] shrink-0" strokeWidth={1.8} aria-hidden="true" />
+              <ShieldCheck className="w-5 h-5 text-[var(--text-1)] shrink-0" strokeWidth={2} aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <Toggle
                   checked={activeRole === 'admin'}
@@ -339,7 +341,7 @@ export const ProfilePage: React.FC = () => {
       {currentUser.role === 'admin' && (
         <section className="space-y-1">
           <SectionTitle title="Administração de Sessão" />
-          <div className="divide-soft">
+          <div className="rule-list">
             <ListRow
               icon={UsersRound}
               title="Simular vista de outro utilizador autorizado"
@@ -429,7 +431,7 @@ export const ProfilePage: React.FC = () => {
             {selfManagedMinors.length > 0 && (
               <div className="space-y-1 pt-2 border-t border-[var(--border-card)]">
                 <div className="t-small t-strong text-[var(--text-2)] py-1">Menores com login próprio</div>
-                <div className="divide-soft">
+                <div className="rule-list">
                   {selfManagedMinors.map((m) => {
                     const selected = m.id === currentUser.id
                     return (

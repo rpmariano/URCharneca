@@ -185,7 +185,7 @@ export const CreateRaceModal: React.FC<Props> = ({ race, onClose }) => {
           </Field>
         </div>
 
-        <div className="rounded-2xl border border-[var(--border-card)] p-3.5 space-y-3">
+        <div className=" border border-[var(--border-card)] p-3.5 space-y-3">
           <Toggle
             checked={openToChildren}
             onChange={setOpenToChildren}

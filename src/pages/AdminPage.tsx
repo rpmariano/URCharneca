@@ -1,23 +1,24 @@
 import React, { useMemo, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { AlertTriangle, Check, ClipboardCheck, Download, LogIn, Pencil, Plus, RefreshCw, Search, ShieldCheck, Ticket, Trophy, UserPlus, X } from 'lucide-react'
+import { AlertTriangle, Check, ClipboardCheck, Download, LogIn, Pencil, Plus, RefreshCw, Search, ShieldCheck, Ticket, UserPlus, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { AthleteProfile, RaceRegistration, TransportMode, YouthAthlete } from '../types'
 import { BIB_STATUS_LABELS, EVENT_TYPE_LABELS, REG_STATUS_LABELS, TRANSPORT_LABELS } from '../types'
 import type { RegistrationBulkAction } from '../context/AppContext'
 import { calculateAge, countSeasonStages, formatShortDate, plural } from '../utils/formatters'
 import { seasonOf, todayISO } from '../utils/dates'
+import { raceDisplayTitle, tidyText } from '../utils/display'
 import { openCreateEvent, openCreateRace } from '../utils/appEvents'
 import { DataTable, type Column } from '../layout/DataTable'
 import { CsvExportDialog, type CsvField } from '../components/CsvExportDialog'
 import { useDesktopShell } from '../layout/useDesktopShell'
-import { ActivityCover } from '../components/ActivityCover'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { AthleteForm, ChildForm, emptyAthlete, emptyChild } from '../components/PeopleForms'
 import { Sheet } from '../components/Sheet'
 import {
   Avatar,
   Button,
+  DateBlock,
   EmptyState,
   Field,
   IconButton,
@@ -26,6 +27,7 @@ import {
   Segmented,
   SheetHeader,
   KIND_SINGULAR,
+  KindMark,
   StatTile,
   Tag,
   inputClass,
@@ -69,12 +71,12 @@ export const AdminPage: React.FC = () => {
         bleed={desktop ? '-mx-2' : undefined}
         title="Gerir a equipa"
         action={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" variant="inverse" onClick={() => setCreateOpen(true)}>
             <Plus className="w-4 h-4" aria-hidden="true" /> Criar
           </Button>
         }
       />
-      <div className={desktop ? 'max-w-[640px]' : undefined}>
+      <div className={desktop ? 'max-w-[760px]' : undefined}>
       <Segmented<Tab>
         label="Secção de gestão"
         value={tab}
@@ -148,10 +150,10 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-3 gap-2 lg:gap-4">
-        <StatTile value={profiles.length} label="Atletas" tone="blue" onClick={() => onTab('athletes')} />
-        <StatTile value={youthAthletes.length} label="Crianças" tone="yellow" onClick={() => onTab('children')} />
-        <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" tone="green" onClick={() => onTab('agenda')} />
+      <div className="grid grid-cols-3 gap-x-4 lg:gap-x-8">
+        <StatTile value={profiles.length} label="Atletas" onClick={() => onTab('athletes')} />
+        <StatTile value={youthAthletes.length} label="Crianças" onClick={() => onTab('children')} />
+        <StatTile value={races.filter((r) => r.date >= today).length} label="Provas futuras" onClick={() => onTab('agenda')} />
       </div>
 
       {/* Em ecrã largo (>= 1280 px) as duas secções do painel ficam lado a lado */}
@@ -163,19 +165,18 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
           action="Abrir Troféu"
           onAction={() => navigate('/trofeu')}
         />
-        <div className="card p-4 space-y-3">
+        <div className="rule-top pt-3 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
                 <span className="t-body t-strong text-[var(--text-1)]">
                   {trofeuStageCount} {plural(trofeuStageCount, 'etapa sincronizada', 'etapas sincronizadas')} ({openSeason})
                 </span>
               </div>
               <p className="t-small text-[var(--text-3)] mt-1">
                 {lastLog
-                  ? `Última sincronização: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')} — ${lastLog.summary}`
-                  : 'Ligação automática ao site trofeuatletismocascais.pt ativa (procura de documentos 2x/semana).'}
+                  ? `Última sincronização: ${new Date(lastLog.timestamp).toLocaleDateString('pt-PT')}. ${lastLog.summary}`
+                  : 'Ligação automática ao site trofeuatletismocascais.pt ativa (procura de documentos 2 vezes por semana).'}
               </p>
             </div>
             <Button
@@ -190,7 +191,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
           </div>
 
           {pendingDorsalAthletesCount > 0 && (
-            <div className="rounded-xl bg-[var(--tint-amber-bg)] p-3.5 space-y-2.5">
+            <div className="bg-[var(--tint-amber-bg)] p-3.5 space-y-2.5" role="note">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-[var(--tint-amber-fg)] shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="t-small text-[var(--text-1)]">
@@ -221,7 +222,7 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
                       value={dorsalInputs[person.id] ?? ''}
                       onChange={(e) => setDorsalInputs((prev) => ({ ...prev, [person.id]: e.target.value }))}
                       placeholder="Dorsal"
-                      className="min-w-0 flex-1 lg:flex-none lg:w-24 min-h-11 lg:min-h-9 rounded-lg bg-[var(--surface-card)] border border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
+                      className="min-w-0 flex-1 lg:flex-none lg:w-24 min-h-11 lg:min-h-10 bg-[var(--surface-card)] border-2 border-[var(--border-card-strong)] px-3 t-body text-[var(--text-1)] placeholder:text-[var(--text-muted)]"
                       aria-label={`Dorsal de ${person.name}`}
                     />
                     <Button
@@ -250,15 +251,15 @@ const PanelTab: React.FC<{ onTab: (t: Tab) => void }> = ({ onTab }) => {
       <section className="space-y-2 min-w-0">
         <SectionTitle title="Inscrições e dorsais" />
         {work.length === 0 ? (
-          <EmptyState icon={ClipboardCheck} title="Tudo em dia" text="Não há inscrições nem dorsais pendentes nas próximas provas." />
+          <EmptyState title="Tudo em dia" text="Não há inscrições nem dorsais pendentes nas próximas provas." />
         ) : (
-          <div className="divide-soft">
+          <div className="rule-list">
             {work.map(({ race, total, pending, bibs }) => (
-              <div key={race.id} className="py-4 space-y-3">
-                <button type="button" className="w-full flex items-center gap-4 text-left pressable" onClick={() => navigate(`/prova/${race.id}`)}>
-                  <ActivityCover kind={race.category} seed={race.id} imageUrl={race.image_url} className="w-14 h-14 rounded-xl shrink-0" />
+              <div key={race.id} className="py-3 space-y-3">
+                <button type="button" className="row-link w-full grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 items-center text-left" onClick={() => navigate(`/prova/${race.id}`)}>
+                  <DateBlock date={race.date} />
                   <span className="min-w-0 flex-1">
-                    <span className="t-body t-strong text-[var(--text-1)] line-clamp-2">{race.title}</span>
+                    <span className="t-item text-[var(--text-1)] line-clamp-2">{raceDisplayTitle(race)}</span>
                     <span className="block t-small text-[var(--text-3)]">
                       {formatShortDate(race.date)} · {total} {total === 1 ? 'inscrito' : 'inscritos'}
                     </span>
@@ -364,7 +365,7 @@ const AthletesTab: React.FC = () => {
         ) : p.needs_admin_review ? (
           <Tag tone="warn">Sem dorsal</Tag>
         ) : (
-          <span className="text-[var(--text-3)]">—</span>
+          <span className="text-[var(--text-2)]">–</span>
         )
       },
     },
@@ -427,7 +428,7 @@ const AthletesTab: React.FC = () => {
                       {p.phone || 'Sem telemóvel'} · {p.email || 'Sem email'}
                     </div>
                     <div>
-                      NIF {p.nif || '—'} · {calculateAge(p.birth_date)} anos · T-shirt {p.shirt_size}
+                      NIF {p.nif || '–'} · {calculateAge(p.birth_date)} anos · T-shirt {p.shirt_size}
                     </div>
                     {dorsalsSummary && (
                       <div>Dorsais Troféu (exclusivos por época): {dorsalsSummary}</div>
@@ -435,7 +436,7 @@ const AthletesTab: React.FC = () => {
                     {kids.length > 0 && <div>Crianças: {kids.map((k) => k.name).join(', ')}</div>}
                   </div>
                   {/* Autorização expressa de login pelo Admin + Email obrigatório na ficha do atleta */}
-                  <div className="rounded-xl bg-[var(--surface-raised)] p-3 space-y-2.5">
+                  <div className=" bg-[var(--surface-raised)] p-3 space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="t-small t-strong text-[var(--text-1)]">Acesso e Login na Aplicação (Admin)</span>
                       <Tag
@@ -637,7 +638,7 @@ const AthletesTab: React.FC = () => {
 
       <SectionTitle title="Atletas" count={list.length} />
       {list.length === 0 && <p className="t-body text-[var(--text-3)]">Nenhum atleta corresponde à pesquisa.</p>}
-      <div className="divide-soft">
+      <div className="rule-list">
         {list.map((p) => {
           const kids = youthAthletes.filter((c) => c.associated_adult_ids.includes(p.id))
           const open = openId === p.id
@@ -741,7 +742,7 @@ const EnrollInRace: React.FC<{ athlete: AthleteProfile }> = ({ athlete }) => {
           <option value="">Escolher prova…</option>
           {available.map((r) => (
             <option key={r.id} value={r.id}>
-              {formatShortDate(r.date)} — {r.title}
+              {formatShortDate(r.date)}, {raceDisplayTitle(r)}
             </option>
           ))}
         </select>
@@ -832,7 +833,7 @@ const ChildrenTab: React.FC = () => {
         ) : c.needs_admin_review ? (
           <Tag tone="warn">Sem dorsal</Tag>
         ) : (
-          <span className="text-[var(--text-3)]">—</span>
+          <span className="text-[var(--text-2)]">–</span>
         )
       },
     },
@@ -842,7 +843,7 @@ const ChildrenTab: React.FC = () => {
       sortValue: (c) => guardiansOf(c).map((g) => g.name).join(', '),
       render: (c) => {
         const g = guardiansOf(c)
-        return g.length > 0 ? g.map((x) => x.name).join(' · ') : <span className="text-[var(--text-3)]">—</span>
+        return g.length > 0 ? g.map((x) => x.name).join(' · ') : <span className="text-[var(--text-2)]">–</span>
       },
     },
     {
@@ -894,7 +895,7 @@ const ChildrenTab: React.FC = () => {
                     </div>
                   )}
                   {/* Opção exclusiva do Administrador: Login próprio (com email obrigatório) vs Máximo 2 adultos */}
-                  <div className="rounded-xl bg-[var(--surface-raised)] p-3 space-y-2.5">
+                  <div className=" bg-[var(--surface-raised)] p-3 space-y-2.5">
                     <div className="t-small t-strong text-[var(--text-1)]">Modo de gestão da conta (Admin)</div>
                     <Field label="Email associado ao menor (obrigatório para Login próprio)">
                       <div className="flex gap-2">
@@ -1089,7 +1090,7 @@ const ChildrenTab: React.FC = () => {
 
       <SectionTitle title="Menores / Jovens" count={youthAthletes.length} />
       {youthAthletes.length === 0 && <p className="t-body text-[var(--text-3)]">Ainda não há perfis de menores.</p>}
-      <div className="divide-soft">
+      <div className="rule-list">
         {youthAthletes.map((c) => {
           const guardians = c.associated_adult_ids.map((id) => profiles.find((p) => p.id === id)).filter((p): p is AthleteProfile => Boolean(p))
           const open = openId === c.id
@@ -1248,10 +1249,10 @@ const RegistrationsTable: React.FC = () => {
               navigate(`/prova/${race.id}`)
             }}
           >
-            {race.title}
+            {raceDisplayTitle(race)}
           </a>
         ) : (
-          '—'
+          '–'
         )
       },
     },
@@ -1302,7 +1303,7 @@ const RegistrationsTable: React.FC = () => {
           <option value="">Todas as provas</option>
           {raceOptions.map((r) => (
             <option key={r.id} value={r.id}>
-              {formatShortDate(r.date)} — {r.title}
+              {formatShortDate(r.date)}, {raceDisplayTitle(r)}
             </option>
           ))}
         </select>
@@ -1374,8 +1375,8 @@ const AgendaTab: React.FC = () => {
   const today = todayISO()
   const [when, setWhen] = useState<'upcoming' | 'past'>('upcoming')
   const all = [
-    ...races.map((r) => ({ id: r.id, date: r.date, time: r.start_time, title: r.title, race: r })),
-    ...events.map((e) => ({ id: e.id, date: e.date, time: e.time, title: e.title, event: e })),
+    ...races.map((r) => ({ id: r.id, date: r.date, time: r.start_time, title: raceDisplayTitle(r), race: r })),
+    ...events.map((e) => ({ id: e.id, date: e.date, time: e.time, title: tidyText(e.title), event: e })),
   ]
   const upcoming = all.filter((i) => i.date >= today).sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
   const past = all.filter((i) => i.date < today).sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`))
@@ -1394,24 +1395,25 @@ const AgendaTab: React.FC = () => {
       />
       <p className="t-small text-[var(--text-3)]">Toca numa atividade para a abrir. O lápis edita provas, treinos e eventos.</p>
       {items.length === 0 && <p className="t-body text-[var(--text-3)]">Não há atividades {when === 'upcoming' ? 'agendadas' : 'passadas'}.</p>}
-      <div className="divide-soft">
+      <div className="rule-list">
         {items.map((i) => {
           const race = 'race' in i ? i.race : undefined
           const event = 'event' in i ? i.event : undefined
           const kind = race ? race.category : kindOfEvent(event!)
           return (
-            <div key={i.id} className="py-3 flex items-center gap-4">
+            <div key={i.id} className="py-2.5 flex items-center gap-3">
               <button
                 type="button"
-                className="flex-1 min-w-0 flex items-center gap-4 text-left pressable"
+                className="row-link flex-1 min-w-0 grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 items-center text-left"
                 onClick={() => navigate(race ? `/prova/${race.id}` : `/evento/${event!.id}`)}
               >
-                <ActivityCover kind={kind} seed={i.id} imageUrl={race?.image_url || event?.image_url} className="w-14 h-14 rounded-xl shrink-0" />
+                <DateBlock date={i.date} color={when === 'past' ? 'var(--text-1)' : undefined} />
                 <span className="min-w-0 flex-1">
-                  <span className="block t-body text-[var(--text-1)] line-clamp-2">{i.title}</span>
-                  <span className="block t-small text-[var(--text-3)] truncate">
-                    {formatShortDate(i.date)} · {i.time}
-                    {race ? ` · ${KIND_SINGULAR[race.category]}` : event ? ` · ${EVENT_TYPE_LABELS[event.type].short}` : ''}
+                  <span className="block t-item text-[var(--text-1)] line-clamp-2">{i.title}</span>
+                  <span className="flex items-center gap-2 t-small text-[var(--text-2)] min-w-0">
+                    <KindMark kind={kind} />
+                    <span className="truncate">{i.time}
+                    {race ? ` · ${KIND_SINGULAR[race.category]}` : event ? ` · ${EVENT_TYPE_LABELS[event.type].short}` : ''}</span>
                   </span>
                 </span>
               </button>

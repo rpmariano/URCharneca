@@ -238,20 +238,21 @@ export function StandingsTable<T>({
   )
 }
 
-/** Lugar com medalha discreta para 1.º–3.º (ouro, prata, bronze); o número fica sempre visível. */
+/** Lugar em número grande; o 1.º em destaque. Os leitores de ecrã ouvem "1.º (medalha de ouro)". */
 export const RankBadge: React.FC<{ pos: number; highlight?: boolean }> = ({ pos, highlight }) => {
   if (!pos || pos <= 0) {
     return (
       <span className="st-rank" aria-label="Sem classificação">
-        —
+        –
       </span>
     )
   }
   const medal = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : ''
   const medalName = pos === 1 ? 'ouro' : pos === 2 ? 'prata' : pos === 3 ? 'bronze' : ''
   return (
-    <span className={`st-rank t-num ${medal ? `is-${medal}` : highlight ? 'is-hi' : ''}`}>
-      {pos}.º{medal && <span className="sr-only"> (medalha de {medalName})</span>}
+    <span className={`st-rank ${medal ? `is-${medal}` : highlight ? 'is-hi' : ''}`}>
+      {pos}
+      <span className="sr-only">.º{medal && ` (medalha de ${medalName})`}</span>
     </span>
   )
 }

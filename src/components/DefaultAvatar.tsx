@@ -2,7 +2,7 @@ import React from 'react'
 
 export type AvatarKind = 'man' | 'woman' | 'boy' | 'girl' | 'neutral'
 
-/** Figura por defeito conforme género e idade: azul (M), cor-de-rosa (F) ou neutra (sem género). */
+/** Figura por defeito conforme género e idade: azul (M), dourado (F) ou neutra (sem género). Quadrada, como o resto da app. */
 export const avatarKind = (gender?: 'M' | 'F', child?: boolean): AvatarKind =>
   gender === 'M' ? (child ? 'boy' : 'man') : gender === 'F' ? (child ? 'girl' : 'woman') : 'neutral'
 
@@ -21,7 +21,7 @@ export const DefaultAvatar: React.FC<{ kind: AvatarKind; size?: number }> = ({ k
       viewBox="0 0 64 64"
       width={size}
       height={size}
-      className="rounded-full shrink-0 block"
+      className="shrink-0 block"
       style={{ background: `var(--avatar-${t}-bg)` }}
       aria-hidden="true"
       focusable="false"

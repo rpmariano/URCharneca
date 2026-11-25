@@ -1,21 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  Cake,
-  CalendarDays,
-  CalendarSearch,
-  ChevronLeft,
-  ChevronRight,
-  Flag,
-  Megaphone,
-  Pin,
-  Plus,
-  ShieldCheck,
-  SlidersHorizontal,
-  Sparkles,
-  Trophy,
-  X,
-} from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Flag, Plus, SlidersHorizontal, Sparkles, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import type { ActivityKind, Race, TeamEvent } from '../types'
 import { addDaysISO, formatLongDate, formatShortDate, getUpcomingBirthdays, plural } from '../utils/formatters'
@@ -25,20 +10,21 @@ import { useDesktopShell } from '../layout/useDesktopShell'
 import { BP, useMediaQuery } from '../layout/useMediaQuery'
 import { useRetract, useScrollingDown } from '../layout/useScrollRetract'
 import { openCreateRace } from '../utils/appEvents'
-import { EventListItem, RaceCard, RaceListItem } from '../components/ActivityItems'
+import { EventListItem, RaceListItem, TrophyStageRow } from '../components/ActivityItems'
+import { raceDisplayTitle, tidyText } from '../utils/display'
 import { CreateMenuSheet } from '../components/CreateMenuSheet'
 import { CATEGORIA_LABELS, EVENT_TYPE_LABELS } from '../types'
 import { Sheet } from '../components/Sheet'
 import { PersonAvatar } from '../components/PersonAvatar'
 import {
   Button,
-  CategoryTabs,
+  DateBlock,
   EmptyState,
   Field,
   IconButton,
-  KIND_COLOR,
   KIND_ICON,
   KIND_SINGULAR,
+  KindMark,
   SearchPill,
   SectionTitle,
   SheetHeader,
@@ -46,7 +32,7 @@ import {
   inputClass,
   kindOfEvent,
 } from '../components/ui'
-import { AppHeader } from '../components/AppHeader'
+import { AppHeader, HeaderButton } from '../components/AppHeader'
 
 type DateRange = 'upcoming' | 'week' | 'month' | 'past' | 'custom'
 type Category = 'all' | 'provas' | ActivityKind
@@ -98,8 +84,8 @@ const parseCategory = (param: string | null): Category => {
   return (KINDS as string[]).includes(param || '') ? (param as ActivityKind) : 'all'
 }
 
-/** Grelha de cartões (container query): 1 coluna na coluna de telemóvel (480 px), 2 em >= 520 px úteis e 3 em >= 740 px úteis (só se atingem no computador). */
-const CARD_GRID = 'grid grid-cols-1 gap-8 @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6 @min-[740px]:grid-cols-3'
+/** Lista em grelha (container query): 1 coluna no telemóvel, 2 colunas com >= 740 px úteis (só no computador). */
+const LIST_GRID = 'rule-list grid grid-cols-1 @min-[740px]:grid-cols-2 @min-[740px]:gap-x-8'
 
 const kindsOf = (c: Category): ActivityKind[] => (c === 'all' ? KINDS : c === 'provas' ? RACE_KINDS : [c])
 
@@ -342,33 +328,91 @@ export const ExplorePage: React.FC = () => {
     [trofeuSeasons]
   )
 
-  const trofeuBanner = (
+  // ----- Pista: prova em destaque, etapas do Troféu e classificação -----
+  const heroRace = upcomingRaces[0]
+  const heroMine = registrations.some(
+    (r) => heroRace && r.race_id === heroRace.id && r.status !== 'cancelled' && !r.is_dependent && r.athlete_id === currentUser.id
+  )
+  const heroOpen = Boolean(heroRace && openRaces.some((r) => r.id === heroRace.id))
+  const nextStages = useMemo(
+    () =>
+      races
+        .filter((r) => r.category === 'trofeu_cascais' && r.date >= today && r.id !== heroRace?.id)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 3),
+    [races, today, heroRace?.id]
+  )
+  // "Próximas provas": as que não são do Troféu (essas estão em "A seguir no Troféu")
+  const nextOtherRaces = upcomingRaces.filter((r) => r.category !== 'trofeu_cascais' && r.id !== heroRace?.id)
+  const topClubs = useMemo(
+    () => [...(openTrofeuSeason?.club_standings ?? [])].sort((a, b) => a.pos - b.pos).slice(0, 5),
+    [openTrofeuSeason]
+  )
+
+  /** Faixa escura "A equipa no Troféu" (telemóvel e computador estreito) */
+  const trofeuBand = (
     <button
       type="button"
       onClick={() => navigate('/trofeu')}
-      className="card w-full p-4 flex items-center gap-4 text-left pressable border-l-4 border-[var(--gold)]"
+      className="block-band on-band w-full flex items-baseline justify-between gap-3 px-4 py-3.5 text-left cursor-pointer hover:bg-[#1b2a44]"
     >
-      <span className="w-11 h-11 rounded-xl bg-[var(--tint-amber-bg)] text-[var(--gold-ink)] flex items-center justify-center shrink-0">
-        <Trophy className="w-5 h-5" aria-hidden="true" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-2 flex-wrap">
-          <span className="t-body t-strong text-[var(--text-1)]">Troféu de Cascais · 2026/2027</span>
-          <Tag tone="ok">Aberto</Tag>
-        </span>
-        <span className="block t-small text-[var(--text-3)] mt-0.5 truncate">
-          {urcOpenStanding
-            ? `U.R. Charneca em ${urcOpenStanding.pos}º (${urcOpenStanding.total} pts) · Histórico 2025/26: ${urcPastStanding?.pos || 4}º`
-            : 'Classificações oficiais, regulamento, croquis e dorsais'}
-        </span>
+      <span className="min-w-0">
+        <span className="block text-[15px]">A equipa no Troféu</span>
         {isAdminView && pendingDorsalAthletesCount > 0 && (
-          <span className="block t-small text-[var(--tint-amber-fg)] t-strong mt-0.5">
+          <span className="block t-small t-strong text-[var(--band-accent)] mt-0.5">
             {pendingDorsalAthletesCount} {plural(pendingDorsalAthletesCount, 'atleta aguarda', 'atletas aguardam')} nº de dorsal
           </span>
         )}
       </span>
-      <ChevronRight className="w-5 h-5 text-[var(--text-2)] shrink-0" aria-hidden="true" />
+      <span className="num-wide font-black text-[26px] text-[var(--band-accent)] whitespace-nowrap">
+        {urcOpenStanding ? `${urcOpenStanding.pos}.º com ${urcOpenStanding.total} pts` : 'Classificações'}
+      </span>
+      {urcPastStanding && <span className="sr-only">. Em 2025/26 ficou em {urcPastStanding.pos}.º</span>}
     </button>
+  )
+
+  /** Marcador escuro com o top 5 dos clubes (coluna lateral no computador largo) */
+  const trofeuBoard = (
+    <aside aria-labelledby="explore-trofeu-h" className="scope-dark on-band px-6 pt-7 pb-5 space-y-4">
+      <div className="space-y-1.5">
+        <h2 id="explore-trofeu-h" className="t-display !text-[34px] text-[var(--text-1)]">Troféu de Cascais</h2>
+        <p className="t-small text-[var(--text-3)]">Clubes, época {openTrofeuSeason?.season ?? ''}.</p>
+      </div>
+      {topClubs.length > 0 && (
+        <div>
+          <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] gap-3 py-2 t-label text-[var(--text-3)] border-b-2 border-[var(--text-1)]" aria-hidden="true">
+            <span>Lugar</span>
+            <span>Clube</span>
+            <span>Pontos</span>
+          </div>
+          <ol className="list-none m-0 p-0">
+            {topClubs.map((c) => (
+              <li
+                key={c.team}
+                aria-current={c.is_urc ? 'true' : undefined}
+                className={`grid grid-cols-[44px_minmax(0,1fr)_auto] gap-3 items-center ${
+                  c.is_urc ? 'block-gold -mx-6 px-6 min-h-[84px]' : 'min-h-[60px] border-b border-[var(--rule)]'
+                }`}
+              >
+                <span className={`num ${c.is_urc ? 'text-[56px]' : c.pos === 1 ? 'text-[40px] text-[var(--band-accent)]' : 'text-[40px]'}`}>
+                  {c.pos}
+                  <span className="sr-only">.º</span>
+                </span>
+                <span className={`min-w-0 ${c.is_urc ? 'text-[18px] font-bold' : 'text-[15px] font-semibold'} leading-tight`}>{c.team}</span>
+                <span className={`num-wide ${c.is_urc ? 'text-[40px] font-black' : 'text-[28px]'}`}>{c.total}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => navigate('/trofeu')}
+        className="min-h-11 inline-flex items-center gap-1 t-body t-strong text-[var(--band-accent)] hover:underline underline-offset-4 cursor-pointer"
+      >
+        Ver a classificação completa <ChevronRight className="w-4 h-4" aria-hidden="true" />
+      </button>
+    </aside>
   )
 
   const listTitle = selectedDay
@@ -383,20 +427,19 @@ export const ExplorePage: React.FC = () => {
 
   // Em computador largo vem depois da lista no DOM (ordem de foco) e a grelha põe-no na coluna da direita
   const calendar = calendarShown && (
-    <div className={sideCalendar ? 'col-start-2 row-start-1 sticky top-[calc(var(--app-header-h)+16px)] pt-6' : undefined}>
-     <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
-      <div className="flex items-center justify-between">
+    <section className={`card-raised p-4 space-y-3 ${sideCalendar ? '' : 'mt-5 sheet-in'}`} aria-label="Calendário">
+      <div className="flex items-center justify-between gap-2">
         <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
           <ChevronLeft className="w-5 h-5" aria-hidden="true" />
         </IconButton>
-        <h2 className="t-body t-strong text-[var(--text-1)]">
+        <h2 className="t-heading text-[var(--text-1)]">
           {MONTHS[cursor.m]} {cursor.y}
         </h2>
         <IconButton label="Mês seguinte" onClick={() => shiftMonth(1)}>
           <ChevronRight className="w-5 h-5" aria-hidden="true" />
         </IconButton>
       </div>
-      <div className="grid grid-cols-7 text-center text-xs text-[var(--text-3)]" aria-hidden="true">
+      <div className="grid grid-cols-7 text-center t-label t-strong text-[var(--text-2)] border-b-2 border-[var(--rule-strong)] pb-1.5" aria-hidden="true">
         {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d) => (
           <span key={d}>{d}</span>
         ))}
@@ -423,146 +466,193 @@ export const ExplorePage: React.FC = () => {
               aria-current={isToday ? 'date' : undefined}
               aria-label={`${formatLongDate(date)}${ks ? `, ${ks.size} tipo(s) de atividade` : ', sem atividades'}`}
               aria-pressed={selected}
-              className="min-h-11 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+              className="min-h-11 flex flex-col items-center justify-center gap-1 cursor-pointer"
+              style={{ outlineOffset: -1 }}
             >
               <span
-                className={`w-9 h-9 rounded-full flex items-center justify-center t-small t-num ${
+                className={`w-9 h-8 flex items-center justify-center t-small t-num ${
                   selected
-                    ? 'bg-[var(--text-1)] text-[var(--bg-app)] t-strong'
+                    ? 'bg-[var(--run)] text-[var(--on-accent)] t-strong'
                     : isToday
-                    ? 'border border-[var(--text-1)] text-[var(--text-1)] t-strong'
+                    ? 'border-2 border-[var(--text-1)] text-[var(--text-1)] t-strong'
                     : inMonth
                     ? ks
                       ? 'text-[var(--text-1)] t-strong'
                       : 'text-[var(--text-2)]'
-                    : 'text-[var(--text-3)] opacity-60'
+                    : 'text-[var(--text-muted)]'
                 }`}
               >
                 {Number(date.slice(8))}
               </span>
               <span className="flex gap-0.5 h-1.5" aria-hidden="true">
-                {ks && [...ks].slice(0, 3).map((k) => <span key={k} className="w-1.5 h-1.5 rounded-full" style={{ background: KIND_COLOR[k] }} />)}
+                {ks && [...ks].slice(0, 3).map((k) => <KindMark key={k} kind={k} size={6} />)}
               </span>
             </button>
           )
         })}
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-3)] pt-1">
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 t-label text-[var(--text-2)] pt-2 border-t border-[var(--rule)]">
         {KINDS.map((k) => (
           <span key={k} className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLOR[k] }} aria-hidden="true" />
+            <KindMark kind={k} size={8} />
             {KIND_SINGULAR[k]}
           </span>
         ))}
       </div>
-     </section>
-    </div>
+    </section>
   )
+
+  /** Fila de botões unidos sobre o bloco azul (categorias e tipo de prova) */
+  const joinedBtn = (on: boolean) =>
+    `min-w-0 h-11 px-1 border-2 border-[#ffffff] t-small t-strong whitespace-nowrap cursor-pointer transition-colors ${
+      on ? 'bg-[#ffffff] text-[#004c94]' : 'bg-transparent text-[#ffffff] hover:bg-[#ffffff]/15'
+    }`
 
   return (
     <div className="pb-28">
-      {/* Topo fixo: barra do clube + pesquisa + categorias */}
+      {/* Topo fixo: bloco azul com o título, a pesquisa e as categorias */}
       <AppHeader title="Explorar" collapsible={!desktop} retracted={scrollingDown}>
-       <div className="border-b border-[var(--border-card)] text-[var(--text-1)]" style={{ background: 'var(--bg-header)' }}>
-        <div className="flex items-center gap-2 px-5 pt-3 pb-2">
-          <div className="flex-1 min-w-0">
-            <SearchPill value={query} onChange={setQuery} placeholder="Procurar" />
-          </div>
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            aria-label={dateFilterActive ? 'Filtros (ativos)' : 'Filtros'}
-            className="relative h-11 px-4 rounded-full border border-[var(--border-card)] bg-[var(--surface-card)] text-[var(--text-1)] t-small t-strong inline-flex items-center gap-2 shrink-0 pressable"
-          >
-            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-            Filtros
-            {dateFilterActive && (
-              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--run)] border-2 border-[var(--bg-app)]" aria-hidden="true" />
-            )}
-          </button>
-          {desktop && !sideCalendar && (
+        <div className="on-blue px-5 pb-4 pt-1 space-y-3 border-b-[3px] border-[var(--hdr-bg)]">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <SearchPill value={query} onChange={setQuery} placeholder="Procurar" />
+            </div>
             <button
               type="button"
-              aria-expanded={calendarOpen}
-              onClick={toggleCalendar}
-              className={`h-11 px-4 rounded-full border t-small t-strong inline-flex items-center gap-2 shrink-0 pressable ${
-                calendarOpen
-                  ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent'
-                  : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
+              onClick={() => setFiltersOpen(true)}
+              aria-label={dateFilterActive ? 'Filtros (ativos)' : 'Filtros'}
+              className={`relative h-12 px-3.5 border-2 border-[#ffffff] t-small t-strong inline-flex items-center gap-2 shrink-0 pressable ${
+                dateFilterActive ? 'bg-[#ffffff] text-[#004c94]' : 'bg-transparent text-[#ffffff] hover:bg-[#ffffff]/15'
               }`}
             >
-              <CalendarDays className="w-4 h-4" aria-hidden="true" />
-              Calendário
+              <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+              Filtros
+              {dateFilterActive && <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-[var(--club-yellow)] border-2 border-[#004c94]" aria-hidden="true" />}
             </button>
+            {desktop && !sideCalendar && (
+              <button
+                type="button"
+                aria-expanded={calendarOpen}
+                onClick={toggleCalendar}
+                className={`h-12 px-3.5 border-2 border-[#ffffff] t-small t-strong inline-flex items-center gap-2 shrink-0 pressable ${
+                  calendarOpen ? 'bg-[#ffffff] text-[#004c94]' : 'bg-transparent text-[#ffffff] hover:bg-[#ffffff]/15'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" aria-hidden="true" />
+                Calendário
+              </button>
+            )}
+            {isAdminView && (
+              <HeaderButton label="Criar" onClick={() => setCreateOpen(true)} className="!w-12 !h-12">
+                <Plus className="w-6 h-6" aria-hidden="true" />
+              </HeaderButton>
+            )}
+          </div>
+          {!desktop && (
+            <div className="joined" role="tablist" aria-label="Tipo de atividade">
+              {CATEGORIES.map((o) => {
+                const active = (isRaceCategory ? 'provas' : category) === o.value
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setCategory(o.value === 'provas' && isRaceCategory ? category : o.value)}
+                    className={joinedBtn(active)}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
           )}
-          {isAdminView && (
-            <IconButton label="Criar" onClick={() => setCreateOpen(true)} className="!bg-[var(--run)] !text-[var(--on-accent)] !border-transparent">
-              <Plus className="w-5 h-5" aria-hidden="true" />
-            </IconButton>
-          )}
-        </div>
-        {!desktop && (
-        <CategoryTabs
-          value={isRaceCategory ? 'provas' : category}
-          options={CATEGORIES}
-          onChange={(v) => setCategory(v === 'provas' && isRaceCategory ? category : v)}
-          label="Tipo de atividade"
-        />
-        )}
-        {isRaceCategory && !desktop && (
-          <div className="scroll-row gap-2 px-5 pb-3" role="group" aria-label="Tipo de prova">
-            {RACE_SUBMENU.map((o) => {
-              const on = category === o.value
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setCategory(o.value)}
-                  className={`shrink-0 min-h-11 px-4 rounded-full t-small t-strong inline-flex items-center border pressable ${
-                    on
-                      ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent'
-                      : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
-                  }`}
-                >
+          {isRaceCategory && !desktop && (
+            <div className="joined" role="group" aria-label="Tipo de prova">
+              {RACE_SUBMENU.map((o) => (
+                <button key={o.value} type="button" aria-pressed={category === o.value} onClick={() => setCategory(o.value)} className={joinedBtn(category === o.value)}>
                   {o.label}
                 </button>
-              )
-            })}
-          </div>
-        )}
-       </div>
+              ))}
+            </div>
+          )}
+        </div>
       </AppHeader>
 
-      <p className="t-body text-[var(--text-3)] px-5 pt-4">
+      {/* Prova em destaque: bloco azul com a data em bloco dourado (só nos Destaques) */}
+      {showHighlights && heroRace && (
+        <section
+          aria-label="Próxima prova"
+          className={`block-blue on-blue ${desktop ? 'px-10 pt-8 pb-9 mt-6 mx-0' : 'px-5 pt-4 pb-5'}`}
+        >
+          <div className={`flex items-stretch ${desktop ? 'gap-7' : 'gap-4'}`}>
+            <DateBlock date={heroRace.date} size={desktop ? 'xl' : 'hero'} />
+            <div className={`min-w-0 flex flex-col justify-center ${desktop ? 'gap-3' : 'gap-1.5'}`}>
+              <h2 className={`t-title text-[var(--hdr-fg)] ${desktop ? '!text-[50px] !leading-none' : '!text-[28px] !font-extrabold'}`}>
+                {raceDisplayTitle(heroRace)}
+              </h2>
+              <p className={`${desktop ? 'text-[17px]' : 'text-[15px]'} leading-[1.4] text-[var(--hdr-fg)] first-letter:uppercase`}>
+                {formatShortDate(heroRace.date).split(',')[0]}, {heroRace.start_time}. {tidyText(heroRace.location)}
+                {heroRace.distances.length > 0 ? `, ${heroRace.distances.join(' · ')}` : ''}.
+              </p>
+              {heroOpen && <p className={`${desktop ? 'text-[17px]' : 'text-[15px]'} font-bold text-[var(--hdr-fg)]`}>Inscrições abertas.</p>}
+            </div>
+          </div>
+          <Button
+            variant="inverse"
+            size="lg"
+            className={desktop ? 'mt-7 w-[332px]' : 'mt-5 w-full'}
+            onClick={() => navigate(`/prova/${heroRace.id}`, heroOpen && !heroMine ? { state: { register: true } } : undefined)}
+          >
+            {heroOpen && !heroMine ? 'Inscrever-me' : 'Ver a prova'}
+          </Button>
+        </section>
+      )}
+
+      <p className="t-body text-[var(--text-2)] px-5 pt-4">
         Olá, {currentUser.nickname || currentUser.name.split(' ')[0]}
       </p>
 
-      <div className={`px-5 ${sideCalendar ? 'grid grid-cols-[minmax(0,1fr)_300px] gap-8 items-start' : ''}`}>
+      <div className={`px-5 ${sideCalendar ? 'grid grid-cols-[minmax(0,1fr)_340px] gap-10 items-start' : ''}`}>
         {/* Calendário por cima da lista (telemóvel e computador estreito) */}
         {!sideCalendar && calendar}
 
-        {/* Contentor (container query): as grelhas de cartões adaptam-se à largura disponível, com ou sem barra lateral */}
+        {/* Contentor (container query): as listas passam a 2 colunas quando há largura */}
         <div className="@container min-w-0 col-start-1 row-start-1">
         {showHighlights ? (
-          <div className="space-y-10 pt-6 stagger">
+          <div className="space-y-10 pt-6">
             {adminPending > 0 && (
-              <button type="button" onClick={() => navigate('/admin')} className="card w-full p-4 flex items-center gap-4 text-left pressable">
-                <ShieldCheck className="w-6 h-6 text-[var(--gold-ink)] shrink-0" aria-hidden="true" />
+              <button type="button" onClick={() => navigate('/admin')} className="block-gold w-full p-4 flex items-center gap-4 text-left cursor-pointer [--focus:#0d1726]">
+                <span className="num text-[44px]" aria-hidden="true">{adminPending}</span>
                 <span className="flex-1 min-w-0">
-                  <span className="block t-body t-strong text-[var(--text-1)]">
+                  <span className="block text-[16px] font-bold">
                     {adminPending} {adminPending === 1 ? 'pedido de inscrição' : 'pedidos de inscrição'}
                   </span>
-                  <span className="block t-small text-[var(--text-3)]">À espera de confirmação do clube</span>
+                  <span className="block t-small">À espera de confirmação do clube</span>
                 </span>
-                <ChevronRight className="w-5 h-5 text-[var(--text-2)] shrink-0" aria-hidden="true" />
+                <ChevronRight className="w-5 h-5 shrink-0" aria-hidden="true" />
               </button>
             )}
 
-            {trofeuBanner}
+            {/* Etapas do Troféu e a classificação da equipa */}
+            <section aria-labelledby="explore-stages-h">
+              <div id="explore-stages-h">
+                <SectionTitle title="A seguir no Troféu" action="Ver todas" onAction={() => setCategory('trofeu_cascais')} />
+              </div>
+              {nextStages.length > 0 ? (
+                <div className="rule-list">
+                  {nextStages.map((r) => (
+                    <TrophyStageRow key={r.id} race={r} wide={desktop} onOpen={() => openRace(r.id)} />
+                  ))}
+                </div>
+              ) : (
+                <p className="rule-top pt-3 t-body text-[var(--text-2)]">Não há etapas marcadas.</p>
+              )}
+              {!sideCalendar && <div className="mt-4">{trofeuBand}</div>}
+            </section>
 
             {/* Comunicados */}
-            <section className="space-y-4">
+            <section>
               <SectionTitle
                 title="Comunicados"
                 count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined}
@@ -576,70 +666,65 @@ export const ExplorePage: React.FC = () => {
                     markNotificationRead(topNotice.id)
                     navigate('/comunicados', { state: { focusId: topNotice.id } })
                   }}
-                  className="card-raised w-full p-4 text-left pressable flex gap-4"
+                  className="row-link rule-top w-full py-3 text-left grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 items-start border-b border-[var(--rule)]"
                 >
-                  <span className="w-11 h-11 rounded-full bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] flex items-center justify-center shrink-0">
-                    {topNotice.pinned ? <Pin className="w-5 h-5" aria-hidden="true" /> : <Megaphone className="w-5 h-5" aria-hidden="true" />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="t-body t-strong text-[var(--text-1)] line-clamp-2 flex-1">{topNotice.title}</span>
-                      {!topNotice.read_by.includes(currentUser.id) && <Tag tone="info">Novo</Tag>}
+                  <DateBlock date={topNotice.created_at.slice(0, 10)} />
+                  <span className="min-w-0">
+                    <span className="flex items-start gap-2">
+                      <span className="text-[16px] font-bold leading-snug text-[var(--text-1)] line-clamp-2 flex-1">{tidyText(topNotice.title)}</span>
+                      {!topNotice.read_by.includes(currentUser.id) && <Tag tone="danger">Novo</Tag>}
                     </span>
-                    <span className="t-small text-[var(--text-3)] line-clamp-2 mt-0.5">{topNotice.message}</span>
-                    <span className="block t-small text-[var(--text-3)] mt-1.5">
-                      {topNotice.created_by_name} · {formatShortDate(topNotice.created_at.slice(0, 10))}
+                    <span className="t-small text-[var(--text-2)] line-clamp-2 mt-0.5">{tidyText(topNotice.message)}</span>
+                    <span className="block t-small text-[var(--text-2)] mt-1.5">
+                      {topNotice.pinned ? 'Fixado · ' : ''}
+                      {topNotice.created_by_name}
                     </span>
                   </span>
                 </button>
               ) : (
-                <p className="t-body text-[var(--text-3)]">Ainda não há comunicados.</p>
+                <p className="rule-top pt-3 t-body text-[var(--text-2)]">Ainda não há comunicados.</p>
               )}
             </section>
 
             {/* Provas com inscrições abertas (do clube e da comunidade), mesmo que sejam daqui a meses */}
             {openRaces.length > 0 && (
-              <section className="space-y-4" aria-label="Inscrições abertas">
-                <SectionTitle
-                  title="Inscrições abertas"
-                  count={freshRaces.length > 0 ? freshRaces.length : undefined}
-                  action="Ver todas"
-                  onAction={() => setCategory('provas')}
-                />
-                <p className="t-small text-[var(--text-3)] -mt-2">Provas novas para te inscreveres, mesmo daqui a uns meses.</p>
-                <div
-                  className="snap-row -mx-5 px-5 @min-[520px]:mx-0! @min-[520px]:px-0! @min-[520px]:grid! @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6! @min-[520px]:gap-y-8! @min-[520px]:overflow-visible! @min-[520px]:[&>*:nth-child(n+5)]:hidden! @min-[740px]:grid-cols-3 @min-[740px]:[&>*:nth-child(n+4)]:hidden!"
-                  role="list"
-                  aria-label="Provas com inscrições abertas"
-                >
-                  {openRaces.slice(0, 6).map((r) => (
-                    <div key={r.id} className="shrink-0 w-[78%] max-w-[320px] @min-[520px]:w-full @min-[520px]:max-w-none [&>*]:w-full! [&>*]:max-w-none!">
-                      <RaceCard race={r} isNew={freshRaces.some((f) => f.id === r.id)} onOpen={() => openRace(r.id)} />
+              <section aria-labelledby="explore-open-h">
+                <div id="explore-open-h">
+                  <SectionTitle
+                    title="Inscrições abertas"
+                    count={freshRaces.length > 0 ? freshRaces.length : undefined}
+                    action="Ver todas"
+                    onAction={() => setCategory('provas')}
+                  />
+                </div>
+                <p className="t-small text-[var(--text-2)] pb-2">Provas novas para te inscreveres, mesmo daqui a uns meses.</p>
+                <div className={LIST_GRID} role="list" aria-label="Provas com inscrições abertas">
+                  {openRaces.slice(0, 4).map((r) => (
+                    <div key={r.id} role="listitem">
+                      <RaceListItem race={r} isNew={freshRaces.some((f) => f.id === r.id)} onOpen={() => openRace(r.id)} />
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Próximas provas — carrossel de 5 */}
-            <section className="space-y-4">
+            {/* Próximas provas (clube e comunidade) */}
+            <section>
               <SectionTitle title="Próximas provas" action="Ver todas" onAction={() => setCategory('provas')} />
               {upcomingRaces.length === 0 ? (
                 <EmptyState
-                  icon={Flag}
                   text="Ainda não há provas agendadas."
                   action={isAdminView ? 'Criar prova' : 'Sugerir uma prova'}
                   onAction={() => openCreateRace()}
                 />
+              ) : nextOtherRaces.length === 0 ? (
+                <p className="rule-top pt-3 t-body text-[var(--text-2)]">As próximas provas são do Troféu (acima).</p>
               ) : (
-                // Mobile: carrossel. Em contentores >= 520 px passa a grelha (2 colunas, 4 provas; >= 740 px: 3 colunas, 3 provas)
-                <div
-                  className="snap-row -mx-5 px-5 @min-[520px]:mx-0! @min-[520px]:px-0! @min-[520px]:grid! @min-[520px]:grid-cols-2 @min-[520px]:gap-x-6! @min-[520px]:gap-y-8! @min-[520px]:overflow-visible! @min-[520px]:[&>*:nth-child(n+5)]:hidden! @min-[740px]:grid-cols-3 @min-[740px]:[&>*:nth-child(n+4)]:hidden!"
-                  role="list"
-                  aria-label="Próximas provas"
-                >
-                  {upcomingRaces.map((r) => (
-                    <RaceCard key={r.id} race={r} onOpen={() => openRace(r.id)} />
+                <div className={LIST_GRID} role="list" aria-label="Próximas provas">
+                  {nextOtherRaces.slice(0, 4).map((r) => (
+                    <div key={r.id} role="listitem">
+                      <RaceListItem race={r} onOpen={() => openRace(r.id)} />
+                    </div>
                   ))}
                 </div>
               )}
@@ -647,21 +732,21 @@ export const ExplorePage: React.FC = () => {
 
             {/* Próximo evento */}
             {nextEvent && (
-              <section className="space-y-4">
+              <section>
                 <SectionTitle title="Próximo evento" action="Ver eventos" onAction={() => setCategory('event')} />
-                <div className={CARD_GRID}>
+                <div className="rule-list">
                   <EventListItem event={nextEvent} onOpen={() => openEvent(nextEvent.id)} />
                 </div>
               </section>
             )}
 
             {/* Treinos */}
-            <section className="space-y-4">
+            <section>
               <SectionTitle title="Próximos treinos" action="Ver todos" onAction={() => setCategory('training')} />
               {nextTrainings.length === 0 ? (
-                <p className="t-body text-[var(--text-3)]">Não há treinos marcados.</p>
+                <p className="rule-top pt-3 t-body text-[var(--text-2)]">Não há treinos marcados.</p>
               ) : (
-                <div className="grid gap-6 @min-[520px]:grid-cols-2 @min-[520px]:gap-x-8 @min-[740px]:grid-cols-3">
+                <div className={LIST_GRID}>
                   {nextTrainings.map((t) => (
                     <EventListItem key={t.id} event={t} compact showRsvp onOpen={() => openEvent(t.id)} />
                   ))}
@@ -671,24 +756,22 @@ export const ExplorePage: React.FC = () => {
 
             {/* Aniversários */}
             {birthdays.length > 0 && (
-              <section className="space-y-2">
+              <section>
                 <SectionTitle title="Aniversários" />
-                <div className="divide-soft max-w-[720px]">
+                <div className="rule-list max-w-[720px]">
                   {birthdays.map((b) => (
-                    <div key={b.id} className="flex items-center gap-4 py-3">
+                    <div key={b.id} className="flex items-center gap-4 min-h-14 py-2.5">
                       <PersonAvatar id={b.id} name={b.name} child={b.isChild} />
                       <div className="min-w-0 flex-1">
-                        <div className="t-body text-[var(--text-1)] truncate">{b.name}</div>
-                        <div className="t-small text-[var(--text-3)]">
+                        <div className="t-body t-strong text-[var(--text-1)] truncate">{b.name}</div>
+                        <div className="t-small text-[var(--text-2)]">
                           {formatShortDate(b.date)} · faz {b.turning} anos
                         </div>
                       </div>
                       {b.daysAway === 0 ? (
-                        <Tag tone="warn">
-                          <Cake className="w-3.5 h-3.5" aria-hidden="true" /> Hoje
-                        </Tag>
+                        <Tag tone="warn">Hoje</Tag>
                       ) : (
-                        <span className="t-small text-[var(--text-3)] shrink-0">{b.daysAway === 1 ? 'amanhã' : `em ${b.daysAway} dias`}</span>
+                        <span className="t-small t-strong text-[var(--text-1)] shrink-0">{b.daysAway === 1 ? 'amanhã' : `em ${b.daysAway} dias`}</span>
                       )}
                     </div>
                   ))}
@@ -697,9 +780,9 @@ export const ExplorePage: React.FC = () => {
             )}
 
             {!isAdminView && (
-              <section className="card p-5 space-y-3 max-w-[720px]">
+              <section className="rule-top pt-4 space-y-3 max-w-[720px]">
                 <h2 className="t-heading text-[var(--text-1)]">Conheces uma boa prova?</h2>
-                <p className="t-body text-[var(--text-3)]">Sugere-a à equipa e combinem ir juntos.</p>
+                <p className="t-body text-[var(--text-1)]">Sugere-a à equipa e combinem ir juntos.</p>
                 <Button variant="secondary" onClick={() => openCreateRace()}>
                   Sugerir uma prova
                 </Button>
@@ -710,13 +793,13 @@ export const ExplorePage: React.FC = () => {
           <div className="pt-6 space-y-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="t-heading text-[var(--text-1)] first-letter:uppercase">{listTitle}</h2>
-                <p className="t-small text-[var(--text-3)]">
+                <h2 className="t-title text-[var(--text-1)] first-letter:uppercase">{listTitle}</h2>
+                <p className="t-small t-strong text-[var(--text-1)] mt-1">
                   {list.length} {list.length === 1 ? 'atividade' : 'atividades'}
                   {!selectedDay && ` · ${RANGES.find((r) => r.value === range)?.label.toLowerCase()}`}
                 </p>
                 {!query.trim() && !selectedDay && CATEGORY_HELP[category] && (
-                  <p className="t-small text-[var(--text-3)] mt-2 max-w-[44ch]">{CATEGORY_HELP[category]}</p>
+                  <p className="t-small text-[var(--text-2)] mt-2">{CATEGORY_HELP[category]}</p>
                 )}
               </div>
               {selectedDay && (
@@ -731,10 +814,9 @@ export const ExplorePage: React.FC = () => {
               )}
             </div>
 
-            {category === 'trofeu_cascais' && trofeuBanner}
+            {category === 'trofeu_cascais' && trofeuBand}
             {list.length === 0 ? (
               <EmptyState
-                icon={CalendarSearch}
                 title="Sem resultados"
                 text="Não há atividades com estes filtros. Experimenta outra categoria ou outro período."
                 action="Limpar filtros"
@@ -742,17 +824,17 @@ export const ExplorePage: React.FC = () => {
               />
             ) : (
               grouped.map(([month, items]) => (
-                <section key={month} className="space-y-6">
+                <section key={month}>
                   {!selectedDay && (
-                    <h2 className="t-small t-strong text-[var(--text-3)]">
+                    <h2 className="t-heading text-[var(--text-1)] pb-2">
                       {MONTHS[Number(month.slice(5)) - 1]} {month.slice(0, 4)}
                     </h2>
                   )}
-                  <div className={CARD_GRID}>
+                  <div className={LIST_GRID}>
                     {items.map((i) => {
                       if (i.race) {
                         const id = i.race.id
-                        return <RaceListItem key={i.id} race={i.race} onOpen={() => openRace(id)} />
+                        return <RaceListItem key={i.id} race={i.race} isNew={freshRaces.some((f) => f.id === id)} onOpen={() => openRace(id)} />
                       }
                       const id = i.event.id
                       return <EventListItem key={i.id} event={i.event} onOpen={() => openEvent(id)} />
@@ -764,7 +846,13 @@ export const ExplorePage: React.FC = () => {
           </div>
         )}
         </div>
-        {sideCalendar && calendar}
+        {sideCalendar && (
+          // A coluna estica até ao fim da linha da grelha: o marcador fica em cima e o calendário cola ao topo ao descer
+          <div className="col-start-2 row-start-1 self-stretch pt-6 space-y-6">
+            {showHighlights && trofeuBoard}
+            <div className="sticky top-[calc(var(--app-header-h)+16px)]">{calendar}</div>
+          </div>
+        )}
       </div>
 
       {/* Botão flutuante do calendário (expandir / colapsar): só em telemóvel */}
@@ -777,7 +865,7 @@ export const ExplorePage: React.FC = () => {
           type="button"
           aria-expanded={calendarOpen}
           onClick={toggleCalendar}
-          className="min-h-11 px-5 rounded-full bg-[var(--text-1)] text-[var(--bg-app)] t-small t-strong flex items-center gap-2 shadow-[var(--shadow-float)] pressable"
+          className="min-h-12 px-5 bg-[var(--text-1)] text-[var(--bg-app)] t-small t-strong flex items-center gap-2 pressable border-2 border-[var(--bg-app)]"
         >
           {calendarOpen ? <X className="w-4 h-4" aria-hidden="true" /> : <CalendarDays className="w-4 h-4" aria-hidden="true" />}
           {calendarOpen ? 'Fechar calendário' : 'Calendário'}
@@ -791,7 +879,7 @@ export const ExplorePage: React.FC = () => {
           <SheetHeader title="Filtros" onClose={() => setFiltersOpen(false)} />
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             <h3 className="t-heading text-[var(--text-1)]">Quando</h3>
-            <div role="radiogroup" aria-label="Período" className="divide-soft">
+            <div role="radiogroup" aria-label="Período" className="rule-list">
               {RANGES.map((r) => {
                 const on = range === r.value && !selectedDay
                 return (
@@ -804,19 +892,17 @@ export const ExplorePage: React.FC = () => {
                       setRange(r.value)
                       setSelectedDay(null)
                     }}
-                    className="w-full min-h-14 py-3 flex items-center gap-4 text-left cursor-pointer"
+                    className="row-link w-full min-h-14 py-3 flex items-center gap-4 text-left cursor-pointer"
                   >
-                    <span className="flex-1 min-w-0">
-                      <span className="block t-body text-[var(--text-1)]">{r.label}</span>
-                      <span className="block t-small text-[var(--text-3)]">{r.hint}</span>
-                    </span>
                     <span
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        on ? 'border-[var(--text-1)]' : 'border-[var(--border-card-strong)]'
-                      }`}
+                      className={`w-6 h-6 border-2 flex items-center justify-center shrink-0 ${on ? 'border-[var(--run)]' : 'border-[var(--border-card-strong)]'}`}
                       aria-hidden="true"
                     >
-                      {on && <span className="w-3 h-3 rounded-full bg-[var(--text-1)]" />}
+                      {on && <span className="w-3 h-3 bg-[var(--run)]" />}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block t-body t-strong text-[var(--text-1)]">{r.label}</span>
+                      <span className="block t-small text-[var(--text-2)]">{r.hint}</span>
                     </span>
                   </button>
                 )
@@ -833,7 +919,7 @@ export const ExplorePage: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="px-5 py-3 border-t border-[var(--border-card)] flex items-center justify-between gap-4 shrink-0">
+          <div className="px-5 py-3 border-t-[3px] border-[var(--rule-strong)] flex items-center justify-between gap-4 shrink-0">
             <Button
               variant="ghost"
               onClick={() => {

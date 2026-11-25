@@ -9,6 +9,7 @@ import { useDesktopShell, useDesktopShellClass } from './layout/useDesktopShell'
 import { ExplorePage } from './pages/ExplorePage'
 import { LoginPage } from './pages/LoginPage'
 import { OPEN_EDITOR_EVENT, type EditorRequest } from './utils/appEvents'
+import { tidyText } from './utils/display'
 
 const RegistrationsPage = lazy(() => import('./pages/RegistrationsPage').then((m) => ({ default: m.RegistrationsPage })))
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
@@ -22,9 +23,11 @@ const CreateEventModal = lazy(() => import('./components/CreateEventModal').then
 const CreateNoticeModal = lazy(() => import('./components/CreateNoticeModal').then((m) => ({ default: m.CreateNoticeModal })))
 
 const PageFallback: React.FC = () => (
-  <div className="py-20 flex justify-center" role="status">
-    <div className="w-7 h-7 rounded-full border-2 border-[var(--run)] border-t-transparent animate-spin" aria-hidden="true" />
-    <span className="sr-only">A carregar…</span>
+  <div className="py-20 px-5 flex justify-center" role="status">
+    <div className="w-full max-w-[240px] flex flex-col gap-2">
+      <span className="loading-bar" aria-hidden="true" />
+      <span className="t-small t-strong text-[var(--text-1)]">A carregar…</span>
+    </div>
   </div>
 )
 
@@ -107,7 +110,7 @@ const AppShell: React.FC = () => {
               e.preventDefault()
               document.getElementById('conteudo')?.focus()
             }}
-            className="sr-only focus:not-sr-only focus:fixed! focus:top-2 focus:left-2 focus:z-[120] focus:px-4! focus:py-3! focus:rounded-xl focus:bg-[var(--text-1)] focus:text-[var(--bg-app)] focus:shadow-[var(--shadow-float)] t-small t-strong"
+            className="sr-only focus:not-sr-only focus:fixed! focus:top-2 focus:left-2 focus:z-[120] focus:px-4! focus:py-3! focus:bg-[var(--text-1)] focus:text-[var(--bg-app)] t-small t-strong"
           >
             Saltar para o conteúdo
           </a>
@@ -153,10 +156,10 @@ const AppShell: React.FC = () => {
           return (
             <div
               key={t.id}
-              className="sheet-in px-4 py-3 rounded-xl t-small t-strong shadow-[var(--shadow-float)] bg-[var(--text-1)] text-[var(--bg-app)] flex items-center gap-3"
+              className="sheet-in px-4 py-3 t-small t-strong bg-[var(--text-1)] text-[var(--bg-app)] flex items-center gap-3"
             >
               <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
-              <span className="min-w-0">{t.text}</span>
+              <span className="min-w-0">{tidyText(t.text)}</span>
             </div>
           )
         })}

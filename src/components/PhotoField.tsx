@@ -70,11 +70,11 @@ export const PhotoField: React.FC<{
         onClick={() => inputRef.current?.click()}
         disabled={busy}
         aria-label={`Escolher foto de ${name || 'atleta'}`}
-        className="relative shrink-0 rounded-full pressable min-w-11 min-h-11"
+        className="relative shrink-0 pressable min-w-11 min-h-11"
       >
         <Avatar name={name || '?'} photo={value} gender={gender} child={child} size={size} />
         <span
-          className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center bg-[var(--run)] text-[var(--on-accent)] border-2 border-[var(--surface-card)]"
+          className="absolute -bottom-1 -right-1 w-9 h-9 flex items-center justify-center bg-[var(--run)] text-[var(--on-accent)] border-2 border-[var(--surface-card)]"
           aria-hidden="true"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}

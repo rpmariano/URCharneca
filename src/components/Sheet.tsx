@@ -146,24 +146,18 @@ export const Sheet: React.FC<SheetProps> = ({
         aria-modal="true"
         aria-label={ariaLabel}
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full shadow-2xl ${
+        className={`relative w-full border-[var(--rule-strong)] ${
           isBottom
-            ? 'max-w-[480px] max-h-[90dvh] rounded-t-[24px] lg:max-w-[560px] lg:max-h-[min(85dvh,880px)] lg:rounded-[24px] flex flex-col overflow-hidden sheet-in'
-            : 'max-w-md max-h-[85dvh] rounded-3xl pop-in'
+            ? 'max-w-[480px] max-h-[90dvh] border-t-[3px] lg:border-2 lg:max-w-[560px] lg:max-h-[min(85dvh,880px)] flex flex-col overflow-hidden sheet-in'
+            : 'max-w-md max-h-[85dvh] border-2 sheet-in'
         } ${panelClassName}`}
         style={{
           background: 'var(--bg-sheet)',
           color: 'var(--text-2)',
-          border: '1px solid var(--border-card-strong)',
           ...panelStyle,
         }}
       >
-        {/* Nos formulários (persistent) não há pega: sugeria que se fechava a arrastar */}
-        {isBottom && (
-          <div className="flex justify-center pt-2 pb-0.5 shrink-0 lg:hidden" aria-hidden="true">
-            <span className={`w-10 h-1 rounded-full ${persistent ? '' : 'bg-[var(--border-card-strong)]'}`} />
-          </div>
-        )}
+        {/* Sem pega de arrastar: as folhas fecham pelo X (e, fora dos formulários, ao tocar fora ou com Esc) */}
         {children}
       </div>
     </div>,

@@ -3,8 +3,7 @@ import { Baby, Check, ChevronRight, X } from 'lucide-react'
 import type { ActivityKind } from '../types'
 import { useApp } from '../context/AppContext'
 import { useOnboardingItem } from '../utils/onboarding'
-import { ActivityCover } from './ActivityCover'
-import { Avatar, Button, KindBadge, Tag } from './ui'
+import { Avatar, Button, DateBlock, KindBadge, Tag } from './ui'
 
 /**
  * Introdução em ecrã inteiro, à primeira abertura: slides que se deslizam (ou "Seguinte"), com ilustrações
@@ -61,9 +60,9 @@ export const Intro: React.FC = () => {
         if (e.key === 'ArrowLeft' && index > 0) goTo(index - 1)
       }}
     >
-      <div className="w-full max-w-[480px] h-full lg:max-w-[520px] lg:h-[min(860px,100%)] lg:rounded-[28px] lg:border lg:border-[var(--border-card)] lg:shadow-[var(--shadow-float)] bg-[var(--bg-app)] flex flex-col relative overflow-hidden">
+      <div className="w-full max-w-[480px] h-full lg:max-w-[520px] lg:h-[min(860px,100%)] lg:border-2 lg:border-[var(--rule-strong)] bg-[var(--bg-app)] flex flex-col relative overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-4 shrink-0">
-          <span className="t-small t-strong text-[var(--text-3)]" aria-live="polite">
+          <span className="t-small t-strong text-[var(--text-1)]" aria-live="polite">
             {index + 1} de {slides.length}
           </span>
           <button
@@ -102,7 +101,7 @@ export const Intro: React.FC = () => {
                 className="h-11 flex items-center cursor-pointer"
               >
                 <span
-                  className="block h-2 rounded-full transition-all"
+                  className="block h-2 transition-all"
                   style={{ width: i === index ? 24 : 8, background: i === index ? 'var(--run)' : 'var(--border-card-strong)' }}
                 />
               </button>
@@ -123,13 +122,9 @@ type SlideProps = { active: boolean; name: string }
 const Frame: React.FC<{ art: React.ReactNode; title: string; text: string; tone?: 'blue' | 'gold' }> = ({ art, title, text, tone = 'blue' }) => (
   <div className="min-h-full flex flex-col">
     <div
-      className="mx-5 mt-2 rounded-3xl flex-1 min-h-[260px] max-h-[380px] flex items-center justify-center relative overflow-hidden"
-      style={{
-        background:
-          tone === 'gold'
-            ? 'linear-gradient(160deg, color-mix(in srgb, var(--gold) 35%, var(--bg-app)), var(--surface-raised))'
-            : 'linear-gradient(160deg, var(--tint-blue-bg-strong), var(--surface-raised))',
-      }}
+      className={`mx-5 mt-2 flex-1 min-h-[260px] max-h-[380px] flex items-center justify-center relative overflow-hidden border-t-[3px] border-[var(--rule-strong)] ${
+        tone === 'gold' ? 'bg-[var(--tint-amber-bg)]' : 'bg-[var(--surface-raised)]'
+      }`}
     >
       {art}
     </div>
@@ -140,16 +135,6 @@ const Frame: React.FC<{ art: React.ReactNode; title: string; text: string; tone?
   </div>
 )
 
-/** Pistas de atletismo em fundo (decorativo). */
-const Lanes: React.FC = () => (
-  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <g fill="none" stroke="var(--run)" strokeOpacity="0.14" strokeWidth="3">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <path key={i} d={`M -40 ${340 - i * 30} C 120 ${310 - i * 30}, 250 ${180 - i * 26}, 440 ${150 - i * 30}`} />
-      ))}
-    </g>
-  </svg>
-)
 
 // ---------------------------------------------------------------------------
 const Welcome: React.FC<SlideProps> = ({ name }) => (
@@ -158,28 +143,24 @@ const Welcome: React.FC<SlideProps> = ({ name }) => (
     title={`Bem-vindo, ${name}`}
     text="Esta é a app da equipa de atletismo da U.R. Charneca: provas, treinos, carrinha e avisos, num só sítio."
     art={
-      <>
-        <Lanes />
-        <div className="relative">
-          <span className="absolute inset-0 rounded-[28px] intro-pulse" style={{ background: 'var(--gold)' }} aria-hidden="true" />
-          <img
-            src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
-            alt="Emblema da União Recreativa da Charneca"
-            width={168}
-            height={168}
-            className="relative w-40 h-40 rounded-[28px] object-cover border-4 border-[var(--gold)] shadow-[var(--shadow-float)] intro-float"
-          />
-        </div>
-      </>
+      <div className="absolute inset-0 block-blue flex items-center justify-center">
+        <img
+          src={`${import.meta.env.BASE_URL}urc-emblema.jpg`}
+          alt="Emblema da União Recreativa da Charneca"
+          width={168}
+          height={168}
+          className="w-40 h-40 object-cover"
+        />
+      </div>
     }
   />
 )
 
-const EXPLORE_KINDS: Array<{ kind: ActivityKind; label: string; title: string; place: string }> = [
-  { kind: 'trofeu_cascais', label: 'Troféu', title: '1ª Prova do Troféu de Cascais', place: 'Dom, 22 Nov · Cascais' },
-  { kind: 'equipa', label: 'Clube', title: 'Marginal Cascais – Lisboa', place: 'Dom, 8 Nov · Marginal' },
-  { kind: 'training', label: 'Treinos', title: 'Treino de terça', place: 'Ter, 10 Nov · Quinta da Marinha' },
-  { kind: 'event', label: 'Eventos', title: 'Jantar de Natal da equipa', place: 'Sáb, 12 Dez · Sociedade' },
+const EXPLORE_KINDS: Array<{ kind: ActivityKind; label: string; title: string; place: string; date: string }> = [
+  { kind: 'trofeu_cascais', label: 'Troféu', title: 'Etapa 1 do Troféu de Cascais', place: '09:30 · Cascais', date: '2026-11-22' },
+  { kind: 'equipa', label: 'Clube', title: 'Marginal Cascais a Lisboa', place: '10:00 · Marginal', date: '2026-11-08' },
+  { kind: 'training', label: 'Treinos', title: 'Treino de terça', place: '19:00 · Quinta da Marinha', date: '2026-11-10' },
+  { kind: 'event', label: 'Eventos', title: 'Jantar de Natal da equipa', place: '20:00 · Sociedade', date: '2026-12-12' },
 ]
 
 const Explore: React.FC<SlideProps> = () => {
@@ -191,30 +172,27 @@ const Explore: React.FC<SlideProps> = () => {
       text="Provas do Troféu, do clube, treinos e eventos. Escolhe uma categoria: experimenta aqui."
       art={
         <div className="relative w-full px-6 space-y-3">
-          <div className="flex gap-2 justify-center flex-wrap" role="group" aria-label="Experimenta as categorias">
+          <div className="joined" role="group" aria-label="Experimenta as categorias">
             {EXPLORE_KINDS.map((x, i) => (
               <button
                 key={x.kind}
                 type="button"
                 aria-pressed={i === pick}
                 onClick={() => setPick(i)}
-                className={`min-h-11 px-4 rounded-full t-small t-strong border pressable ${
-                  i === pick ? 'bg-[var(--text-1)] text-[var(--bg-app)] border-transparent' : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card)]'
+                className={`min-w-0 min-h-11 px-1 t-small t-strong border-2 border-[var(--text-1)] pressable ${
+                  i === pick ? 'bg-[var(--run)] text-[var(--on-accent)]' : 'bg-[var(--bg-app)] text-[var(--text-1)]'
                 }`}
               >
                 {x.label}
               </button>
             ))}
           </div>
-          <div key={k.kind} className="pop-in rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)] overflow-hidden">
-            <ActivityCover kind={k.kind} seed={`intro-${k.kind}`} className="aspect-[16/8]">
-              <span className="absolute top-3 left-3">
-                <KindBadge kind={k.kind} solid />
-              </span>
-            </ActivityCover>
-            <div className="p-3">
-              <div className="t-body t-strong text-[var(--text-1)] truncate">{k.title}</div>
-              <div className="t-small text-[var(--text-3)] truncate">{k.place}</div>
+          <div key={k.kind} className="fade-in bg-[var(--bg-app)] border-t-[3px] border-[var(--rule-strong)] grid grid-cols-[52px_minmax(0,1fr)] gap-3.5 items-center p-3">
+            <DateBlock date={k.date} />
+            <div className="min-w-0 space-y-1">
+              <div className="t-item text-[var(--text-1)] truncate">{k.title}</div>
+              <div className="t-small text-[var(--text-2)] truncate">{k.place}</div>
+              <KindBadge kind={k.kind} />
             </div>
           </div>
         </div>
@@ -240,10 +218,10 @@ const Register: React.FC<SlideProps> = () => {
       text="Toca numa prova, carrega em Inscrever e diz como vais. Experimenta o transporte:"
       art={
         <div className="relative w-full px-6 space-y-4">
-          <div className="rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)] p-4">
+          <div className="bg-[var(--bg-app)] border-t-[3px] border-[var(--rule-strong)] p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="t-small t-strong text-[var(--text-1)]">Carrinha do clube</span>
-              <span className="t-small t-num text-[var(--text-3)]">{taken + (mode === 'van' ? 1 : 0)}/9</span>
+              <span className="num-wide text-[20px] text-[var(--text-1)]">{taken + (mode === 'van' ? 1 : 0)}/9</span>
             </div>
             <div className="grid grid-cols-9 gap-1.5" aria-hidden="true">
               {seats.map((i) => {
@@ -252,7 +230,7 @@ const Register: React.FC<SlideProps> = () => {
                 return (
                   <span
                     key={i}
-                    className={`h-8 rounded-lg ${mine ? 'intro-seat' : ''}`}
+                    className="h-8 transition-colors"
                     style={{
                       background: mine ? 'var(--run)' : full ? 'var(--border-card-strong)' : 'var(--surface-raised)',
                       outline: mine ? '2px solid var(--run)' : 'none',
@@ -263,7 +241,7 @@ const Register: React.FC<SlideProps> = () => {
               })}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Transporte">
+          <div className="joined" role="radiogroup" aria-label="Transporte">
             {([['van', 'Carrinha'], ['ride', 'Boleia'], ['own', 'Por mim']] as Array<[Transport, string]>).map(([v, label]) => (
               <button
                 key={v}
@@ -271,15 +249,15 @@ const Register: React.FC<SlideProps> = () => {
                 role="radio"
                 aria-checked={mode === v}
                 onClick={() => setMode(v)}
-                className={`min-h-11 rounded-xl t-small t-strong border pressable ${
-                  mode === v ? 'bg-[var(--run)] text-[var(--on-accent)] border-transparent' : 'bg-[var(--surface-card)] text-[var(--text-1)] border-[var(--border-card-strong)]'
+                className={`min-w-0 min-h-11 t-small t-strong border-2 border-[var(--text-1)] pressable ${
+                  mode === v ? 'bg-[var(--run)] text-[var(--on-accent)]' : 'bg-[var(--bg-app)] text-[var(--text-1)]'
                 }`}
               >
                 {label}
               </button>
             ))}
           </div>
-          <p key={mode} className="t-small text-[var(--text-2)] text-center fade-in min-h-10" aria-live="polite">
+          <p key={mode} className="t-small text-[var(--text-1)] fade-in min-h-10" aria-live="polite">
             {TRANSPORT_TEXT[mode]}
           </p>
         </div>
@@ -303,17 +281,17 @@ const Kids: React.FC<SlideProps> = ({ active }) => {
               <span className="t-small text-[var(--text-2)]">Tu</span>
             </div>
             <svg width="72" height="12" viewBox="0 0 72 12" aria-hidden="true">
-              <line x1="2" y1="6" x2="70" y2="6" stroke="var(--text-1)" strokeWidth="3" strokeLinecap="round" strokeDasharray="72" strokeDashoffset={active && linked ? 0 : 72} style={{ transition: 'stroke-dashoffset .6s ease' }} />
-              <line x1="2" y1="6" x2="70" y2="6" stroke="var(--border-card-strong)" strokeWidth="3" strokeLinecap="round" strokeDasharray="2 8" opacity={linked ? 0 : 1} />
+              <line x1="2" y1="6" x2="70" y2="6" stroke="var(--text-1)" strokeWidth="3" strokeDasharray="72" strokeDashoffset={active && linked ? 0 : 72} style={{ transition: 'stroke-dashoffset .6s ease' }} />
+              <line x1="2" y1="6" x2="70" y2="6" stroke="var(--border-card-strong)" strokeWidth="3" strokeDasharray="2 8" opacity={linked ? 0 : 1} />
             </svg>
             <div className="flex flex-col items-center gap-1">
-              <span className={linked ? 'pop-in' : ''}>
+              <span>
                 <Avatar name="Criança" child size={64} />
               </span>
               <span className="t-small text-[var(--text-2)]">{linked ? 'A teu cargo' : 'Criança'}</span>
             </div>
           </div>
-          <div className="rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)] p-3 w-full flex items-center gap-3">
+          <div className="bg-[var(--bg-app)] border-t-[3px] border-[var(--rule-strong)] p-3 w-full flex items-center gap-3">
             <Baby className="w-5 h-5 text-[var(--text-1)] shrink-0" aria-hidden="true" />
             <span className="t-small text-[var(--text-1)] flex-1">Prova aberta a crianças</span>
             {linked ? <Tag tone="ok">Inscrita</Tag> : <Tag tone="neutral">Por inscrever</Tag>}
@@ -350,9 +328,9 @@ const Follow: React.FC<SlideProps> = ({ active }) => {
       art={
         <div className="relative w-full px-8 space-y-6">
           <ol className="relative space-y-5">
-            <span className="absolute left-[15px] top-4 bottom-4 w-[3px] rounded bg-[var(--border-card-strong)]" aria-hidden="true" />
+            <span className="absolute left-[15px] top-4 bottom-4 w-[3px] bg-[var(--border-card-strong)]" aria-hidden="true" />
             <span
-              className="absolute left-[15px] top-4 w-[3px] rounded bg-[var(--run)]"
+              className="absolute left-[15px] top-4 w-[3px] bg-[var(--run)]"
               style={{ height: `calc((100% - 32px) * ${step / 2})`, transition: 'height .7s ease' }}
               aria-hidden="true"
             />
@@ -360,24 +338,24 @@ const Follow: React.FC<SlideProps> = ({ active }) => {
               <li key={s.label}>
                 <button type="button" onClick={() => setStep(i)} className="relative w-full flex items-center gap-4 text-left min-h-11 cursor-pointer">
                   <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors t-small t-strong"
+                    className="w-8 h-8 flex items-center justify-center shrink-0 transition-colors t-small t-strong"
                     style={{
                       background: i <= step ? 'var(--run)' : 'var(--surface-card)',
-                      color: i <= step ? 'var(--on-accent)' : 'var(--text-3)',
+                      color: i <= step ? 'var(--on-accent)' : 'var(--text-1)',
                       border: i <= step ? 'none' : '2px solid var(--border-card-strong)',
                     }}
                   >
                     {i <= step ? <Check className="w-4 h-4" aria-hidden="true" /> : i + 1}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className={`block t-body ${i === step ? 't-strong text-[var(--text-1)]' : 'text-[var(--text-3)]'}`}>{s.label}</span>
+                    <span className={`block t-body ${i === step ? 't-strong text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}>{s.label}</span>
                   </span>
                   {i === step && <Tag tone={i === 0 ? 'warn' : 'ok'}>{s.state}</Tag>}
                 </button>
               </li>
             ))}
           </ol>
-          <p key={step} className="t-small text-[var(--text-2)] text-center fade-in min-h-10" aria-live="polite">
+          <p key={step} className="t-small text-[var(--text-1)] fade-in min-h-10" aria-live="polite">
             {FOLLOW_STEPS[step].text}
           </p>
         </div>
@@ -405,7 +383,7 @@ const Manage: React.FC<SlideProps> = () => {
       text="Como administrador, escolhes as inscrições a confirmar (ou confirmas todas) e marcas os dorsais no clube e entregues."
       art={
         <div className="relative w-full px-6 space-y-3">
-          <div className="rounded-2xl bg-[var(--surface-card)] shadow-[var(--shadow-card)] divide-soft px-2">
+          <div className="bg-[var(--bg-app)] rule-list px-2">
             {PEOPLE.map((p, i) => (
               <label key={p} className="flex items-center gap-3 min-h-14 cursor-pointer px-1">
                 <input type="checkbox" checked={chosen.has(i)} onChange={() => toggle(i)} className="w-5 h-5 accent-[var(--run)]" aria-label={`Escolher ${p}`} />

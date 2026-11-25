@@ -2,145 +2,160 @@
    Shell de computador (todos os utilizadores autenticados, >= 1024 px). Ativado pela classe
    `desktop-shell` no <html>; abaixo de 1024 px nada aqui se aplica (a app é a de telemóvel).
    O que é só de administrador (Gerir, tabelas de gestão, exportar) depende de `isAdminView` nos componentes.
+   Direção "Pista": barra lateral com régua escura de 3 px, ligações de 52 px separadas por réguas finas,
+   a ativa preenchida a azul; tabelas com réguas, sem cantos nem sombras.
    ========================================================================= */
 @media (min-width: 1024px) {
-  /* Largura útil do conteúdo ao lado da barra lateral */
   html.desktop-shell {
     --desk-max: 1200px;
+    --sidebar-w: 232px;
   }
   html.desktop-shell body {
     background-color: var(--bg-app);
   }
   html.desktop-shell #root {
     max-width: none;
-    box-shadow: none;
+    border-inline: 0;
+  }
+  /* O emblema está na barra lateral: não se repete no topo das páginas */
+  html.desktop-shell .hdr-emblem {
+    display: none;
   }
 
   .desk-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    width: 248px;
+    width: var(--sidebar-w);
     z-index: 40;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 20px 12px;
-    background: var(--surface-card);
-    border-right: 1px solid var(--border-card);
+    background: var(--bg-app);
+    border-right: 3px solid var(--rule-strong);
+    overflow-y: auto;
   }
   .desk-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 0 8px 12px;
+    gap: 10px;
+    padding: 22px 16px;
+    background: var(--hdr-bg);
+    color: var(--hdr-fg);
   }
-  .desk-brand img {
-    box-shadow: 0 0 0 2px var(--gold);
+  .desk-brand-name {
+    font-family: var(--font-display);
+    font-stretch: 75%;
+    font-weight: 800;
+    font-size: 21px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .desk-brand-role {
+    font-size: 13px;
+    color: var(--hdr-fg-2);
+    margin-top: 4px;
   }
   .desk-nav {
     display: flex;
     flex-direction: column;
-    gap: 4px;
     flex: 1;
   }
   .desk-nav-link {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    min-height: 40px;
-    padding: 0 12px;
-    border-radius: 10px;
+    min-height: 52px;
+    padding: 0 20px;
     font-size: 15px;
-    color: var(--text-2);
+    font-weight: 700;
+    color: var(--text-1);
     background: transparent;
     border: 0;
+    border-bottom: 1px solid var(--rule);
     cursor: pointer;
     text-decoration: none;
-    transition: background-color 0.14s ease;
+    transition: background-color 0.12s ease;
   }
   .desk-nav-link:hover {
     background: var(--surface-raised);
   }
   .desk-nav-link.is-active {
-    background: var(--tint-blue-bg-strong);
-    color: var(--tint-blue-fg);
-    font-weight: 600;
-    box-shadow: inset 4px 0 0 var(--gold);
+    background: var(--run);
+    color: var(--on-accent);
+    border-bottom-color: var(--run);
+    --focus: #ffffff;
   }
   .desk-nav-link.is-parent {
     color: var(--text-1);
-    font-weight: 600;
   }
   .desk-subnav {
     list-style: none;
-    margin: 0 0 6px 22px;
-    padding: 0 0 0 8px;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    border-left: 2px solid var(--border-card);
   }
   .desk-sub-link {
-    min-height: 36px;
+    min-height: 44px;
+    padding-left: 36px;
     font-size: 14px;
-    gap: 10px;
+    font-weight: 600;
   }
   .desk-sub-link.is-level2 {
-    padding-left: 26px;
-    font-size: 13px;
-    min-height: 32px;
+    padding-left: 52px;
+    font-size: 14px;
+    min-height: 40px;
   }
   .desk-nav-link:focus-visible,
   .desk-sort:focus-visible,
   .desk-rowlink:focus-visible,
   .desk-check:focus-visible,
   .desk-icon-btn:focus-visible {
-    outline: 2px solid var(--run);
-    outline-offset: 2px;
+    outline: 3px solid var(--focus);
+    outline-offset: -3px;
   }
   .desk-badge {
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 9999px;
-    background: #b91c1c;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    background: var(--alert);
+    color: var(--on-alert);
+    font-size: 13px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-variant-numeric: tabular-nums;
   }
   .desk-sidebar-foot {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    border-top: 1px solid var(--border-card);
-    padding-top: 12px;
+    border-top: 3px solid var(--rule-strong);
+    padding-top: 10px;
+  }
+  .desk-sidebar-foot .desk-nav-link {
+    border-bottom: 0;
   }
 
   .desk-main {
-    margin-left: 248px;
-    width: calc(100% - 248px);
+    margin-left: var(--sidebar-w);
+    width: calc(100% - var(--sidebar-w));
     min-width: 0;
   }
   .desk-content {
     max-width: var(--desk-max);
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 0 24px;
   }
 
   .desk-kbd {
     display: inline-block;
-    min-width: 22px;
+    min-width: 24px;
     padding: 1px 6px;
-    border: 1px solid var(--border-card-strong);
-    border-bottom-width: 2px;
-    border-radius: 6px;
-    background: var(--surface-raised);
+    border: 2px solid var(--text-1);
+    background: var(--bg-app);
     color: var(--text-1);
-    font: 600 12px/18px var(--font-sans);
+    font: 700 12px/18px var(--font-sans);
     text-align: center;
   }
   .desk-shortcuts {
@@ -159,8 +174,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    color: var(--text-2);
+    color: var(--text-1);
     background: transparent;
     border: 0;
     cursor: pointer;
@@ -171,18 +185,18 @@
 
   /* Barras fixas de detalhe: alinhadas com a área de conteúdo, não com o centro do ecrã */
   html.desktop-shell .fixed-bar {
-    left: 248px;
+    left: var(--sidebar-w);
     right: 0;
     width: auto;
     max-width: none;
     transform: none;
     translate: none;
-    padding-left: max(24px, calc((100vw - 248px - var(--desk-max)) / 2 + 24px));
-    padding-right: max(24px, calc((100vw - 248px - var(--desk-max)) / 2 + 24px));
+    padding-left: max(24px, calc((100vw - var(--sidebar-w) - var(--desk-max)) / 2 + 24px));
+    padding-right: max(24px, calc((100vw - var(--sidebar-w) - var(--desk-max)) / 2 + 24px));
   }
   /* Avisos curtos centrados na área de conteúdo, sem barra inferior */
-  html.desktop-shell [role="status"][class*="max-w-[440px]"] {
-    left: calc(50% + 124px);
+  html.desktop-shell .toast-region {
+    left: calc(50% + var(--sidebar-w) / 2);
     translate: -50% 0;
     bottom: 88px;
   }
@@ -191,12 +205,12 @@
   .desk-detail {
     max-width: var(--desk-max);
     margin: 0 auto;
-    padding: 24px 24px 120px;
+    padding: 0 24px 120px;
   }
   .desk-detail-grid {
     display: grid;
     grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    gap: 40px;
+    gap: 48px;
     align-items: start;
   }
   .desk-detail-col {
@@ -215,10 +229,9 @@
     gap: 12px;
   }
   .desk-field {
-    height: 36px;
+    height: 40px;
     min-width: 0;
-    border-radius: 10px;
-    border: 1px solid var(--border-card-strong);
+    border: 2px solid var(--border-card-strong);
     background: var(--surface-card);
     color: var(--text-1);
     padding: 0 12px;
@@ -236,17 +249,15 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px 12px;
-    border-radius: 12px;
-    background: var(--tint-blue-bg);
-    border: 1px solid var(--tint-blue-border);
-    color: var(--tint-blue-fg);
+    background: var(--band-bg);
+    color: var(--band-fg);
+    --focus: #f2d94e;
   }
 
-  /* Tabelas densas */
+  /* Tabelas densas: régua escura no topo, réguas finas entre linhas */
   .desk-table-wrap {
     overflow-x: auto;
-    border: 1px solid var(--border-card);
-    border-radius: 12px;
+    border-top: 3px solid var(--rule-strong);
     background: var(--surface-card);
   }
   .desk-table {
@@ -258,17 +269,20 @@
   .desk-caption {
     caption-side: top;
     text-align: left;
-    padding: 10px 14px;
-    font-weight: 600;
+    padding: 10px 0;
+    font-family: var(--font-display);
+    font-stretch: 75%;
+    font-weight: 800;
+    font-size: 20px;
     color: var(--text-1);
   }
   .desk-table th,
   .desk-table td {
-    padding: 6px 12px;
+    padding: 8px 12px;
     text-align: left;
     vertical-align: middle;
-    border-bottom: 1px solid var(--border-card);
-    min-height: 40px;
+    border-bottom: 1px solid var(--rule);
+    min-height: 44px;
   }
   .desk-table td {
     white-space: nowrap;
@@ -280,14 +294,12 @@
   .desk-table thead th {
     position: sticky;
     top: 0;
-    background: var(--surface-raised);
-    font-size: 12px;
-    font-weight: 600;
+    background: var(--bg-app);
+    font-size: 13px;
+    font-weight: 700;
     color: var(--text-2);
     white-space: nowrap;
-  }
-  .desk-table tbody tr:last-child td {
-    border-bottom: 0;
+    border-bottom: 2px solid var(--rule-strong);
   }
   .desk-table tbody tr:hover {
     background: var(--surface-card-hover);
@@ -313,14 +325,13 @@
     padding: 0 4px;
     margin: 0 -4px;
     border: 0;
-    border-radius: 6px;
     background: transparent;
     color: inherit;
     font: inherit;
     cursor: pointer;
   }
   .desk-sort:hover {
-    background: var(--border-card);
+    background: var(--surface-raised);
   }
   .desk-rowlink {
     display: block;
@@ -331,17 +342,18 @@
     background: transparent;
     color: var(--text-1);
     font: inherit;
-    font-weight: 600;
+    font-weight: 700;
     text-align: left;
     cursor: pointer;
   }
   .desk-rowlink:hover {
     text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .desk-state {
     padding: 40px 12px !important;
     text-align: center !important;
-    color: var(--text-3);
+    color: var(--text-2);
   }
 }
 

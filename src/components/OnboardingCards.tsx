@@ -7,7 +7,7 @@ export const ContextualHint: React.FC<{ id: string; children: React.ReactNode }>
   const { visible, dismiss } = useOnboardingItem(id)
   if (!visible) return null
   return (
-    <div className="flex items-start gap-3 rounded-xl bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] px-4 py-3" role="note">
+    <div className="flex items-start gap-3 bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] px-4 py-3" role="note">
       <Lightbulb className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
       <p className="t-small flex-1">{children}</p>
       <button

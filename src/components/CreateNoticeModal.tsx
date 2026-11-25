@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { Sheet } from './Sheet'
 import { Button, Field, SheetHeader, Toggle, inputClass } from './ui'
+import { raceDisplayTitle } from '../utils/display'
 import type { NotificationType } from '../types'
 import { todayISO } from '../utils/dates'
 
@@ -63,7 +64,7 @@ export const CreateNoticeModal: React.FC<{ relatedRaceId?: string; onClose: () =
               <option value="">Nenhuma</option>
               {upcoming.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.title}
+                  {raceDisplayTitle(r)}
                 </option>
               ))}
             </select>
